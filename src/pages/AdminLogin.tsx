@@ -52,7 +52,7 @@ const AdminLogin: React.FC = () => {
       
       // Check if credentials match admin credentials
       // In a real app, this would be a server-side check
-      if (credentials.email === 'admin@jam3a.com' && credentials.password === 'admin123') {
+      if (credentials.email === 'admin@jam3a.me' && credentials.password === 'Admin123!') {
         // Create admin user object
         const adminUser = {
           id: 'admin-1',
@@ -202,8 +202,8 @@ const AdminLogin: React.FC = () => {
           <CardFooter className="border-t p-4">
             <div className="text-xs text-muted-foreground w-full text-center">
               {language === 'en' 
-                ? 'Admin credentials for testing: admin@jam3a.com / admin123' 
-                : 'بيانات اعتماد المسؤول للاختبار: admin@jam3a.com / admin123'}
+                ? 'Admin credentials for testing: admin@jam3a.me / Admin123!' 
+                : 'بيانات اعتماد المسؤول للاختبار: admin@jam3a.me / Admin123!'}
             </div>
           </CardFooter>
         </Card>

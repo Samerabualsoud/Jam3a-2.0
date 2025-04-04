@@ -25,6 +25,18 @@ import SellerRegister from "./pages/SellerRegister";
 import SellerRegistration from "./pages/SellerRegistration";
 import JoinJam3a from "./pages/JoinJam3a";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import ContactUs from "./pages/ContactUs";
+import TrackOrder from "./pages/TrackOrder";
+import ReturnsPolicy from "./pages/ReturnsPolicy";
+import CustomerSupport from "./pages/CustomerSupport";
+import SellerGuidelines from "./pages/SellerGuidelines";
+import SellerSupport from "./pages/SellerSupport";
+import BecomeASeller from "./pages/BecomeASeller";
+import MyJam3a from "./pages/MyJam3a";
+import Cart from "./pages/Cart";
+import UserProfile from "./pages/UserProfile";
 
 // Define route types for better organization
 type RouteConfig = {
@@ -54,13 +66,20 @@ const App = () => {
     { path: "/seller-login", element: <SellerLogin /> },
     { path: "/seller-register", element: <SellerRegister /> },
     { path: "/admin-login", element: <AdminLogin /> },
-    { path: "/privacy", element: <Index /> },
-    { path: "/terms", element: <Index /> },
-    { path: "/contact", element: <Index /> },
-    { path: "/product/:id", element: <Index /> },
+    { path: "/privacy", element: <PrivacyPolicy /> },
+    { path: "/terms", element: <TermsOfService /> },
+    { path: "/contact", element: <ContactUs /> },
+    { path: "/track-order", element: <TrackOrder /> },
+    { path: "/returns", element: <ReturnsPolicy /> },
+    { path: "/support", element: <CustomerSupport /> },
+    { path: "/seller-guidelines", element: <SellerGuidelines /> },
+    { path: "/seller-support", element: <SellerSupport /> },
+    { path: "/become-seller", element: <BecomeASeller /> },
     
     // Protected routes (require authentication)
-    { path: "/my-jam3a", element: <Index />, requireAuth: true },
+    { path: "/my-jam3a", element: <MyJam3a />, requireAuth: true },
+    { path: "/cart", element: <Cart />, requireAuth: true },
+    { path: "/profile", element: <UserProfile />, requireAuth: true },
     { path: "/start-jam3a", element: <StartJam3a />, requireAuth: true },
     { path: "/seller/register", element: <SellerRegistration />, requireAuth: true },
     
