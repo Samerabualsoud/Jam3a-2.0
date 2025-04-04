@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -89,7 +88,7 @@ const BilingualProductListing: React.FC = () => {
     },
     {
       id: 2,
-      image: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=1600&q=80",
+      image: "https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       title: {
         en: "Samsung Galaxy S25 Ultra",
         ar: "سامسونج جالاكسي S25 الترا"
@@ -114,7 +113,7 @@ const BilingualProductListing: React.FC = () => {
     },
     {
       id: 3,
-      image: "https://images.unsplash.com/photo-1615380547903-c456276b7702?auto=format&fit=crop&w=1600&q=80",
+      image: "https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       title: {
         en: "Galaxy Z Fold 6",
         ar: "جالاكسي زد فولد 6"
@@ -144,7 +143,7 @@ const BilingualProductListing: React.FC = () => {
     },
     {
       id: 4,
-      image: "https://images.unsplash.com/photo-1675264710674-942dd359ac0a?auto=format&fit=crop&w=1600&q=80",
+      image: "https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       title: {
         en: "Galaxy Z Flip 6",
         ar: "جالاكسي زد فليب 6"
@@ -173,6 +172,15 @@ const BilingualProductListing: React.FC = () => {
       }
     },
   ];
+
+  // Function to handle joining a specific Jam3a
+  const handleJoinJam3a = (product: Product) => {
+    const productName = product.title[language];
+    const productPrice = product.groupPrices[product.groupPrices.length - 1].price;
+    const discount = Math.round((product.originalPrice - productPrice) / product.originalPrice * 100);
+    
+    navigate(`/join-jam3a?product=${encodeURIComponent(productName)}&price=${productPrice} SAR&discount=${discount}%&id=${product.id}`);
+  };
 
   return (
     <section className="py-16 md:py-24 bg-gradient-to-br from-white to-purple-50 overflow-hidden">
@@ -274,13 +282,11 @@ const BilingualProductListing: React.FC = () => {
                   <CardFooter className="p-4 pt-0" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                     <div className="w-full space-y-2">
                       <Button 
-                      className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple"
-                      onClick={() => {
-                        navigate(`/join-jam3a?product=${encodeURIComponent(product.title[language])}&price=${product.groupPrices[product.groupPrices.length - 1].price} SAR&discount=${Math.round((product.originalPrice - product.groupPrices[product.groupPrices.length - 1].price) / product.originalPrice * 100)}%`);
-                      }}
-                    >
-                      {language === 'en' ? 'Join Jam3a' : 'انضم للجمعة'}
-                    </Button>
+                        className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                        onClick={() => handleJoinJam3a(product)}
+                      >
+                        {language === 'en' ? 'Join Jam3a' : 'انضم للجمعة'}
+                      </Button>
                       <div className="flex justify-center items-center gap-x-4 text-xs text-muted-foreground">
                         <span className="flex items-center">
                           <Clock className="h-3 w-3 mr-1" /> {language === 'en' ? 'Limited Time' : 'وقت محدود'}
@@ -309,9 +315,9 @@ const BilingualProductListing: React.FC = () => {
             className="flex items-center gap-2"
           >
             {language === 'en' ? (
-              <>View All Deals <ChevronRight className="h-4 w-4" /></>
+              <>View All Jam3as <ChevronRight className="h-4 w-4" /></>
             ) : (
-              <>عرض جميع الصفقات <ChevronLeft className="h-4 w-4" /></>
+              <>عرض جميع الجمعات <ChevronLeft className="h-4 w-4" /></>
             )}
           </Button>
         </div>

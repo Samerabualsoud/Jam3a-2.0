@@ -24,7 +24,8 @@ const Hero = () => {
   };
   
   const handleJoinJam3a = () => {
-    navigate('/join-jam3a/example-iphone');
+    // Navigate to the specific Jam3a with product details
+    navigate('/join-jam3a?product=iPhone%2016%20Pro&price=3499%20SAR&discount=12%');
   };
   
   return (
