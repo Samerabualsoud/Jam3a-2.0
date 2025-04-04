@@ -10,17 +10,19 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 import AboutUs from "./pages/AboutUs";
 import { LanguageProvider } from "./components/Header";
 import { AuthProvider } from "./contexts/AuthContext";
 import FAQ from "./pages/FAQ";
-import ShopAllDeals from "./pages/ShopAllDeals";
+import ShopJam3a from "./pages/ShopJam3a";
 import StartJam3a from "./pages/StartJam3a";
 import HowItWorks from "./pages/HowItWorks";
 import FAQPage from "./pages/FAQPage";
 import Sellers from "./pages/Sellers";
 import SellerLogin from "./pages/SellerLogin";
 import SellerRegister from "./pages/SellerRegister";
+import SellerRegistration from "./pages/SellerRegistration";
 import JoinJam3a from "./pages/JoinJam3a";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -37,12 +39,13 @@ const App = () => {
   // Create a client
   const [queryClient] = useState(() => new QueryClient());
 
-  // Define routes configuration
+    // Define routes configuration
   const routesConfig: RouteConfig[] = [
     // Public routes
     { path: "/", element: <Index /> },
-    { path: "/shop-all-deals", element: <ShopAllDeals /> },
+    { path: "/shop-jam3a", element: <ShopJam3a /> },
     { path: "/join-jam3a", element: <JoinJam3a /> },
+    { path: "/join-jam3a/:id", element: <JoinJam3a /> },
     { path: "/how-it-works", element: <HowItWorks /> },
     { path: "/about", element: <AboutUs /> },
     { path: "/faq", element: <FAQPage /> },
@@ -50,6 +53,7 @@ const App = () => {
     { path: "/register", element: <Register /> },
     { path: "/seller-login", element: <SellerLogin /> },
     { path: "/seller-register", element: <SellerRegister /> },
+    { path: "/admin-login", element: <AdminLogin /> },
     { path: "/privacy", element: <Index /> },
     { path: "/terms", element: <Index /> },
     { path: "/contact", element: <Index /> },
@@ -58,10 +62,14 @@ const App = () => {
     // Protected routes (require authentication)
     { path: "/my-jam3a", element: <Index />, requireAuth: true },
     { path: "/start-jam3a", element: <StartJam3a />, requireAuth: true },
+    { path: "/seller/register", element: <SellerRegistration />, requireAuth: true },
     
     // Role-specific routes
     { path: "/sellers", element: <Sellers />, requireAuth: true, requiredRole: "seller" },
     { path: "/admin/*", element: <Admin />, requireAuth: true, requiredRole: "admin" },
+    
+    // Redirects
+    { path: "/shop-all-deals", element: <Navigate to="/shop-jam3a" replace /> },
     
     // Catch-all route for 404
     { path: "*", element: <NotFound /> }

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Users, ShoppingBag, Globe, Menu, X, User, LogOut } from 'lucide-react';
+import { Users, ShoppingBag, Globe, Menu, X, User, LogOut, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -108,9 +108,25 @@ const Header = () => {
             </ToggleGroupItem>
           </ToggleGroup>
           
-          <Button variant="ghost" size="icon" className="text-foreground hover:text-jam3a-purple transition-colors">
-            <ShoppingBag className="h-5 w-5" />
-          </Button>
+          <Link to="/shop-jam3a">
+            <Button variant="ghost" size="icon" className="text-foreground hover:text-jam3a-purple transition-colors">
+              <ShoppingBag className="h-5 w-5" />
+            </Button>
+          </Link>
+          
+          <Link to="/admin-login">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-foreground hover:text-jam3a-purple transition-colors relative"
+              title={language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
+            >
+              <ShieldCheck className="h-5 w-5" />
+              {user?.isAdmin && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full"></span>
+              )}
+            </Button>
+          </Link>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -133,6 +149,7 @@ const Header = () => {
                   {user?.isAdmin && (
                     <DropdownMenuItem className="hover:bg-jam3a-purple-50">
                       <Link to="/admin" className="w-full flex items-center">
+                        <ShieldCheck className="h-4 w-4 mr-2" />
                         {language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
                       </Link>
                     </DropdownMenuItem>
@@ -233,10 +250,11 @@ const Header = () => {
               {language === 'en' ? 'Register' : 'التسجيل'}
             </Link>
             <Link 
-              to="/admin" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              to="/admin-login" 
+              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors flex items-center"
               onClick={() => setIsMenuOpen(false)}
             >
+              <ShieldCheck className="h-5 w-5 mr-2" />
               {language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
             </Link>
             <Button 
