@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ const ContentManager = () => {
   const [selectedFAQ, setSelectedFAQ] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Form states
   const [bannerForm, setBannerForm] = useState({
@@ -64,6 +66,7 @@ const ContentManager = () => {
       active: banner.active,
       link: banner.link || '',
     });
+    setPreviewImage(banner.image);
     setIsEditing(true);
   };
 
@@ -96,6 +99,7 @@ const ContentManager = () => {
         active: false,
         link: '',
       });
+      setPreviewImage(null);
     } else if (activeTab === 'pages') {
       setSelectedPage(null);
       setPageForm({
@@ -126,6 +130,27 @@ const ContentManager = () => {
     setSelectedBanner(null);
     setSelectedPage(null);
     setSelectedFAQ(null);
+    setPreviewImage(null);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create a URL for the file
+      const imageUrl = URL.createObjectURL(file);
+      setPreviewImage(imageUrl);
+      setBannerForm({...bannerForm, image: imageUrl});
+      
+      // In a real implementation, you would upload the file to a server
+      toast({
+        title: "Image uploaded",
+        description: `File "${file.name}" has been uploaded successfully.`,
+      });
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -145,6 +170,7 @@ const ContentManager = () => {
         setSelectedBanner(null);
         setSelectedPage(null);
         setSelectedFAQ(null);
+        setPreviewImage(null);
       }} className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="banners">Banners</TabsTrigger>
@@ -202,7 +228,7 @@ const ContentManager = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="banner-image">Banner Image URL</Label>
+                  <Label htmlFor="banner-image">Banner Image</Label>
                   <div className="flex space-x-2">
                     <Input 
                       id="banner-image" 
@@ -211,16 +237,23 @@ const ContentManager = () => {
                       placeholder="Enter image URL or upload"
                       className="flex-1"
                     />
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={triggerFileInput}>
                       <ImagePlus className="h-4 w-4 mr-1" /> Upload
                     </Button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                    />
                   </div>
                 </div>
                 
-                {bannerForm.image && (
+                {(previewImage || bannerForm.image) && (
                   <div className="border rounded-md overflow-hidden h-40 mt-2">
                     <img 
-                      src={bannerForm.image} 
+                      src={previewImage || bannerForm.image} 
                       alt="Banner preview" 
                       className="w-full h-full object-cover"
                     />
@@ -269,7 +302,7 @@ const ContentManager = () => {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -278,12 +311,12 @@ const ContentManager = () => {
                         <td className="px-6 py-4 whitespace-nowrap">{page.title}</td>
                         <td className="px-6 py-4 whitespace-nowrap">{page.slug}</td>
                         <td className="px-6 py-4 whitespace-nowrap">{page.lastUpdated}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <Button variant="ghost" size="sm" className="mr-2" onClick={() => handlePageSelect(page)}>
-                            <Edit className="h-4 w-4" />
+                        <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                          <Button variant="outline" size="sm" className="mr-2" onClick={() => handlePageSelect(page)}>
+                            <Edit className="h-4 w-4 mr-1" /> Edit
                           </Button>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-1" /> View
                           </Button>
                         </td>
                       </tr>
@@ -296,7 +329,7 @@ const ContentManager = () => {
             <Card>
               <CardHeader>
                 <CardTitle>{selectedPage ? 'Edit Page' : 'Add New Page'}</CardTitle>
-                <CardDescription>Manage website pages and content</CardDescription>
+                <CardDescription>Manage static pages content</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -326,7 +359,7 @@ const ContentManager = () => {
                     value={pageForm.content} 
                     onChange={(e) => setPageForm({...pageForm, content: e.target.value})}
                     placeholder="Enter page content"
-                    className="min-h-[200px]"
+                    rows={10}
                   />
                 </div>
               </CardContent>
@@ -346,13 +379,13 @@ const ContentManager = () => {
             <div className="space-y-4">
               {mockFAQs.map((faq) => (
                 <Card key={faq.id}>
-                  <CardHeader>
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-lg">{faq.question}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p>{faq.answer}</p>
+                    <p className="text-gray-600">{faq.answer}</p>
                   </CardContent>
-                  <CardFooter className="flex justify-end">
+                  <CardFooter>
                     <Button variant="outline" size="sm" className="mr-2" onClick={() => handleFAQSelect(faq)}>
                       <Edit className="h-4 w-4 mr-1" /> Edit
                     </Button>
@@ -387,7 +420,7 @@ const ContentManager = () => {
                     value={faqForm.answer} 
                     onChange={(e) => setFaqForm({...faqForm, answer: e.target.value})}
                     placeholder="Enter answer"
-                    className="min-h-[150px]"
+                    rows={5}
                   />
                 </div>
               </CardContent>

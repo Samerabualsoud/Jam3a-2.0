@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Users, ShoppingBag, Globe, Menu, X, User, LogOut, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +41,7 @@ const Header = () => {
   const { language, setLanguage } = useLanguage();
   const { toast } = useToast();
   const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   const toggleLanguage = (value: string) => {
     if (value) {
@@ -60,6 +60,19 @@ const Header = () => {
       title: language === 'en' ? 'Logged Out' : 'تم تسجيل الخروج',
       description: language === 'en' ? 'You have been logged out successfully' : 'تم تسجيل خروجك بنجاح',
     });
+  };
+
+  const handleJoinStartJam3a = () => {
+    if (isAuthenticated) {
+      navigate('/start-jam3a');
+    } else {
+      navigate('/login', { state: { from: '/start-jam3a' } });
+      toast({
+        title: language === 'en' ? 'Login Required' : 'تسجيل الدخول مطلوب',
+        description: language === 'en' ? 'Please login to start or join a Jam3a' : 'يرجى تسجيل الدخول لبدء أو الانضمام إلى جمعة',
+      });
+    }
+    setIsMenuOpen(false);
   };
 
   return (
@@ -178,10 +191,11 @@ const Header = () => {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button className="bg-jam3a-purple hover:bg-jam3a-deep-purple transition-colors">
-            <Link to="/start-jam3a" className="text-white">
-              {language === 'en' ? 'Join/Start a Jam3a' : 'انضم/ابدأ جمعة'}
-            </Link>
+          <Button 
+            className="bg-jam3a-purple hover:bg-jam3a-deep-purple transition-colors"
+            onClick={handleJoinStartJam3a}
+          >
+            {language === 'en' ? 'Join/Start a Jam3a' : 'انضم/ابدأ جمعة'}
           </Button>
         </div>
 
@@ -259,11 +273,9 @@ const Header = () => {
             </Link>
             <Button 
               className="bg-jam3a-purple hover:bg-jam3a-deep-purple mt-4"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={handleJoinStartJam3a}
             >
-              <Link to="/start-jam3a" className="text-white">
-                {language === 'en' ? 'Join/Start a Jam3a' : 'انضم/ابدأ جمعة'}
-              </Link>
+              {language === 'en' ? 'Join/Start a Jam3a' : 'انضم/ابدأ جمعة'}
             </Button>
             <div className="flex justify-center items-center mt-4 p-2">
               <ToggleGroup 

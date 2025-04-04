@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,9 +8,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/components/Header';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const JoinJam3a = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { language } = useLanguage();
   const [searchParams] = useSearchParams();
@@ -20,6 +23,7 @@ const JoinJam3a = () => {
   const productName = searchParams.get('product') || 'Jam3a Deal';
   const productPrice = searchParams.get('price') || '4999 SAR';
   const productDiscount = searchParams.get('discount') || '16%';
+  const productId = searchParams.get('id') || '1';
   
   // Form state
   const [formData, setFormData] = useState({
@@ -29,14 +33,59 @@ const JoinJam3a = () => {
     address: '',
     paymentMethod: 'credit-card'
   });
+
+  // Form validation state
+  const [formErrors, setFormErrors] = useState({
+    name: false,
+    email: false,
+    phone: false,
+    address: false
+  });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: false }));
+    }
   };
   
   const handlePaymentMethodChange = (method: string) => {
     setFormData(prev => ({ ...prev, paymentMethod: method }));
+  };
+
+  // Validate form before proceeding to next tab
+  const validateForm = () => {
+    const errors = {
+      name: !formData.name,
+      email: !formData.email || !/\S+@\S+\.\S+/.test(formData.email),
+      phone: !formData.phone,
+      address: !formData.address
+    };
+    
+    setFormErrors(errors);
+    return !Object.values(errors).some(error => error);
+  };
+  
+  // Handle tab change with validation
+  const handleTabChange = (value: string) => {
+    if (activeTab === 'details' && value === 'info') {
+      setActiveTab(value);
+    } else if (activeTab === 'info' && value === 'payment') {
+      if (validateForm()) {
+        setActiveTab(value);
+      } else {
+        toast({
+          title: language === 'en' ? 'Please fill all required fields' : 'يرجى ملء جميع الحقول المطلوبة',
+          variant: 'destructive'
+        });
+      }
+    } else if (activeTab === 'info' && value === 'details') {
+      setActiveTab(value);
+    } else if (activeTab === 'payment' && value === 'info') {
+      setActiveTab(value);
+    }
   };
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,9 +104,21 @@ const JoinJam3a = () => {
       navigate('/');
     }, 2000);
   };
+
+  // Get product image based on ID
+  const getProductImage = () => {
+    const images = {
+      '1': 'https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&w=1600&q=80',
+      '2': 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      '3': 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      '4': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    };
+    
+    return images[productId] || 'https://placehold.co/400x400/purple/white?text=Product+Image';
+  };
   
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className={`flex min-h-screen flex-col ${language === 'ar' ? 'rtl' : 'ltr'}`}>
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -66,7 +127,7 @@ const JoinJam3a = () => {
           </h1>
           
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="details">
                   {language === 'en' ? 'Deal Details' : 'تفاصيل الصفقة'}
@@ -84,7 +145,7 @@ const JoinJam3a = () => {
                   <div className="md:w-1/3">
                     <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
                       <img 
-                        src="/images/products/iphone_16_pro.jpg" 
+                        src={getProductImage()} 
                         alt={productName}
                         className="max-w-full max-h-full object-contain"
                         onError={(e) => {
@@ -134,12 +195,12 @@ const JoinJam3a = () => {
                       <ul className="list-disc list-inside text-gray-600">
                         <li>{language === 'en' ? 'Current members: 8/10' : 'الأعضاء الحاليون: 8/10'}</li>
                         <li>{language === 'en' ? 'Estimated delivery: 2-3 weeks' : 'التسليم المتوقع: 2-3 أسابيع'}</li>
-                        <li>{language === 'en' ? 'Payment options: Credit Card, Apple Pay, STC Pay' : 'خيارات الدفع: بطاقة ائتمان، آبل باي، STC Pay'}</li>
+                        <li>{language === 'en' ? 'Payment options: Credit Card, Apple Pay, STC Pay, Tabby, Tamara' : 'خيارات الدفع: بطاقة ائتمان، آبل باي، STC Pay، تابي، تمارا'}</li>
                       </ul>
                     </div>
                     
                     <Button 
-                      onClick={() => setActiveTab('info')}
+                      onClick={() => handleTabChange('info')}
                       className="w-full bg-purple-600 hover:bg-purple-700"
                     >
                       {language === 'en' ? 'Continue to Next Step' : 'المتابعة إلى الخطوة التالية'}
@@ -152,8 +213,8 @@ const JoinJam3a = () => {
                 <form className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name">
-                        {language === 'en' ? 'Full Name' : 'الاسم الكامل'}
+                      <Label htmlFor="name" className={formErrors.name ? 'text-red-500' : ''}>
+                        {language === 'en' ? 'Full Name *' : 'الاسم الكامل *'}
                       </Label>
                       <Input 
                         id="name" 
@@ -162,12 +223,18 @@ const JoinJam3a = () => {
                         onChange={handleInputChange}
                         placeholder={language === 'en' ? 'Enter your full name' : 'أدخل اسمك الكامل'}
                         required
+                        className={formErrors.name ? 'border-red-500' : ''}
                       />
+                      {formErrors.name && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {language === 'en' ? 'Name is required' : 'الاسم مطلوب'}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="email">
-                        {language === 'en' ? 'Email Address' : 'البريد الإلكتروني'}
+                      <Label htmlFor="email" className={formErrors.email ? 'text-red-500' : ''}>
+                        {language === 'en' ? 'Email Address *' : 'البريد الإلكتروني *'}
                       </Label>
                       <Input 
                         id="email" 
@@ -177,12 +244,18 @@ const JoinJam3a = () => {
                         onChange={handleInputChange}
                         placeholder={language === 'en' ? 'Enter your email' : 'أدخل بريدك الإلكتروني'}
                         required
+                        className={formErrors.email ? 'border-red-500' : ''}
                       />
+                      {formErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {language === 'en' ? 'Valid email is required' : 'البريد الإلكتروني الصحيح مطلوب'}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="phone">
-                        {language === 'en' ? 'Phone Number' : 'رقم الهاتف'}
+                      <Label htmlFor="phone" className={formErrors.phone ? 'text-red-500' : ''}>
+                        {language === 'en' ? 'Phone Number *' : 'رقم الهاتف *'}
                       </Label>
                       <Input 
                         id="phone" 
@@ -191,12 +264,18 @@ const JoinJam3a = () => {
                         onChange={handleInputChange}
                         placeholder={language === 'en' ? 'Enter your phone number' : 'أدخل رقم هاتفك'}
                         required
+                        className={formErrors.phone ? 'border-red-500' : ''}
                       />
+                      {formErrors.phone && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {language === 'en' ? 'Phone number is required' : 'رقم الهاتف مطلوب'}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="address">
-                        {language === 'en' ? 'Delivery Address' : 'عنوان التسليم'}
+                      <Label htmlFor="address" className={formErrors.address ? 'text-red-500' : ''}>
+                        {language === 'en' ? 'Delivery Address *' : 'عنوان التسليم *'}
                       </Label>
                       <Input 
                         id="address" 
@@ -205,7 +284,13 @@ const JoinJam3a = () => {
                         onChange={handleInputChange}
                         placeholder={language === 'en' ? 'Enter your address' : 'أدخل عنوانك'}
                         required
+                        className={formErrors.address ? 'border-red-500' : ''}
                       />
+                      {formErrors.address && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {language === 'en' ? 'Address is required' : 'العنوان مطلوب'}
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -213,14 +298,14 @@ const JoinJam3a = () => {
                     <Button 
                       type="button"
                       variant="outline"
-                      onClick={() => setActiveTab('details')}
+                      onClick={() => handleTabChange('details')}
                     >
                       {language === 'en' ? 'Back' : 'رجوع'}
                     </Button>
                     
                     <Button 
                       type="button"
-                      onClick={() => setActiveTab('payment')}
+                      onClick={() => handleTabChange('payment')}
                       className="bg-purple-600 hover:bg-purple-700"
                     >
                       {language === 'en' ? 'Continue to Payment' : 'المتابعة إلى الدفع'}
@@ -287,6 +372,40 @@ const JoinJam3a = () => {
                           {language === 'en' ? 'Mobile Payment' : 'الدفع عبر الجوال'}
                         </div>
                       </div>
+
+                      <div 
+                        className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'tabby' ? 'border-purple-600 bg-purple-50' : ''}`}
+                        onClick={() => handlePaymentMethodChange('tabby')}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-medium">Tabby</div>
+                          <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
+                            {formData.paymentMethod === 'tabby' && (
+                              <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {language === 'en' ? 'Pay in 4 installments' : 'الدفع على 4 أقساط'}
+                        </div>
+                      </div>
+
+                      <div 
+                        className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'tamara' ? 'border-purple-600 bg-purple-50' : ''}`}
+                        onClick={() => handlePaymentMethodChange('tamara')}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-medium">Tamara</div>
+                          <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
+                            {formData.paymentMethod === 'tamara' && (
+                              <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {language === 'en' ? 'Buy now, pay later' : 'اشتر الآن، ادفع لاحقًا'}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
@@ -326,6 +445,35 @@ const JoinJam3a = () => {
                       </div>
                     </div>
                   )}
+
+                  {(formData.paymentMethod === 'tabby' || formData.paymentMethod === 'tamara') && (
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium">
+                        {language === 'en' 
+                          ? `${formData.paymentMethod === 'tabby' ? 'Tabby' : 'Tamara'} Payment Details` 
+                          : `تفاصيل الدفع ${formData.paymentMethod === 'tabby' ? 'تابي' : 'تمارا'}`}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {language === 'en'
+                          ? formData.paymentMethod === 'tabby' 
+                            ? 'Split your payment into 4 interest-free installments.' 
+                            : 'Buy now and pay 30 days later with no fees.'
+                          : formData.paymentMethod === 'tabby'
+                            ? 'قسّم دفعتك إلى 4 أقساط بدون فوائد.'
+                            : 'اشترِ الآن وادفع بعد 30 يومًا بدون رسوم.'
+                        }
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="terms" />
+                        <Label htmlFor="terms" className="text-sm">
+                          {language === 'en'
+                            ? `I agree to ${formData.paymentMethod === 'tabby' ? 'Tabby' : 'Tamara'}'s terms and conditions`
+                            : `أوافق على شروط وأحكام ${formData.paymentMethod === 'tabby' ? 'تابي' : 'تمارا'}`
+                          }
+                        </Label>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="border-t pt-4 mt-6">
                     <div className="flex justify-between mb-2">
@@ -346,7 +494,7 @@ const JoinJam3a = () => {
                     <Button 
                       type="button"
                       variant="outline"
-                      onClick={() => setActiveTab('info')}
+                      onClick={() => handleTabChange('info')}
                     >
                       {language === 'en' ? 'Back' : 'رجوع'}
                     </Button>
