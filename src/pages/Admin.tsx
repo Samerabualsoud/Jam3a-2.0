@@ -4,15 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import Dashboard from "@/components/admin/Dashboard";
+import AdminDashboardFeatures from "@/components/admin/AdminDashboardFeatures";
 import ProductsManager from "@/components/admin/ProductsManager";
 import UsersManager from "@/components/admin/UsersManager";
 import OrdersManager from "@/components/admin/OrdersManager";
-import Settings from "@/components/admin/Settings";
-import ContentManager from "@/components/admin/ContentManager";
+import AdminSettings from "@/components/admin/AdminSettings";
+import BilingualContentManager from "@/components/admin/BilingualContentManager";
 import AnalyticsIntegration from "@/components/admin/AnalyticsIntegration";
 import PaymentIntegration from "@/components/admin/PaymentIntegration";
-import EmailManager from "@/components/admin/EmailManager";
+import EnhancedEmailManager from "@/components/admin/EnhancedEmailManager";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,7 +124,7 @@ const Admin = () => {
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard">
-          <Dashboard />
+          <AdminDashboardFeatures />
         </TabsContent>
         <TabsContent value="products">
           <ProductsManager />
@@ -136,19 +136,19 @@ const Admin = () => {
           <OrdersManager />
         </TabsContent>
         <TabsContent value="content">
-          <ContentManager />
+          <BilingualContentManager />
         </TabsContent>
         <TabsContent value="payments">
           <PaymentIntegration />
         </TabsContent>
         <TabsContent value="emails">
-          <EmailManager />
+          <EnhancedEmailManager />
         </TabsContent>
         <TabsContent value="analytics">
           <AnalyticsIntegration />
         </TabsContent>
         <TabsContent value="settings">
-          <Settings />
+          <AdminSettings />
         </TabsContent>
       </Tabs>
     </div>
