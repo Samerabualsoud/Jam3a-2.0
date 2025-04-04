@@ -18,11 +18,11 @@ const TermsOfService = () => {
       definitions: {
         title: "Definitions",
         items: [
-          ""We", "Us", "Our", and "Jam3a" refer to Jam3a Hub Collective.",
-          ""Platform" refers to our website, mobile applications, and services.",
-          ""User", "You", and "Your" refer to individuals who access or use our Platform.",
-          ""Jam3a Deal" refers to a group buying opportunity where multiple users collectively purchase products at discounted prices.",
-          ""Seller" refers to businesses or individuals who offer products through our Platform."
+          "\"We\", \"Us\", \"Our\", and \"Jam3a\" refer to Jam3a Hub Collective.",
+          "\"Platform\" refers to our website, mobile applications, and services.",
+          "\"User\", \"You\", and \"Your\" refer to individuals who access or use our Platform.",
+          "\"Jam3a Deal\" refers to a group buying opportunity where multiple users collectively purchase products at discounted prices.",
+          "\"Seller\" refers to businesses or individuals who offer products through our Platform."
         ]
       },
       accountRegistration: {

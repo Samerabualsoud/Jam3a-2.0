@@ -190,7 +190,7 @@ const StartJam3a = () => {
       },
       jam3aSetup: {
         title: "Setup Your Jam3a",
-        description: "Configure the details of your Jam3a",
+        sectionDescription: "Configure the details of your Jam3a",
         duration: "Jam3a Duration",
         durationDays: "days",
         category: "Product Category",
@@ -279,7 +279,7 @@ const StartJam3a = () => {
       },
       jam3aSetup: {
         title: "إعداد جمعتك",
-        description: "قم بتكوين تفاصيل جمعتك",
+        sectionDescription: "قم بتكوين تفاصيل جمعتك",
         duration: "مدة الجمعة",
         durationDays: "أيام",
         category: "فئة المنتج",
