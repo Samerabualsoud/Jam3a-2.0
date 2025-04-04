@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,6 +36,7 @@ import BecomeASeller from "./pages/BecomeASeller";
 import MyJam3a from "./pages/MyJam3a";
 import Cart from "./pages/Cart";
 import UserProfile from "./pages/UserProfile";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Define route types for better organization
 type RouteConfig = {
@@ -122,6 +122,8 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              {/* Add ScrollToTop component to handle automatic scrolling on route changes */}
+              <ScrollToTop />
               <Routes>
                 {renderRoutes(routesConfig)}
               </Routes>

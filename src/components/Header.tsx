@@ -76,32 +76,32 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="container mx-auto px-4 flex h-16 items-center justify-between" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-jam3a-purple">
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full gradient-bg transition-transform group-hover:scale-110">
               <Users className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Jam3a</span>
+            <span className="text-xl font-bold gradient-text">Jam3a</span>
           </Link>
         </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/" className="text-sm font-medium text-foreground hover:text-jam3a-purple transition-colors">
+          <Link to="/" className="nav-link active">
             {language === 'en' ? 'Home' : 'الرئيسية'}
           </Link>
-          <Link to="/about" className="text-sm font-medium text-foreground hover:text-jam3a-purple transition-colors">
+          <Link to="/about" className="nav-link">
             {language === 'en' ? 'About Us' : 'من نحن'}
           </Link>
-          <Link to="/how-it-works" className="text-sm font-medium text-foreground hover:text-jam3a-purple transition-colors">
+          <Link to="/how-it-works" className="nav-link">
             {language === 'en' ? 'How It Works' : 'كيف تعمل'}
           </Link>
-          <Link to="/sellers" className="text-sm font-medium text-foreground hover:text-jam3a-purple transition-colors">
+          <Link to="/sellers" className="nav-link">
             {language === 'en' ? 'For Sellers' : 'للبائعين'}
           </Link>
-          <Link to="/faq" className="text-sm font-medium text-foreground hover:text-jam3a-purple transition-colors">
+          <Link to="/faq" className="nav-link">
             {language === 'en' ? 'FAQ' : 'الأسئلة الشائعة'}
           </Link>
         </nav>
@@ -111,18 +111,18 @@ const Header = () => {
             type="single" 
             value={language} 
             onValueChange={toggleLanguage}
-            className="bg-gray-50 border rounded-full shadow-sm p-1"
+            className="bg-secondary border rounded-full shadow-sm p-1"
           >
-            <ToggleGroupItem value="en" aria-label="Toggle English" className="rounded-full data-[state=on]:bg-jam3a-purple data-[state=on]:text-white">
+            <ToggleGroupItem value="en" aria-label="Toggle English" className="rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
               EN
             </ToggleGroupItem>
-            <ToggleGroupItem value="ar" aria-label="Toggle Arabic" className="rounded-full data-[state=on]:bg-jam3a-purple data-[state=on]:text-white">
+            <ToggleGroupItem value="ar" aria-label="Toggle Arabic" className="rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
               AR
             </ToggleGroupItem>
           </ToggleGroup>
           
           <Link to="/shop-jam3a">
-            <Button variant="ghost" size="icon" className="text-foreground hover:text-jam3a-purple transition-colors">
+            <Button variant="ghost" size="icon" className="text-foreground hover:text-primary transition-colors">
               <ShoppingBag className="h-5 w-5" />
             </Button>
           </Link>
@@ -131,7 +131,7 @@ const Header = () => {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-foreground hover:text-jam3a-purple transition-colors relative"
+              className="text-foreground hover:text-primary transition-colors relative"
               title={language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
             >
               <ShieldCheck className="h-5 w-5" />
@@ -143,31 +143,31 @@ const Header = () => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-foreground hover:text-jam3a-purple transition-colors">
+              <Button variant="ghost" size="icon" className="text-foreground hover:text-primary transition-colors">
                 <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border border-gray-200 shadow-md">
+            <DropdownMenuContent align="end" className="w-56 border shadow-md">
               {isAuthenticated ? (
                 <>
                   <DropdownMenuItem className="font-medium">
                     <span>{user?.name}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="hover:bg-jam3a-purple-50">
+                  <DropdownMenuItem>
                     <Link to="/my-jam3a" className="w-full flex items-center">
                       {language === 'en' ? 'My Jam3a Deals' : 'صفقات جمعتي'}
                     </Link>
                   </DropdownMenuItem>
                   {user?.isAdmin && (
-                    <DropdownMenuItem className="hover:bg-jam3a-purple-50">
+                    <DropdownMenuItem>
                       <Link to="/admin" className="w-full flex items-center">
                         <ShieldCheck className="h-4 w-4 mr-2" />
                         {language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem className="hover:bg-jam3a-purple-50" onClick={handleLogout}>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <div className="w-full flex items-center">
                       <LogOut className="h-4 w-4 mr-2" />
                       {language === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
@@ -176,12 +176,12 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem className="hover:bg-jam3a-purple-50">
+                  <DropdownMenuItem>
                     <Link to="/login" className="w-full flex items-center">
                       {language === 'en' ? 'Sign In' : 'تسجيل الدخول'}
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-jam3a-purple-50">
+                  <DropdownMenuItem>
                     <Link to="/register" className="w-full flex items-center">
                       {language === 'en' ? 'Register' : 'التسجيل'}
                     </Link>
@@ -192,7 +192,7 @@ const Header = () => {
           </DropdownMenu>
           
           <Button 
-            className="bg-jam3a-purple hover:bg-jam3a-deep-purple transition-colors"
+            className="gradient-bg hover:opacity-90 transition-opacity"
             onClick={handleJoinStartJam3a}
           >
             {language === 'en' ? 'Join/Start a Jam3a' : 'انضم/ابدأ جمعة'}
@@ -212,67 +212,67 @@ const Header = () => {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="fixed inset-0 top-16 z-50 bg-white md:hidden">
+        <div className="fixed inset-0 top-16 z-50 bg-background md:hidden animate-fade-in">
           <nav className="container mx-auto px-4 py-6 flex flex-col gap-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
             <Link 
               to="/" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               {language === 'en' ? 'Home' : 'الرئيسية'}
             </Link>
             <Link 
               to="/about" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               {language === 'en' ? 'About Us' : 'من نحن'}
             </Link>
             <Link 
               to="/how-it-works" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               {language === 'en' ? 'How It Works' : 'كيف تعمل'}
             </Link>
             <Link 
               to="/sellers" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               {language === 'en' ? 'For Sellers' : 'للبائعين'}
             </Link>
             <Link 
               to="/faq" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               {language === 'en' ? 'FAQ' : 'الأسئلة الشائعة'}
             </Link>
             <Link 
               to="/login" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               {language === 'en' ? 'Sign In' : 'تسجيل الدخول'}
             </Link>
             <Link 
               to="/register" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               {language === 'en' ? 'Register' : 'التسجيل'}
             </Link>
             <Link 
               to="/admin-login" 
-              className="text-lg font-medium p-2 hover:bg-jam3a-purple-50 rounded transition-colors flex items-center"
+              className="text-lg font-medium p-3 hover:bg-secondary rounded-lg transition-colors flex items-center"
               onClick={() => setIsMenuOpen(false)}
             >
               <ShieldCheck className="h-5 w-5 mr-2" />
               {language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
             </Link>
             <Button 
-              className="bg-jam3a-purple hover:bg-jam3a-deep-purple mt-4"
+              className="gradient-bg hover:opacity-90 mt-4 p-6 text-lg"
               onClick={handleJoinStartJam3a}
             >
               {language === 'en' ? 'Join/Start a Jam3a' : 'انضم/ابدأ جمعة'}
@@ -284,10 +284,10 @@ const Header = () => {
                 onValueChange={toggleLanguage}
                 className="w-full max-w-xs border rounded-lg shadow-sm p-1"
               >
-                <ToggleGroupItem value="en" className="flex-1 data-[state=on]:bg-jam3a-purple data-[state=on]:text-white">
+                <ToggleGroupItem value="en" className="flex-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
                   <Globe className="h-4 w-4 mr-1 inline-block" /> English
                 </ToggleGroupItem>
-                <ToggleGroupItem value="ar" className="flex-1 data-[state=on]:bg-jam3a-purple data-[state=on]:text-white">
+                <ToggleGroupItem value="ar" className="flex-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
                   <Globe className="h-4 w-4 mr-1 inline-block" /> العربية
                 </ToggleGroupItem>
               </ToggleGroup>

@@ -24,7 +24,7 @@ const ShopJam3a = () => {
         en: 'Samsung 55" QLED 4K Smart TV',
         ar: 'تلفزيون سامسونج ذكي QLED 4K مقاس 55 بوصة'
       },
-      image: '/images/products/tv.jpg',
+      image: 'https://images.pexels.com/photos/6782570/pexels-photo-6782570.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
       regularPrice: 3999,
       jam3aPrice: 2899,
       participants: {
@@ -40,7 +40,7 @@ const ShopJam3a = () => {
         en: 'Apple AirPods Pro (2nd Generation)',
         ar: 'سماعات أبل إيربودز برو (الجيل الثاني)'
       },
-      image: '/images/products/airpods.jpg',
+      image: 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
       regularPrice: 999,
       jam3aPrice: 799,
       participants: {
@@ -56,7 +56,7 @@ const ShopJam3a = () => {
         en: 'Dyson V12 Detect Slim Cordless Vacuum',
         ar: 'مكنسة دايسون V12 ديتكت سليم لاسلكية'
       },
-      image: '/images/products/vacuum.jpg',
+      image: 'https://images.pexels.com/photos/4108714/pexels-photo-4108714.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
       regularPrice: 2499,
       jam3aPrice: 1899,
       participants: {
@@ -72,7 +72,7 @@ const ShopJam3a = () => {
         en: 'Nike Air Zoom Pegasus 39 Running Shoes',
         ar: 'حذاء نايك اير زوم بيجاسوس 39 للجري'
       },
-      image: '/images/products/shoes.jpg',
+      image: 'https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
       regularPrice: 599,
       jam3aPrice: 449,
       participants: {
@@ -88,7 +88,7 @@ const ShopJam3a = () => {
         en: 'KitchenAid Stand Mixer Professional 5',
         ar: 'خلاط كيتشن ايد ستاند ميكسر بروفيشنال 5'
       },
-      image: '/images/products/mixer.jpg',
+      image: 'https://images.pexels.com/photos/4051569/pexels-photo-4051569.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
       regularPrice: 1899,
       jam3aPrice: 1499,
       participants: {
@@ -104,9 +104,57 @@ const ShopJam3a = () => {
         en: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
         ar: 'سماعات سوني WH-1000XM5 لاسلكية بخاصية إلغاء الضوضاء'
       },
-      image: '/images/products/headphones.jpg',
+      image: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
       regularPrice: 1499,
       jam3aPrice: 1199,
+      participants: {
+        current: 2,
+        required: 5
+      },
+      timeLeft: '3 days',
+      category: 'electronics'
+    },
+    {
+      id: 'jam3a-007',
+      title: {
+        en: 'Samsung Galaxy Z Fold 6',
+        ar: 'سامسونج جالاكسي زد فولد 6'
+      },
+      image: 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      regularPrice: 6999,
+      jam3aPrice: 5799,
+      participants: {
+        current: 7,
+        required: 10
+      },
+      timeLeft: '12 hours',
+      category: 'electronics'
+    },
+    {
+      id: 'jam3a-008',
+      title: {
+        en: 'Samsung Galaxy S25 Ultra',
+        ar: 'سامسونج جالاكسي S25 ألترا'
+      },
+      image: 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      regularPrice: 4599,
+      jam3aPrice: 3899,
+      participants: {
+        current: 4,
+        required: 6
+      },
+      timeLeft: '2 days',
+      category: 'electronics'
+    },
+    {
+      id: 'jam3a-009',
+      title: {
+        en: 'Samsung Galaxy Z Flip 6',
+        ar: 'سامسونج جالاكسي زد فليب 6'
+      },
+      image: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      regularPrice: 3999,
+      jam3aPrice: 3299,
       participants: {
         current: 2,
         required: 5
@@ -172,7 +220,10 @@ const ShopJam3a = () => {
   };
   
   const handleJoinJam3a = (dealId) => {
-    navigate(`/join-jam3a/${dealId}`);
+    const deal = deals.find(d => d.id === dealId);
+    if (deal) {
+      navigate(`/join-jam3a?product=${encodeURIComponent(deal.title[language])}&price=${deal.jam3aPrice} SAR&discount=${calculateSavings(deal.regularPrice, deal.jam3aPrice)}%&id=${dealId}`);
+    }
   };
   
   const handleViewDetails = (dealId) => {
@@ -239,6 +290,14 @@ const ShopJam3a = () => {
               {filteredDeals.map(deal => (
                 <Card key={deal.id} className="overflow-hidden">
                   <div className="aspect-video bg-muted relative">
+                    <img 
+                      src={deal.image} 
+                      alt={deal.title[language]} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://placehold.co/600x400/purple/white?text=Product+Image';
+                      }}
+                    />
                     <div className="absolute top-2 right-2 bg-jam3a-purple text-white px-3 py-1 rounded-full text-sm font-medium">
                       {currentContent.savings} {calculateSavings(deal.regularPrice, deal.jam3aPrice)}%
                     </div>

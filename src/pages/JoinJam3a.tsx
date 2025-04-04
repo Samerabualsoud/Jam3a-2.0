@@ -10,6 +10,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CreditCard, Smartphone, Apple, Clock, Calendar } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const JoinJam3a = () => {
   const navigate = useNavigate();
@@ -31,7 +33,9 @@ const JoinJam3a = () => {
     email: '',
     phone: '',
     address: '',
-    paymentMethod: 'credit-card'
+    paymentMethod: 'credit-card',
+    termsAccepted: false,
+    installmentOption: '4_installments' // For Tabby
   });
 
   // Form validation state
@@ -39,7 +43,8 @@ const JoinJam3a = () => {
     name: false,
     email: false,
     phone: false,
-    address: false
+    address: false,
+    termsAccepted: false
   });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,13 +60,39 @@ const JoinJam3a = () => {
     setFormData(prev => ({ ...prev, paymentMethod: method }));
   };
 
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: false }));
+    }
+  };
+
+  const handleInstallmentOptionChange = (option: string) => {
+    setFormData(prev => ({ ...prev, installmentOption: option }));
+  };
+
   // Validate form before proceeding to next tab
   const validateForm = () => {
     const errors = {
       name: !formData.name,
       email: !formData.email || !/\S+@\S+\.\S+/.test(formData.email),
       phone: !formData.phone,
-      address: !formData.address
+      address: !formData.address,
+      termsAccepted: false
+    };
+    
+    setFormErrors(errors);
+    return !Object.values(errors).some(error => error);
+  };
+
+  // Validate payment form before submission
+  const validatePaymentForm = () => {
+    const errors = {
+      name: false,
+      email: false,
+      phone: false,
+      address: false,
+      termsAccepted: (formData.paymentMethod === 'tabby' || formData.paymentMethod === 'tamara') && !formData.termsAccepted
     };
     
     setFormErrors(errors);
@@ -91,6 +122,14 @@ const JoinJam3a = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!validatePaymentForm()) {
+      toast({
+        title: language === 'en' ? 'Please accept terms and conditions' : 'يرجى قبول الشروط والأحكام',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     // Show success toast
     toast({
       title: language === 'en' ? 'Success!' : 'تم بنجاح!',
@@ -115,6 +154,17 @@ const JoinJam3a = () => {
     };
     
     return images[productId] || 'https://placehold.co/400x400/purple/white?text=Product+Image';
+  };
+
+  // Calculate installment amounts for Tabby
+  const calculateInstallments = () => {
+    const price = parseInt(productPrice.replace(/[^0-9]/g, ''));
+    const installments = {
+      '4_installments': Math.round(price / 4),
+      '2_installments': Math.round(price / 2),
+      'pay_later': price
+    };
+    return installments;
   };
   
   return (
@@ -323,11 +373,12 @@ const JoinJam3a = () => {
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div 
-                        className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'credit-card' ? 'border-purple-600 bg-purple-50' : ''}`}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors hover:border-purple-400 ${formData.paymentMethod === 'credit-card' ? 'border-purple-600 bg-purple-50' : ''}`}
                         onClick={() => handlePaymentMethodChange('credit-card')}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium">
+                          <div className="font-medium flex items-center">
+                            <CreditCard className="h-4 w-4 mr-2" />
                             {language === 'en' ? 'Credit Card' : 'بطاقة ائتمان'}
                           </div>
                           <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
@@ -340,11 +391,14 @@ const JoinJam3a = () => {
                       </div>
                       
                       <div 
-                        className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'apple-pay' ? 'border-purple-600 bg-purple-50' : ''}`}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors hover:border-purple-400 ${formData.paymentMethod === 'apple-pay' ? 'border-purple-600 bg-purple-50' : ''}`}
                         onClick={() => handlePaymentMethodChange('apple-pay')}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium">Apple Pay</div>
+                          <div className="font-medium flex items-center">
+                            <Apple className="h-4 w-4 mr-2" />
+                            Apple Pay
+                          </div>
                           <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
                             {formData.paymentMethod === 'apple-pay' && (
                               <div className="w-3 h-3 rounded-full bg-purple-600"></div>
@@ -357,11 +411,14 @@ const JoinJam3a = () => {
                       </div>
                       
                       <div 
-                        className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'stc-pay' ? 'border-purple-600 bg-purple-50' : ''}`}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors hover:border-purple-400 ${formData.paymentMethod === 'stc-pay' ? 'border-purple-600 bg-purple-50' : ''}`}
                         onClick={() => handlePaymentMethodChange('stc-pay')}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium">STC Pay</div>
+                          <div className="font-medium flex items-center">
+                            <Smartphone className="h-4 w-4 mr-2" />
+                            STC Pay
+                          </div>
                           <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
                             {formData.paymentMethod === 'stc-pay' && (
                               <div className="w-3 h-3 rounded-full bg-purple-600"></div>
@@ -374,11 +431,14 @@ const JoinJam3a = () => {
                       </div>
 
                       <div 
-                        className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'tabby' ? 'border-purple-600 bg-purple-50' : ''}`}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors hover:border-purple-400 ${formData.paymentMethod === 'tabby' ? 'border-purple-600 bg-purple-50' : ''}`}
                         onClick={() => handlePaymentMethodChange('tabby')}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium">Tabby</div>
+                          <div className="font-medium flex items-center">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Tabby
+                          </div>
                           <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
                             {formData.paymentMethod === 'tabby' && (
                               <div className="w-3 h-3 rounded-full bg-purple-600"></div>
@@ -391,11 +451,14 @@ const JoinJam3a = () => {
                       </div>
 
                       <div 
-                        className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'tamara' ? 'border-purple-600 bg-purple-50' : ''}`}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors hover:border-purple-400 ${formData.paymentMethod === 'tamara' ? 'border-purple-600 bg-purple-50' : ''}`}
                         onClick={() => handlePaymentMethodChange('tamara')}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium">Tamara</div>
+                          <div className="font-medium flex items-center">
+                            <Clock className="h-4 w-4 mr-2" />
+                            Tamara
+                          </div>
                           <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
                             {formData.paymentMethod === 'tamara' && (
                               <div className="w-3 h-3 rounded-full bg-purple-600"></div>
@@ -446,32 +509,183 @@ const JoinJam3a = () => {
                     </div>
                   )}
 
-                  {(formData.paymentMethod === 'tabby' || formData.paymentMethod === 'tamara') && (
-                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium">
-                        {language === 'en' 
-                          ? `${formData.paymentMethod === 'tabby' ? 'Tabby' : 'Tamara'} Payment Details` 
-                          : `تفاصيل الدفع ${formData.paymentMethod === 'tabby' ? 'تابي' : 'تمارا'}`}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {language === 'en'
-                          ? formData.paymentMethod === 'tabby' 
-                            ? 'Split your payment into 4 interest-free installments.' 
-                            : 'Buy now and pay 30 days later with no fees.'
-                          : formData.paymentMethod === 'tabby'
-                            ? 'قسّم دفعتك إلى 4 أقساط بدون فوائد.'
-                            : 'اشترِ الآن وادفع بعد 30 يومًا بدون رسوم.'
-                        }
-                      </p>
+                  {formData.paymentMethod === 'tabby' && (
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium flex items-center">
+                          <img 
+                            src="https://cdn.tabby.ai/tabby-logo-en.svg" 
+                            alt="Tabby" 
+                            className="h-6 mr-2" 
+                          />
+                          {language === 'en' ? 'Tabby Payment' : 'الدفع بواسطة تابي'}
+                        </h4>
+                        <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">
+                          {language === 'en' ? 'No Interest' : 'بدون فوائد'}
+                        </span>
+                      </div>
+
+                      <div className="bg-white p-3 rounded border">
+                        <div className="text-sm font-medium mb-2">
+                          {language === 'en' ? 'Choose your installment plan:' : 'اختر خطة التقسيط الخاصة بك:'}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div 
+                            className={`border rounded p-3 cursor-pointer ${formData.installmentOption === '4_installments' ? 'border-purple-600 bg-purple-50' : ''}`}
+                            onClick={() => handleInstallmentOptionChange('4_installments')}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">
+                                  {language === 'en' ? 'Pay in 4 installments' : 'الدفع على 4 أقساط'}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {language === 'en' 
+                                    ? `${calculateInstallments()['4_installments']} SAR every 2 weeks` 
+                                    : `${calculateInstallments()['4_installments']} ريال كل أسبوعين`}
+                                </div>
+                              </div>
+                              <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
+                                {formData.installmentOption === '4_installments' && (
+                                  <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div 
+                            className={`border rounded p-3 cursor-pointer ${formData.installmentOption === '2_installments' ? 'border-purple-600 bg-purple-50' : ''}`}
+                            onClick={() => handleInstallmentOptionChange('2_installments')}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">
+                                  {language === 'en' ? 'Pay in 2 installments' : 'الدفع على قسطين'}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {language === 'en' 
+                                    ? `${calculateInstallments()['2_installments']} SAR now & in 1 month` 
+                                    : `${calculateInstallments()['2_installments']} ريال الآن وبعد شهر`}
+                                </div>
+                              </div>
+                              <div className="w-5 h-5 rounded-full border border-purple-600 flex items-center justify-center">
+                                {formData.installmentOption === '2_installments' && (
+                                  <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="terms" />
-                        <Label htmlFor="terms" className="text-sm">
+                        <Checkbox 
+                          id="tabby-terms" 
+                          checked={formData.termsAccepted}
+                          onCheckedChange={(checked) => handleCheckboxChange('termsAccepted', checked as boolean)}
+                          className={formErrors.termsAccepted ? 'border-red-500' : ''}
+                        />
+                        <Label 
+                          htmlFor="tabby-terms" 
+                          className={`text-sm ${formErrors.termsAccepted ? 'text-red-500' : ''}`}
+                        >
                           {language === 'en'
-                            ? `I agree to ${formData.paymentMethod === 'tabby' ? 'Tabby' : 'Tamara'}'s terms and conditions`
-                            : `أوافق على شروط وأحكام ${formData.paymentMethod === 'tabby' ? 'تابي' : 'تمارا'}`
+                            ? 'I agree to Tabby\'s terms and conditions'
+                            : 'أوافق على شروط وأحكام تابي'
                           }
                         </Label>
                       </div>
+                      
+                      {formErrors.termsAccepted && (
+                        <p className="text-red-500 text-xs">
+                          {language === 'en' 
+                            ? 'You must accept the terms and conditions' 
+                            : 'يجب عليك قبول الشروط والأحكام'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {formData.paymentMethod === 'tamara' && (
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium flex items-center">
+                          <img 
+                            src="https://cdn.tamara.co/assets/tamara-logo.svg" 
+                            alt="Tamara" 
+                            className="h-6 mr-2" 
+                          />
+                          {language === 'en' ? 'Tamara Payment' : 'الدفع بواسطة تمارا'}
+                        </h4>
+                        <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {language === 'en' ? 'Pay Later' : 'ادفع لاحقًا'}
+                        </span>
+                      </div>
+
+                      <div className="bg-white p-4 rounded border">
+                        <div className="flex items-center mb-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                            <span className="font-bold">1</span>
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {language === 'en' ? 'Confirm your order today' : 'أكّد طلبك اليوم'}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {language === 'en' ? 'No payment required now' : 'لا يلزم الدفع الآن'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                            <span className="font-bold">2</span>
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {language === 'en' ? 'Pay after 30 days' : 'ادفع بعد 30 يومًا'}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {language === 'en' ? 'No fees, no interest' : 'بدون رسوم، بدون فوائد'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Alert className="bg-blue-50 text-blue-800 border-blue-200">
+                        <AlertDescription>
+                          {language === 'en' 
+                            ? 'You will receive payment instructions via SMS and email after your order is confirmed.' 
+                            : 'ستتلقى تعليمات الدفع عبر الرسائل القصيرة والبريد الإلكتروني بعد تأكيد طلبك.'}
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="tamara-terms" 
+                          checked={formData.termsAccepted}
+                          onCheckedChange={(checked) => handleCheckboxChange('termsAccepted', checked as boolean)}
+                          className={formErrors.termsAccepted ? 'border-red-500' : ''}
+                        />
+                        <Label 
+                          htmlFor="tamara-terms" 
+                          className={`text-sm ${formErrors.termsAccepted ? 'text-red-500' : ''}`}
+                        >
+                          {language === 'en'
+                            ? 'I agree to Tamara\'s terms and conditions'
+                            : 'أوافق على شروط وأحكام تمارا'
+                          }
+                        </Label>
+                      </div>
+                      
+                      {formErrors.termsAccepted && (
+                        <p className="text-red-500 text-xs">
+                          {language === 'en' 
+                            ? 'You must accept the terms and conditions' 
+                            : 'يجب عليك قبول الشروط والأحكام'}
+                        </p>
+                      )}
                     </div>
                   )}
                   
