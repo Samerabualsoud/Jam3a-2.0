@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLanguage } from '@/components/Header';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -6,148 +6,115 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Phone, MapPin, Clock, Send, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Phone, MapPin, Send } from 'lucide-react';
 
 const ContactUs = () => {
   const { language } = useLanguage();
   const isRtl = language === 'ar';
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const navigate = useNavigate();
+  
   const content = {
     en: {
       title: "Contact Us",
-      subtitle: "We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+      subtitle: "We'd love to hear from you",
       form: {
-        title: "Send Us a Message",
-        name: "Your Name",
+        title: "Send us a message",
+        description: "Fill out the form below and we'll get back to you as soon as possible.",
+        name: "Full Name",
+        namePlaceholder: "Enter your full name",
         email: "Email Address",
-        phone: "Phone Number (optional)",
+        emailPlaceholder: "Enter your email address",
         subject: "Subject",
+        subjectPlaceholder: "What is your message about?",
         message: "Message",
+        messagePlaceholder: "Please provide details about your inquiry...",
         submit: "Send Message",
-        submitting: "Sending...",
-        success: "Your message has been sent! We'll get back to you soon.",
-        error: "There was an error sending your message. Please try again."
+        success: "Your message has been sent successfully. We'll get back to you soon!"
       },
-      contactInfo: {
+      contact: {
         title: "Contact Information",
-        description: "Here's how you can reach us directly:",
-        email: {
-          title: "Email",
-          value: "contact@jam3a.me",
-          description: "For general inquiries"
-        },
-        support: {
-          title: "Customer Support",
-          value: "support@jam3a.me",
-          description: "For help with orders and products"
-        },
-        phone: {
-          title: "Phone",
-          value: "+966 12 345 6789",
-          description: "Sunday - Thursday: 9:00 AM - 6:00 PM (Saudi Arabia Time)"
-        },
-        address: {
-          title: "Office Address",
-          value: "King Fahd Road, Riyadh, Saudi Arabia",
-          description: "Visit us during business hours"
-        },
-        hours: {
-          title: "Business Hours",
-          value: "Sunday - Thursday: 9:00 AM - 6:00 PM",
-          description: "Closed on Friday and Saturday"
-        }
+        description: "You can also reach us through these channels:",
+        email: "Email",
+        emailValue: "support@jam3a.me",
+        phone: "Phone",
+        phoneValue: "+966 12 345 6789",
+        address: "Address",
+        addressValue: "King Fahd Road, Riyadh, Saudi Arabia",
+        hours: "Business Hours",
+        hoursValue: "Sunday - Thursday: 9am - 6pm"
       },
       faq: {
         title: "Frequently Asked Questions",
-        description: "Find quick answers to common questions:",
-        link: "View All FAQs",
-        items: [
+        questions: [
           {
-            question: "How does Jam3a group buying work?",
-            answer: "Jam3a allows users to join together to purchase products at discounted prices. When enough people join a Jam3a (minimum 5 participants), everyone gets the group discount."
-          },
-          {
-            question: "When will I be charged for my order?",
-            answer: "You'll only be charged once the minimum group size for the Jam3a deal is reached. If the minimum isn't reached, no charges will be made."
+            question: "How does Jam3a work?",
+            answer: "Jam3a is a group buying platform that allows users to purchase products at discounted prices by joining or creating group deals. When enough people join a Jam3a deal, everyone gets the discounted price."
           },
           {
             question: "How do I track my order?",
-            answer: "You can track your order by visiting the 'Track Order' page and entering your order number, or by checking your account under 'Jam3a History'."
+            answer: "You can track your order by logging into your account and visiting the 'My Orders' section. Alternatively, you can use the order tracking feature on our website by entering your order number and email address."
+          },
+          {
+            question: "What is your return policy?",
+            answer: "We offer a 14-day return policy for most products. Items must be in their original condition with all packaging and accessories. Some products may have specific return conditions, which will be noted on the product page."
+          },
+          {
+            question: "How can I become a seller on Jam3a?",
+            answer: "To become a seller, visit our 'Become a Seller' page and complete the application process. You'll need to provide business information, product details, and agree to our seller terms and conditions."
           }
         ]
       }
     },
     ar: {
       title: "اتصل بنا",
-      subtitle: "يسعدنا أن نسمع منك. أرسل لنا رسالة وسنرد في أقرب وقت ممكن.",
+      subtitle: "يسعدنا سماع رأيك",
       form: {
         title: "أرسل لنا رسالة",
-        name: "اسمك",
+        description: "املأ النموذج أدناه وسنرد عليك في أقرب وقت ممكن.",
+        name: "الاسم الكامل",
+        namePlaceholder: "أدخل اسمك الكامل",
         email: "عنوان البريد الإلكتروني",
-        phone: "رقم الهاتف (اختياري)",
+        emailPlaceholder: "أدخل عنوان بريدك الإلكتروني",
         subject: "الموضوع",
+        subjectPlaceholder: "ما هو موضوع رسالتك؟",
         message: "الرسالة",
+        messagePlaceholder: "يرجى تقديم تفاصيل حول استفسارك...",
         submit: "إرسال الرسالة",
-        submitting: "جاري الإرسال...",
-        success: "تم إرسال رسالتك! سنرد عليك قريبًا.",
-        error: "حدث خطأ في إرسال رسالتك. يرجى المحاولة مرة أخرى."
+        success: "تم إرسال رسالتك بنجاح. سنرد عليك قريبًا!"
       },
-      contactInfo: {
+      contact: {
         title: "معلومات الاتصال",
-        description: "إليك كيفية الوصول إلينا مباشرة:",
-        email: {
-          title: "البريد الإلكتروني",
-          value: "contact@jam3a.me",
-          description: "للاستفسارات العامة"
-        },
-        support: {
-          title: "دعم العملاء",
-          value: "support@jam3a.me",
-          description: "للمساعدة في الطلبات والمنتجات"
-        },
-        phone: {
-          title: "الهاتف",
-          value: "+966 12 345 6789",
-          description: "الأحد - الخميس: 9:00 صباحًا - 6:00 مساءً (توقيت المملكة العربية السعودية)"
-        },
-        address: {
-          title: "عنوان المكتب",
-          value: "طريق الملك فهد، الرياض، المملكة العربية السعودية",
-          description: "زرنا خلال ساعات العمل"
-        },
-        hours: {
-          title: "ساعات العمل",
-          value: "الأحد - الخميس: 9:00 صباحًا - 6:00 مساءً",
-          description: "مغلق يومي الجمعة والسبت"
-        }
+        description: "يمكنك أيضًا الوصول إلينا من خلال هذه القنوات:",
+        email: "البريد الإلكتروني",
+        emailValue: "support@jam3a.me",
+        phone: "الهاتف",
+        phoneValue: "+966 12 345 6789",
+        address: "العنوان",
+        addressValue: "طريق الملك فهد، الرياض، المملكة العربية السعودية",
+        hours: "ساعات العمل",
+        hoursValue: "الأحد - الخميس: 9 صباحًا - 6 مساءً"
       },
       faq: {
-        title: "الأسئلة المتداولة",
-        description: "ابحث عن إجابات سريعة للأسئلة الشائعة:",
-        link: "عرض جميع الأسئلة المتداولة",
-        items: [
+        title: "الأسئلة الشائعة",
+        questions: [
           {
-            question: "كيف يعمل الشراء الجماعي في جمعة؟",
-            answer: "تتيح جمعة للمستخدمين الانضمام معًا لشراء المنتجات بأسعار مخفضة. عندما ينضم عدد كافٍ من الأشخاص إلى جمعة (الحد الأدنى 5 مشاركين)، يحصل الجميع على خصم المجموعة."
-          },
-          {
-            question: "متى سيتم خصم قيمة طلبي؟",
-            answer: "سيتم خصم المبلغ فقط عند الوصول إلى الحد الأدنى لحجم المجموعة لصفقة جمعة. إذا لم يتم الوصول إلى الحد الأدنى، فلن يتم إجراء أي رسوم."
+            question: "كيف تعمل جمعة؟",
+            answer: "جمعة هي منصة شراء جماعي تتيح للمستخدمين شراء المنتجات بأسعار مخفضة من خلال الانضمام إلى صفقات جماعية أو إنشائها. عندما ينضم عدد كافٍ من الأشخاص إلى صفقة جمعة، يحصل الجميع على السعر المخفض."
           },
           {
             question: "كيف يمكنني تتبع طلبي؟",
-            answer: "يمكنك تتبع طلبك من خلال زيارة صفحة 'تتبع الطلب' وإدخال رقم طلبك، أو من خلال التحقق من حسابك ضمن 'سجل جمعة'."
+            answer: "يمكنك تتبع طلبك عن طريق تسجيل الدخول إلى حسابك وزيارة قسم 'طلباتي'. بدلاً من ذلك، يمكنك استخدام ميزة تتبع الطلب على موقعنا الإلكتروني عن طريق إدخال رقم طلبك وعنوان بريدك الإلكتروني."
+          },
+          {
+            question: "ما هي سياسة الإرجاع الخاصة بكم؟",
+            answer: "نقدم سياسة إرجاع لمدة 14 يومًا لمعظم المنتجات. يجب أن تكون العناصر في حالتها الأصلية مع جميع العبوات والملحقات. قد تحتوي بعض المنتجات على شروط إرجاع محددة، والتي سيتم ملاحظتها في صفحة المنتج."
+          },
+          {
+            question: "كيف يمكنني أن أصبح بائعًا على جمعة؟",
+            answer: "لتصبح بائعًا، قم بزيارة صفحة 'كن بائعًا' وأكمل عملية التقديم. ستحتاج إلى تقديم معلومات العمل وتفاصيل المنتج والموافقة على شروط وأحكام البائع الخاصة بنا."
           }
         ]
       }
@@ -155,7 +122,14 @@ const ContactUs = () => {
   };
 
   const currentContent = content[language];
-
+  
+  const [formData, setFormData] = React.useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -163,215 +137,162 @@ const ContactUs = () => {
       [name]: value
     }));
   };
-
+  
   const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: <div className="flex items-center gap-2"><CheckCircle className="h-5 w-5" /> {currentContent.form.success}</div>,
-        variant: "success"
-      });
-      
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
-      });
-      
-      setIsSubmitting(false);
-    }, 1500);
+    
+    // In a real implementation, this would submit the form to the backend
+    // For now, we'll just simulate it
+    toast({
+      title: currentContent.form.success,
+      variant: "success"
+    });
+    
+    // Reset form
+    setFormData({
+      name: '',
+      email: '',
+      subject: '',
+      message: ''
+    });
   };
 
   return (
     <div className={`flex min-h-screen flex-col ${isRtl ? 'rtl' : 'ltr'}`}>
       <Header />
       <main className="flex-1 py-10">
-        <div className="container mx-auto px-4 max-w-6xl">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold tracking-tight mb-2">{currentContent.title}</h1>
             <p className="text-xl text-muted-foreground">{currentContent.subtitle}</p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            <div className="md:col-span-2">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle>{currentContent.form.title}</CardTitle>
+                  <CardDescription>{currentContent.form.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="name">{currentContent.form.name}</Label>
+                        <label htmlFor="name" className="text-sm font-medium">{currentContent.form.name}</label>
                         <Input
                           id="name"
                           name="name"
+                          placeholder={currentContent.form.namePlaceholder}
                           value={formData.name}
                           onChange={handleInputChange}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">{currentContent.form.email}</Label>
+                        <label htmlFor="email" className="text-sm font-medium">{currentContent.form.email}</label>
                         <Input
                           id="email"
                           name="email"
                           type="email"
+                          placeholder={currentContent.form.emailPlaceholder}
                           value={formData.email}
                           onChange={handleInputChange}
                           required
                         />
                       </div>
                     </div>
+                    
                     <div className="space-y-2">
-                      <Label htmlFor="phone">{currentContent.form.phone}</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="subject">{currentContent.form.subject}</Label>
+                      <label htmlFor="subject" className="text-sm font-medium">{currentContent.form.subject}</label>
                       <Input
                         id="subject"
                         name="subject"
+                        placeholder={currentContent.form.subjectPlaceholder}
                         value={formData.subject}
                         onChange={handleInputChange}
                         required
                       />
                     </div>
+                    
                     <div className="space-y-2">
-                      <Label htmlFor="message">{currentContent.form.message}</Label>
+                      <label htmlFor="message" className="text-sm font-medium">{currentContent.form.message}</label>
                       <Textarea
                         id="message"
                         name="message"
-                        rows={5}
+                        placeholder={currentContent.form.messagePlaceholder}
+                        rows={6}
                         value={formData.message}
                         onChange={handleInputChange}
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <span className="flex items-center">
-                          <span className="animate-spin mr-2">⟳</span>
-                          {currentContent.form.submitting}
-                        </span>
-                      ) : (
-                        <span className="flex items-center">
-                          <Send className="mr-2 h-4 w-4" />
-                          {currentContent.form.submit}
-                        </span>
-                      )}
+                    
+                    <Button type="submit" className="w-full">
+                      <Send className="mr-2 h-4 w-4" />
+                      {currentContent.form.submit}
                     </Button>
                   </form>
                 </CardContent>
               </Card>
             </div>
-
-            <div className="space-y-6">
-              <Card>
+            
+            <div>
+              <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle>{currentContent.contactInfo.title}</CardTitle>
-                  <CardDescription>{currentContent.contactInfo.description}</CardDescription>
+                  <CardTitle>{currentContent.contact.title}</CardTitle>
+                  <CardDescription>{currentContent.contact.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <Mail className="h-6 w-6 text-jam3a-purple mt-1" />
+                <CardContent className="space-y-4">
+                  <div className="flex items-start">
+                    <Mail className="h-5 w-5 mt-0.5 mr-3" />
                     <div>
-                      <h3 className="font-medium">{currentContent.contactInfo.email.title}</h3>
-                      <p className="text-jam3a-purple">{currentContent.contactInfo.email.value}</p>
-                      <p className="text-sm text-muted-foreground">{currentContent.contactInfo.email.description}</p>
+                      <div className="font-medium">{currentContent.contact.email}</div>
+                      <div className="text-muted-foreground">{currentContent.contact.emailValue}</div>
                     </div>
                   </div>
-
-                  <div className="flex items-start space-x-4">
-                    <Mail className="h-6 w-6 text-jam3a-purple mt-1" />
+                  
+                  <div className="flex items-start">
+                    <Phone className="h-5 w-5 mt-0.5 mr-3" />
                     <div>
-                      <h3 className="font-medium">{currentContent.contactInfo.support.title}</h3>
-                      <p className="text-jam3a-purple">{currentContent.contactInfo.support.value}</p>
-                      <p className="text-sm text-muted-foreground">{currentContent.contactInfo.support.description}</p>
+                      <div className="font-medium">{currentContent.contact.phone}</div>
+                      <div className="text-muted-foreground">{currentContent.contact.phoneValue}</div>
                     </div>
                   </div>
-
-                  <div className="flex items-start space-x-4">
-                    <Phone className="h-6 w-6 text-jam3a-purple mt-1" />
+                  
+                  <div className="flex items-start">
+                    <MapPin className="h-5 w-5 mt-0.5 mr-3" />
                     <div>
-                      <h3 className="font-medium">{currentContent.contactInfo.phone.title}</h3>
-                      <p className="text-jam3a-purple">{currentContent.contactInfo.phone.value}</p>
-                      <p className="text-sm text-muted-foreground">{currentContent.contactInfo.phone.description}</p>
+                      <div className="font-medium">{currentContent.contact.address}</div>
+                      <div className="text-muted-foreground">{currentContent.contact.addressValue}</div>
                     </div>
                   </div>
-
-                  <div className="flex items-start space-x-4">
-                    <MapPin className="h-6 w-6 text-jam3a-purple mt-1" />
-                    <div>
-                      <h3 className="font-medium">{currentContent.contactInfo.address.title}</h3>
-                      <p className="text-jam3a-purple">{currentContent.contactInfo.address.value}</p>
-                      <p className="text-sm text-muted-foreground">{currentContent.contactInfo.address.description}</p>
+                  
+                  <div className="flex items-start">
+                    <div className="h-5 w-5 mt-0.5 mr-3 flex items-center justify-center">
+                      <div className="h-4 w-4 rounded-full border-2 border-current"></div>
                     </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <Clock className="h-6 w-6 text-jam3a-purple mt-1" />
                     <div>
-                      <h3 className="font-medium">{currentContent.contactInfo.hours.title}</h3>
-                      <p className="text-jam3a-purple">{currentContent.contactInfo.hours.value}</p>
-                      <p className="text-sm text-muted-foreground">{currentContent.contactInfo.hours.description}</p>
+                      <div className="font-medium">{currentContent.contact.hours}</div>
+                      <div className="text-muted-foreground">{currentContent.contact.hoursValue}</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
+              
               <Card>
                 <CardHeader>
                   <CardTitle>{currentContent.faq.title}</CardTitle>
-                  <CardDescription>{currentContent.faq.description}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {currentContent.faq.items.map((item, index) => (
-                      <div key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
-                        <h3 className="font-medium mb-1">{item.question}</h3>
-                        <p className="text-sm text-muted-foreground">{item.answer}</p>
-                      </div>
-                    ))}
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4"
-                      onClick={() => window.location.href = '/customer-support'}
-                    >
-                      {currentContent.faq.link}
-                    </Button>
-                  </div>
+                <CardContent className="space-y-4">
+                  {currentContent.faq.questions.map((item, index) => (
+                    <div key={index} className="border-b pb-4 last:border-0 last:pb-0">
+                      <h3 className="font-medium mb-2">{item.question}</h3>
+                      <p className="text-sm text-muted-foreground">{item.answer}</p>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </div>
-          </div>
-
-          <div className="mb-12">
-            <Card>
-              <CardContent className="p-0">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3624.6554812553373!2d46.6745381!3d24.7136!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e2f03890d489399%3A0xba974d1c98e79fd5!2sKing%20Fahd%20Rd%2C%20Riyadh%20Saudi%20Arabia!5e0!3m2!1sen!2sus!4v1648651234567!5m2!1sen!2sus"
-                  width="100%"
-                  height="400"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Jam3a Hub Collective Location"
-                ></iframe>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </main>

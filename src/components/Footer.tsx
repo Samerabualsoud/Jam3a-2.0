@@ -44,7 +44,7 @@ const Footer = () => {
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <Link to="/shop" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="/shop-jam3a" className="text-gray-400 hover:text-white transition-colors">
                   {language === 'en' ? 'Shop All Deals' : 'تسوق جميع العروض'}
                 </Link>
               </li>
