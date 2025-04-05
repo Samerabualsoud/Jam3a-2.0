@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ import Footer from "@/components/Footer";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Phone, User, Mail, Lock, ArrowRight } from "lucide-react";
+import { Phone, User, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Login form schema
@@ -49,11 +48,28 @@ const otpSchema = z.object({
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, register: registerUser, isLoading, error, clearError } = useAuth();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [showOTPVerification, setShowOTPVerification] = useState<boolean>(false);
   const [otpValue, setOTPValue] = useState<string>("");
   const [userPhone, setUserPhone] = useState<string>("");
+  const [registrationData, setRegistrationData] = useState<any>(null);
+
+  // Clear any auth errors when component mounts or tab changes
+  useEffect(() => {
+    clearError();
+  }, [activeTab, clearError]);
+
+  // Show error toast if authentication error occurs
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Authentication Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   // Login form
   const loginForm = useForm<z.infer<typeof loginSchema>>({
@@ -83,32 +99,32 @@ const Login = () => {
     },
   });
 
-  const onLoginSubmit = (data: z.infer<typeof loginSchema>) => {
-    console.log("Login data:", data);
-    
-    // Use the authentication context to login
-    login({
-      id: "user-" + Date.now(),
-      name: "User",
-      email: data.email,
-      isAdmin: data.email.includes("admin")
-    });
-    
-    // Simulate login success
-    toast({
-      title: "Login successful",
-      description: "Welcome back to Jam3a!",
-    });
-    
-    // Redirect to home after successful login
-    setTimeout(() => navigate("/"), 1000);
+  const onLoginSubmit = async (data: z.infer<typeof loginSchema>) => {
+    try {
+      // Use the authentication context to login with real API
+      await login(data.email, data.password);
+      
+      // Show success message
+      toast({
+        title: "Login successful",
+        description: "Welcome back to Jam3a!",
+      });
+      
+      // Redirect to home after successful login
+      navigate("/");
+    } catch (err) {
+      // Error is handled by the AuthContext and displayed via the useEffect above
+      console.error("Login error:", err);
+    }
   };
 
-  const onRegisterSubmit = (data: z.infer<typeof registerSchema>) => {
-    console.log("Register data:", data);
+  const onRegisterSubmit = async (data: z.infer<typeof registerSchema>) => {
+    // Store registration data for later use after OTP verification
+    setRegistrationData(data);
     setUserPhone(data.phone);
     
-    // Simulate sending OTP
+    // In a real implementation, we would call an API to send OTP
+    // For now, we'll simulate it
     toast({
       title: "OTP sent",
       description: `Verification code sent to ${data.phone}`,
@@ -118,17 +134,36 @@ const Login = () => {
     setShowOTPVerification(true);
   };
 
-  const onOTPSubmit = (data: z.infer<typeof otpSchema>) => {
-    console.log("OTP verification:", data);
-    
-    // Simulate OTP verification success
-    toast({
-      title: "Registration successful",
-      description: "Your account has been created successfully!",
-    });
-    
-    // Redirect to home after successful registration
-    setTimeout(() => navigate("/"), 1500);
+  const onOTPSubmit = async (data: z.infer<typeof otpSchema>) => {
+    if (!registrationData) {
+      toast({
+        title: "Registration error",
+        description: "Registration data not found. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Use the authentication context to register with real API
+      await registerUser(
+        registrationData.name,
+        registrationData.email,
+        registrationData.password
+      );
+      
+      // Show success message
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created successfully!",
+      });
+      
+      // Redirect to home after successful registration
+      navigate("/");
+    } catch (err) {
+      // Error is handled by the AuthContext and displayed via the useEffect above
+      console.error("Registration error:", err);
+    }
   };
 
   // For OTP input
@@ -174,8 +209,19 @@ const Login = () => {
                   )}
                 />
                 
-                <Button type="submit" className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple">
-                  Verify OTP
+                <Button 
+                  type="submit" 
+                  className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify OTP"
+                  )}
                 </Button>
                 
                 <div className="text-center mt-4">
@@ -183,6 +229,7 @@ const Login = () => {
                     variant="link" 
                     className="text-jam3a-purple"
                     onClick={() => setShowOTPVerification(false)}
+                    disabled={isLoading}
                   >
                     Go back to registration
                   </Button>
@@ -227,6 +274,7 @@ const Login = () => {
                               placeholder="your@email.com" 
                               className="pl-10" 
                               {...field} 
+                              disabled={isLoading}
                             />
                           </div>
                         </FormControl>
@@ -249,6 +297,7 @@ const Login = () => {
                               placeholder="********" 
                               className="pl-10" 
                               {...field} 
+                              disabled={isLoading}
                             />
                           </div>
                         </FormControl>
@@ -257,8 +306,19 @@ const Login = () => {
                     )}
                   />
                   
-                  <Button type="submit" className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple">
-                    Sign In
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing In...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
                   </Button>
                 </form>
               </Form>
@@ -280,6 +340,7 @@ const Login = () => {
                               placeholder="John Doe" 
                               className="pl-10" 
                               {...field} 
+                              disabled={isLoading}
                             />
                           </div>
                         </FormControl>
@@ -301,6 +362,7 @@ const Login = () => {
                               placeholder="your@email.com" 
                               className="pl-10" 
                               {...field} 
+                              disabled={isLoading}
                             />
                           </div>
                         </FormControl>
@@ -319,9 +381,10 @@ const Login = () => {
                           <div className="relative">
                             <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                             <Input 
-                              placeholder="+966 5X XXX XXXX" 
+                              placeholder="+1234567890" 
                               className="pl-10" 
                               {...field} 
+                              disabled={isLoading}
                             />
                           </div>
                         </FormControl>
@@ -344,6 +407,7 @@ const Login = () => {
                               placeholder="********" 
                               className="pl-10" 
                               {...field} 
+                              disabled={isLoading}
                             />
                           </div>
                         </FormControl>
@@ -352,8 +416,19 @@ const Login = () => {
                     )}
                   />
                   
-                  <Button type="submit" className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple">
-                    Create Account <ArrowRight className="h-4 w-4 ml-2" />
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Sign Up"
+                    )}
                   </Button>
                 </form>
               </Form>
