@@ -1,211 +1,157 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { fetchFeaturedDeals } from '@/services/DealService';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/Header';
+import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Loader2, ArrowRight } from 'lucide-react';
 
 const FeaturedDeals = () => {
   const { language } = useLanguage();
   const isRtl = language === 'ar';
   const navigate = useNavigate();
+  
+  const [deals, setDeals] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Content based on language
   const content = {
     en: {
-      title: "Featured Deals",
-      subtitle: "Join these popular Jam3a deals and save big",
-      viewAll: "View All Deals",
-      currency: "SAR",
-      regularPrice: "Regular Price",
-      jam3aPrice: "Jam3a Price",
-      discount: "Discount",
+      title: "Featured Jam3a Deals",
+      viewDeal: "View Deal",
       participants: "Participants",
       timeLeft: "Time Left",
-      join: "Join This Jam3a"
+      discount: "Discount",
+      noDeals: "No featured deals available at the moment.",
+      viewAll: "View All Deals",
+      currency: "SAR"
     },
     ar: {
-      title: "العروض المميزة",
-      subtitle: "انضم إلى صفقات جمعة الشعبية هذه ووفر كثيرًا",
-      viewAll: "عرض جميع العروض",
-      currency: "ريال",
-      regularPrice: "السعر العادي",
-      jam3aPrice: "سعر جمعة",
-      discount: "الخصم",
+      title: "صفقات جمعة المميزة",
+      viewDeal: "عرض الصفقة",
       participants: "المشاركون",
       timeLeft: "الوقت المتبقي",
-      join: "انضم إلى هذه الجمعة"
+      discount: "الخصم",
+      noDeals: "لا توجد صفقات مميزة متاحة في الوقت الحالي.",
+      viewAll: "عرض جميع الصفقات",
+      currency: "ريال"
     }
   };
 
   const currentContent = content[language];
 
-  // Product data with local images
-  const products = [
-    {
-      id: 1,
-      name: {
-        en: "Samsung 55\" QLED 4K Smart TV",
-        ar: "تلفزيون سامسونج QLED ذكي 55 بوصة بدقة 4K"
-      },
-      regularPrice: 3499,
-      jam3aPrice: 2799,
-      discount: "20%",
-      participants: {
-        current: 3,
-        total: 5
-      },
-      timeLeft: "2 days, 5 hours",
-      image: "/assets/products/samsung-tv.jpg"
-    },
-    {
-      id: 2,
-      name: {
-        en: "Apple iPhone 14 Pro - 256GB",
-        ar: "آيفون 14 برو - 256 جيجابايت"
-      },
-      regularPrice: 4799,
-      jam3aPrice: 4199,
-      discount: "12.5%",
-      participants: {
-        current: 4,
-        total: 5
-      },
-      timeLeft: "1 day, 12 hours",
-      image: "/assets/products/iphone-14.jpg"
-    },
-    {
-      id: 3,
-      name: {
-        en: "Sony WH-1000XM5 Wireless Headphones",
-        ar: "سماعات سوني WH-1000XM5 لاسلكية"
-      },
-      regularPrice: 1499,
-      jam3aPrice: 1199,
-      discount: "20%",
-      participants: {
-        current: 2,
-        total: 5
-      },
-      timeLeft: "3 days, 8 hours",
-      image: "/assets/products/sony-headphones.jpg"
-    },
-    {
-      id: 4,
-      name: {
-        en: "Dyson V12 Detect Slim Cordless Vacuum",
-        ar: "مكنسة دايسون V12 ديتكت سليم لاسلكية"
-      },
-      regularPrice: 2899,
-      jam3aPrice: 2299,
-      discount: "20.7%",
-      participants: {
-        current: 1,
-        total: 5
-      },
-      timeLeft: "4 days, 10 hours",
-      image: "/assets/products/dyson-vacuum.jpg"
-    }
-  ];
+  useEffect(() => {
+    const loadFeaturedDeals = async () => {
+      try {
+        setIsLoading(true);
+        const dealsData = await fetchFeaturedDeals();
+        setDeals(dealsData);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error loading featured deals:', err);
+        setError(err.message || 'Failed to load featured deals');
+        setIsLoading(false);
+      }
+    };
 
-  return (
-    <section className={`py-16 ${isRtl ? 'rtl' : 'ltr'}`}>
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight mb-2">{currentContent.title}</h2>
-          <p className="text-xl text-muted-foreground">{currentContent.subtitle}</p>
-        </div>
+    loadFeaturedDeals();
+  }, []);
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
-          {products.map((product) => (
-            <div key={product.id} className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md transition-all hover:shadow-lg">
-              <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden bg-gray-200 relative">
-                {/* Loading skeleton that shows before image loads */}
-                <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-                <img
-                  src={product.image}
-                  alt={product.name[language]}
-                  className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                  onLoad={(e) => {
-                    // Hide skeleton when image loads
-                    const target = e.target as HTMLImageElement;
-                    target.parentElement?.querySelector('.animate-pulse')?.classList.add('hidden');
-                  }}
-                />
-                <div className="absolute top-2 right-2 bg-jam3a-purple text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-md">
-                  {product.discount}
-                </div>
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2 line-clamp-2">{product.name[language]}</h3>
-                <div className="flex justify-between mb-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{currentContent.regularPrice}</p>
-                    <p className="text-sm line-through text-muted-foreground">{product.regularPrice} {currentContent.currency}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">{currentContent.jam3aPrice}</p>
-                    <p className="text-lg font-bold text-jam3a-purple">{product.jam3aPrice} {currentContent.currency}</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <div>
-                      <p className="text-muted-foreground">{currentContent.participants}</p>
-                      <p>{product.participants.current}/{product.participants.total}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-muted-foreground">{currentContent.timeLeft}</p>
-                      <p>{product.timeLeft}</p>
-                    </div>
-                  </div>
-                  <div 
-                    className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={(product.participants.current / product.participants.total) * 100}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={language === 'ar' ? 'نسبة اكتمال المجموعة' : 'Group completion percentage'}
-                  >
-                    <div 
-                      className="bg-jam3a-purple h-2.5 rounded-full transition-all duration-500 ease-in-out" 
-                      style={{ width: `${(product.participants.current / product.participants.total) * 100}%` }}
-                    ></div>
-                  </div>
-                  <button 
-                    className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple text-white py-2.5 rounded-md transition-all duration-300 font-medium shadow-sm hover:shadow-md"
-                    onClick={() => {
-                      // Track click event in analytics
-                      if (window.gtag) {
-                        window.gtag('event', 'select_item', {
-                          items: [{
-                            item_id: product.id,
-                            item_name: product.name[language],
-                            price: product.jam3aPrice,
-                            discount: product.discount
-                          }]
-                        });
-                      }
-                      // Navigate to join page using React Router instead of window.location
-                      navigate(`/join-jam3a?product=${encodeURIComponent(product.name[language])}&price=${product.jam3aPrice}&discount=${product.discount}&id=${product.id}`);
-                    }}
-                    aria-label={`${currentContent.join}: ${product.name[language]}`}
-                  >
-                    {currentContent.join}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+  const handleViewDeal = (dealId) => {
+    navigate(`/join-jam3a?dealId=${dealId}`);
+  };
 
-        <div className="text-center mt-10">
-          <Link to="/shop-jam3a" className="inline-flex items-center text-jam3a-purple hover:text-jam3a-deep-purple font-medium transition-colors duration-300">
-            {currentContent.viewAll}
-            <svg className={`w-5 h-5 ml-1 ${isRtl ? 'transform rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-            </svg>
-          </Link>
+  if (isLoading) {
+    return (
+      <div className="py-12">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold mb-6 text-center">{currentContent.title}</h2>
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-jam3a-purple" />
+          </div>
         </div>
       </div>
-    </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-12">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold mb-6 text-center">{currentContent.title}</h2>
+          <div className="text-center py-12 text-red-500">
+            <p>{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-12 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-2xl font-bold mb-8 text-center">{currentContent.title}</h2>
+        
+        {deals.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {deals.map((deal) => (
+              <Card key={deal._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-48 overflow-hidden">
+                  <img 
+                    src={deal.image || deal.category?.image || 'https://via.placeholder.com/400x200?text=Jam3a+Deal'} 
+                    alt={deal.title} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{language === 'ar' && deal.titleAr ? deal.titleAr : deal.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                      <span>{currentContent.discount}: {deal.discount}%</span>
+                      <span className="text-jam3a-purple font-semibold">
+                        {deal.currentParticipants}/{deal.maxParticipants} {currentContent.participants}
+                      </span>
+                    </div>
+                    
+                    <Progress value={deal.progress} className="h-2" />
+                    
+                    <div className="text-sm text-muted-foreground">
+                      {currentContent.timeLeft}: {deal.timeRemaining}
+                    </div>
+                    
+                    <Button 
+                      onClick={() => handleViewDeal(deal._id)} 
+                      className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                    >
+                      {currentContent.viewDeal}
+                      <ArrowRight className={`ml-2 h-4 w-4 ${isRtl ? 'transform rotate-180' : ''}`} />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>{currentContent.noDeals}</p>
+          </div>
+        )}
+        
+        <div className="text-center mt-8">
+          <Button 
+            onClick={() => navigate('/deals')} 
+            variant="outline" 
+            className="border-jam3a-purple text-jam3a-purple hover:bg-jam3a-purple hover:text-white"
+          >
+            {currentContent.viewAll}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 

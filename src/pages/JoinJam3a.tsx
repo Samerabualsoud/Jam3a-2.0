@@ -16,6 +16,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import ScrollToTop from '@/components/ScrollToTop';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
+import ProductSelector from '@/components/ProductSelector';
+import { fetchDealById, fetchDealProducts, joinDeal } from '@/services/DealService';
 
 // Payment method icons
 const TabbyIcon = () => (
@@ -30,49 +32,25 @@ const TamaraIcon = () => (
   </div>
 );
 
-// Comprehensive product image mapping system
-const PRODUCT_IMAGES = {
-  // Apple Products
-  IPHONE: {
-    DEFAULT: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '16 PRO': 'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '16 PRO MAX': 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '15': 'https://images.pexels.com/photos/341523/pexels-photo-341523.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '15 PRO': 'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-  },
-  // Samsung Products
-  GALAXY: {
-    DEFAULT: 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'S25': 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'S25 ULTRA': 'https://images.pexels.com/photos/15351642/pexels-photo-15351642.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-  },
-  FOLD: {
-    DEFAULT: 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '6': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-  },
-  FLIP: {
-    DEFAULT: 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '6': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-  },
-  // Fallback
-  FALLBACK: 'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-};
-
 const JoinJam3a = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const { language } = useLanguage();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState('product');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // Get product details from URL params
-  const productName = searchParams.get('product') || 'Jam3a Deal';
-  const productPrice = searchParams.get('price') || '4999 SAR';
-  const productDiscount = searchParams.get('discount') || '16%';
-  const productId = searchParams.get('id') || '1';
+  // Get deal ID from URL params
+  const dealId = searchParams.get('dealId') || '';
+  
+  // Deal and products state
+  const [deal, setDeal] = useState(null);
+  const [categoryProducts, setCategoryProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -98,125 +76,235 @@ const JoinJam3a = () => {
     termsAccepted: false,
     cardNumber: false,
     cardExpiry: false,
-    cardCvv: false
+    cardCvv: false,
+    product: false
   });
-  
-  // Scroll to top when component mounts
+
+  // Content based on language
+  const content = {
+    en: {
+      title: "Join Jam3a Deal",
+      productSelection: "Select Product",
+      personalInfo: "Personal Information",
+      payment: "Payment",
+      confirmation: "Confirmation",
+      categoryTitle: "Category",
+      selectProduct: "Select a product from this category",
+      productDetails: "Product Details",
+      regularPrice: "Regular Price",
+      jam3aPrice: "Jam3a Price",
+      discount: "Discount",
+      participants: "Participants",
+      timeLeft: "Time Left",
+      continue: "Continue",
+      back: "Back",
+      personalInfoTitle: "Enter Your Information",
+      nameLabel: "Full Name",
+      emailLabel: "Email Address",
+      phoneLabel: "Phone Number",
+      addressLabel: "Delivery Address",
+      termsLabel: "I agree to the terms and conditions",
+      paymentTitle: "Payment Method",
+      creditCard: "Credit/Debit Card",
+      bankTransfer: "Bank Transfer",
+      cashOnDelivery: "Cash on Delivery",
+      tabby: "Tabby (Pay in 4)",
+      tamara: "Tamara (Pay Later)",
+      cardNumberLabel: "Card Number",
+      cardExpiryLabel: "Expiry Date (MM/YY)",
+      cardCvvLabel: "CVV",
+      saveCardLabel: "Save card for future purchases",
+      payNow: "Pay Now",
+      processingPayment: "Processing Payment...",
+      paymentSuccessTitle: "Payment Successful!",
+      paymentSuccessMessage: "Your Jam3a deal purchase has been confirmed. You will receive a confirmation email shortly.",
+      viewOrder: "View Order Details",
+      continueShopping: "Continue Shopping",
+      errorTitle: "Error",
+      requiredField: "This field is required",
+      invalidEmail: "Please enter a valid email address",
+      invalidPhone: "Please enter a valid phone number",
+      invalidCard: "Please enter a valid card number",
+      invalidExpiry: "Please enter a valid expiry date (MM/YY)",
+      invalidCvv: "Please enter a valid CVV",
+      termsRequired: "You must agree to the terms and conditions",
+      productRequired: "Please select a product to continue",
+      currency: "SAR"
+    },
+    ar: {
+      title: "انضم إلى صفقة جمعة",
+      productSelection: "اختر المنتج",
+      personalInfo: "المعلومات الشخصية",
+      payment: "الدفع",
+      confirmation: "التأكيد",
+      categoryTitle: "الفئة",
+      selectProduct: "اختر منتجًا من هذه الفئة",
+      productDetails: "تفاصيل المنتج",
+      regularPrice: "السعر العادي",
+      jam3aPrice: "سعر جمعة",
+      discount: "الخصم",
+      participants: "المشاركون",
+      timeLeft: "الوقت المتبقي",
+      continue: "متابعة",
+      back: "رجوع",
+      personalInfoTitle: "أدخل معلوماتك",
+      nameLabel: "الاسم الكامل",
+      emailLabel: "البريد الإلكتروني",
+      phoneLabel: "رقم الهاتف",
+      addressLabel: "عنوان التوصيل",
+      termsLabel: "أوافق على الشروط والأحكام",
+      paymentTitle: "طريقة الدفع",
+      creditCard: "بطاقة ائتمان/خصم",
+      bankTransfer: "تحويل بنكي",
+      cashOnDelivery: "الدفع عند الاستلام",
+      tabby: "تابي (ادفع على 4)",
+      tamara: "تمارا (ادفع لاحقًا)",
+      cardNumberLabel: "رقم البطاقة",
+      cardExpiryLabel: "تاريخ الانتهاء (MM/YY)",
+      cardCvvLabel: "رمز التحقق",
+      saveCardLabel: "حفظ البطاقة للمشتريات المستقبلية",
+      payNow: "ادفع الآن",
+      processingPayment: "جاري معالجة الدفع...",
+      paymentSuccessTitle: "تم الدفع بنجاح!",
+      paymentSuccessMessage: "تم تأكيد شراء صفقة جمعة الخاصة بك. ستتلقى رسالة تأكيد بالبريد الإلكتروني قريبًا.",
+      viewOrder: "عرض تفاصيل الطلب",
+      continueShopping: "متابعة التسوق",
+      errorTitle: "خطأ",
+      requiredField: "هذا الحقل مطلوب",
+      invalidEmail: "يرجى إدخال بريد إلكتروني صحيح",
+      invalidPhone: "يرجى إدخال رقم هاتف صحيح",
+      invalidCard: "يرجى إدخال رقم بطاقة صحيح",
+      invalidExpiry: "يرجى إدخال تاريخ انتهاء صحيح (MM/YY)",
+      invalidCvv: "يرجى إدخال رمز تحقق صحيح",
+      termsRequired: "يجب الموافقة على الشروط والأحكام",
+      productRequired: "يرجى اختيار منتج للمتابعة",
+      currency: "ريال"
+    }
+  };
+
+  const currentContent = content[language];
+  const isRtl = language === 'ar';
+
+  // Fetch deal and products data
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-  
+    const loadDealData = async () => {
+      if (!dealId) {
+        setError('No deal ID provided');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        
+        // Fetch deal details
+        const dealData = await fetchDealById(dealId);
+        setDeal(dealData);
+        
+        // Fetch products in this deal's category
+        const productsData = await fetchDealProducts(dealId);
+        setCategoryProducts(productsData.data);
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error loading deal data:', err);
+        setError(err.message || 'Failed to load deal data');
+        setIsLoading(false);
+      }
+    };
+
+    loadDealData();
+  }, [dealId]);
+
+  // Handle product selection
+  const handleProductSelect = (product) => {
+    setSelectedProduct(product);
+    setFormErrors({
+      ...formErrors,
+      product: false
+    });
+  };
+
+  // Handle form input changes
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     
     // Format card number with spaces
     if (name === 'cardNumber') {
-      const cleaned = value.replace(/\s/g, '');
-      const formatted = cleaned.replace(/(\d{4})/g, '$1 ').trim();
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    } 
-    // Format card expiry as MM/YY
-    else if (name === 'cardExpiry') {
-      const cleaned = value.replace(/\D/g, '');
-      let formatted = cleaned;
-      if (cleaned.length > 2) {
-        formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4);
-      }
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    }
-    // Format phone number
-    else if (name === 'phone') {
-      // Allow only numbers and format as needed
-      const cleaned = value.replace(/\D/g, '');
-      let formatted = cleaned;
+      const formattedValue = value
+        .replace(/\s/g, '')
+        .replace(/(\d{4})/g, '$1 ')
+        .trim()
+        .slice(0, 19);
       
-      // Format Saudi phone numbers
-      if (cleaned.startsWith('966') || cleaned.startsWith('05')) {
-        if (cleaned.startsWith('05')) {
-          formatted = cleaned;
-        } else if (cleaned.startsWith('966')) {
-          formatted = cleaned;
-        }
-      } else if (cleaned.length > 0) {
-        // If doesn't start with country code, assume Saudi number
-        if (!cleaned.startsWith('0')) {
-          formatted = '0' + cleaned;
-        } else {
-          formatted = cleaned;
-        }
+      setFormData({
+        ...formData,
+        [name]: formattedValue
+      });
+      return;
+    }
+    
+    // Format expiry date with slash
+    if (name === 'cardExpiry') {
+      let formattedValue = value.replace(/\D/g, '');
+      if (formattedValue.length > 2) {
+        formattedValue = formattedValue.slice(0, 2) + '/' + formattedValue.slice(2, 4);
       }
       
-      setFormData(prev => ({ ...prev, [name]: formatted }));
-    }
-    // Regular input handling
-    else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData({
+        ...formData,
+        [name]: formattedValue
+      });
+      return;
     }
     
-    // Clear error when user types
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+    
+    // Clear validation error when field is edited
     if (formErrors[name]) {
-      setFormErrors(prev => ({ ...prev, [name]: false }));
-    }
-  };
-  
-  const handlePaymentMethodChange = (method) => {
-    // Reset installment option when changing payment method
-    let installmentOption = formData.installmentOption;
-    
-    if (method === 'tabby' && !['4_installments', 'pay_next_month'].includes(installmentOption)) {
-      installmentOption = '4_installments';
-    } else if (method === 'tamara' && !['3_installments', 'pay_in_30'].includes(installmentOption)) {
-      installmentOption = '3_installments';
-    }
-    
-    setFormData(prev => ({ 
-      ...prev, 
-      paymentMethod: method,
-      installmentOption
-    }));
-  };
-
-  const handleCheckboxChange = (name, checked) => {
-    setFormData(prev => ({ ...prev, [name]: checked }));
-    if (formErrors[name]) {
-      setFormErrors(prev => ({ ...prev, [name]: false }));
+      setFormErrors({
+        ...formErrors,
+        [name]: false
+      });
     }
   };
 
-  const handleInstallmentOptionChange = (option) => {
-    setFormData(prev => ({ ...prev, installmentOption: option }));
+  // Validate email format
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
   };
 
-  // Validate phone number with international format support
+  // Validate phone number format (Saudi format)
   const validatePhoneNumber = (phone) => {
-    // Support Saudi format (05xxxxxxxx or 5xxxxxxxx) and international format (+966xxxxxxxx)
-    const saudiRegex = /^(05|\+9665|5)[0-9]{8}$/;
-    return saudiRegex.test(phone.replace(/\s+/g, ''));
+    // Saudi phone formats: 05xxxxxxxx, 5xxxxxxxx, +9665xxxxxxxx
+    const re = /^(05|5|\+9665)[0-9]{8}$/;
+    return re.test(phone.replace(/\s/g, ''));
   };
 
-  // Validate credit card number using Luhn algorithm
-  const validateCreditCard = (number) => {
-    // Remove spaces and non-digits
-    const cardNumber = number.replace(/\D/g, '');
+  // Validate credit card using Luhn algorithm
+  const validateCreditCard = (cardNumber) => {
+    if (!cardNumber) return false;
     
-    // Check length
-    if (cardNumber.length < 13 || cardNumber.length > 19) {
-      return false;
-    }
+    // Remove spaces and non-digit characters
+    const digits = cardNumber.replace(/\D/g, '');
+    
+    if (digits.length < 13 || digits.length > 19) return false;
     
     // Luhn algorithm
     let sum = 0;
     let shouldDouble = false;
     
     // Loop from right to left
-    for (let i = cardNumber.length - 1; i >= 0; i--) {
-      let digit = parseInt(cardNumber.charAt(i));
+    for (let i = digits.length - 1; i >= 0; i--) {
+      let digit = parseInt(digits.charAt(i));
       
       if (shouldDouble) {
         digit *= 2;
-        if (digit > 9) {
-          digit -= 9;
-        }
+        if (digit > 9) digit -= 9;
       }
       
       sum += digit;
@@ -226,983 +314,611 @@ const JoinJam3a = () => {
     return sum % 10 === 0;
   };
 
-  // Validate form before proceeding to next tab
-  const validateForm = () => {
-    const errors = {
-      name: !formData.name,
-      email: !formData.email || !/\S+@\S+\.\S+/.test(formData.email),
-      phone: !formData.phone || !validatePhoneNumber(formData.phone),
-      address: !formData.address,
-      termsAccepted: false,
-      cardNumber: false,
-      cardExpiry: false,
-      cardCvv: false
-    };
+  // Validate expiry date format (MM/YY)
+  const validateExpiry = (expiry) => {
+    if (!expiry) return false;
     
-    // Validate payment details if on payment tab
-    if (activeTab === 'payment') {
-      errors.termsAccepted = !formData.termsAccepted;
+    const parts = expiry.split('/');
+    if (parts.length !== 2) return false;
+    
+    const month = parseInt(parts[0]);
+    const year = parseInt('20' + parts[1]);
+    
+    if (isNaN(month) || isNaN(year)) return false;
+    if (month < 1 || month > 12) return false;
+    
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    if (year < currentYear) return false;
+    if (year === currentYear && month < currentMonth) return false;
+    
+    return true;
+  };
+
+  // Validate CVV (3-4 digits)
+  const validateCVV = (cvv) => {
+    if (!cvv) return false;
+    const re = /^[0-9]{3,4}$/;
+    return re.test(cvv);
+  };
+
+  // Validate form based on current tab
+  const validateForm = () => {
+    let isValid = true;
+    let newErrors = { ...formErrors };
+    
+    if (activeTab === 'product') {
+      if (!selectedProduct) {
+        newErrors.product = true;
+        isValid = false;
+      }
+    }
+    
+    else if (activeTab === 'details') {
+      if (!formData.name) {
+        newErrors.name = 'required';
+        isValid = false;
+      }
+      
+      if (!formData.email) {
+        newErrors.email = 'required';
+        isValid = false;
+      } else if (!validateEmail(formData.email)) {
+        newErrors.email = 'invalid';
+        isValid = false;
+      }
+      
+      if (!formData.phone) {
+        newErrors.phone = 'required';
+        isValid = false;
+      } else if (!validatePhoneNumber(formData.phone)) {
+        newErrors.phone = 'invalid';
+        isValid = false;
+      }
+      
+      if (!formData.address) {
+        newErrors.address = 'required';
+        isValid = false;
+      }
+    }
+    
+    else if (activeTab === 'payment') {
+      if (!formData.termsAccepted) {
+        newErrors.termsAccepted = true;
+        isValid = false;
+      }
       
       if (formData.paymentMethod === 'credit-card') {
-        errors.cardNumber = !formData.cardNumber || !validateCreditCard(formData.cardNumber);
-        errors.cardExpiry = !formData.cardExpiry || !/^\d{2}\/\d{2}$/.test(formData.cardExpiry);
-        errors.cardCvv = !formData.cardCvv || !/^\d{3,4}$/.test(formData.cardCvv);
+        if (!formData.cardNumber) {
+          newErrors.cardNumber = 'required';
+          isValid = false;
+        } else if (!validateCreditCard(formData.cardNumber)) {
+          newErrors.cardNumber = 'invalid';
+          isValid = false;
+        }
+        
+        if (!formData.cardExpiry) {
+          newErrors.cardExpiry = 'required';
+          isValid = false;
+        } else if (!validateExpiry(formData.cardExpiry)) {
+          newErrors.cardExpiry = 'invalid';
+          isValid = false;
+        }
+        
+        if (!formData.cardCvv) {
+          newErrors.cardCvv = 'required';
+          isValid = false;
+        } else if (!validateCVV(formData.cardCvv)) {
+          newErrors.cardCvv = 'invalid';
+          isValid = false;
+        }
       }
     }
     
-    setFormErrors(errors);
-    
-    // Check if there are any errors
-    return !Object.values(errors).some(error => error);
+    setFormErrors(newErrors);
+    return isValid;
   };
-  
-  // Handle tab change
-  const handleTabChange = (value) => {
-    // Validate current tab before allowing change
-    if (value === 'info' && activeTab === 'details') {
-      setActiveTab(value);
-    } else if (value === 'payment' && activeTab === 'info') {
-      if (validateForm()) {
-        setActiveTab(value);
-      } else {
-        toast({
-          title: language === 'en' ? 'Please complete all required fields' : 'يرجى إكمال جميع الحقول المطلوبة',
-          variant: 'destructive'
-        });
-      }
-    } else if (value === 'details') {
-      setActiveTab(value);
+
+  // Handle tab navigation
+  const handleContinue = () => {
+    if (!validateForm()) {
+      toast({
+        title: currentContent.errorTitle,
+        description: formErrors.product ? currentContent.productRequired : currentContent.requiredField,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (activeTab === 'product') {
+      setActiveTab('details');
+    } else if (activeTab === 'details') {
+      setActiveTab('payment');
+    } else if (activeTab === 'payment') {
+      handleSubmit();
     }
   };
-  
-  // Handle next button click
-  const handleNext = () => {
+
+  const handleBack = () => {
     if (activeTab === 'details') {
-      setActiveTab('info');
-    } else if (activeTab === 'info') {
-      if (validateForm()) {
-        setActiveTab('payment');
-      } else {
-        toast({
-          title: language === 'en' ? 'Please complete all required fields' : 'يرجى إكمال جميع الحقول المطلوبة',
-          variant: 'destructive'
-        });
-      }
+      setActiveTab('product');
+    } else if (activeTab === 'payment') {
+      setActiveTab('details');
     }
   };
-  
+
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast({
-        title: language === 'en' ? 'Please complete all required fields' : 'يرجى إكمال جميع الحقول المطلوبة',
-        variant: 'destructive'
-      });
       return;
     }
     
     setIsProcessing(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Show success state
-      setPaymentSuccess(true);
-      setIsProcessing(false);
-      
-      // Track conversion
-      if (window.gtag) {
-        window.gtag('event', 'purchase', {
-          transaction_id: `JAM-${Date.now().toString().slice(-8)}`,
-          value: parseInt(productPrice),
-          currency: 'SAR',
-          items: [{
-            item_id: productId,
-            item_name: productName,
-            price: productPrice
-          }]
-        });
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      setIsProcessing(false);
-      toast({
-        title: language === 'en' ? 'Payment failed' : 'فشلت عملية الدفع',
-        description: language === 'en' ? 'Please try again or use a different payment method' : 'يرجى المحاولة مرة أخرى أو استخدام طريقة دفع مختلفة',
-        variant: 'destructive'
+      // Join the deal with selected product
+      const response = await joinDeal(dealId, {
+        productId: selectedProduct._id,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        paymentMethod: formData.paymentMethod
       });
+      
+      // Simulate payment processing
+      setTimeout(() => {
+        setPaymentSuccess(true);
+        setIsProcessing(false);
+        setActiveTab('confirmation');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error joining deal:', error);
+      toast({
+        title: currentContent.errorTitle,
+        description: error.message || 'Failed to process payment',
+        variant: "destructive",
+      });
+      setIsProcessing(false);
     }
   };
-  
-  // Get product image based on product name
-  const getProductImage = () => {
-    const name = productName.toUpperCase();
-    
-    if (name.includes('IPHONE')) {
-      const model = Object.keys(PRODUCT_IMAGES.IPHONE).find(key => name.includes(key));
-      return model ? PRODUCT_IMAGES.IPHONE[model] : PRODUCT_IMAGES.IPHONE.DEFAULT;
-    } else if (name.includes('GALAXY')) {
-      const model = Object.keys(PRODUCT_IMAGES.GALAXY).find(key => name.includes(key));
-      return model ? PRODUCT_IMAGES.GALAXY[model] : PRODUCT_IMAGES.GALAXY.DEFAULT;
-    } else if (name.includes('FOLD')) {
-      const model = Object.keys(PRODUCT_IMAGES.FOLD).find(key => name.includes(key));
-      return model ? PRODUCT_IMAGES.FOLD[model] : PRODUCT_IMAGES.FOLD.DEFAULT;
-    } else if (name.includes('FLIP')) {
-      const model = Object.keys(PRODUCT_IMAGES.FLIP).find(key => name.includes(key));
-      return model ? PRODUCT_IMAGES.FLIP[model] : PRODUCT_IMAGES.FLIP.DEFAULT;
-    }
-    
-    return PRODUCT_IMAGES.FALLBACK;
-  };
-  
-  // Render Tabby payment option details
-  const renderTabbyDetails = () => (
-    <div className="space-y-4 mt-4 p-4 border rounded-lg bg-secondary/50">
-      <div className="flex items-center gap-2">
-        <TabbyIcon />
-        <div>
-          <h4 className="font-medium">Tabby - Buy Now, Pay Later</h4>
-          <p className="text-sm text-muted-foreground">
-            {language === 'en' 
-              ? 'Split your payment into 4 interest-free installments' 
-              : 'قسّم دفعتك إلى 4 أقساط بدون فوائد'}
-          </p>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        <RadioGroup 
-          value={formData.installmentOption} 
-          onValueChange={handleInstallmentOptionChange}
-          className="space-y-2"
-        >
-          <div className="flex items-center space-x-2 border p-3 rounded-md bg-background">
-            <RadioGroupItem value="4_installments" id="4_installments" />
-            <Label htmlFor="4_installments" className="flex-1 cursor-pointer">
-              <div className="font-medium">
-                {language === 'en' ? '4 interest-free installments' : '4 أقساط بدون فوائد'}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {language === 'en' 
-                  ? `${Math.round(parseInt(productPrice) / 4)} SAR today & 3 monthly payments` 
-                  : `${Math.round(parseInt(productPrice) / 4)} ريال اليوم و 3 دفعات شهرية`}
-              </div>
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2 border p-3 rounded-md bg-background">
-            <RadioGroupItem value="pay_next_month" id="pay_next_month" />
-            <Label htmlFor="pay_next_month" className="flex-1 cursor-pointer">
-              <div className="font-medium">
-                {language === 'en' ? 'Pay next month' : 'ادفع الشهر القادم'}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {language === 'en' 
-                  ? `Pay ${productPrice} after 30 days` 
-                  : `ادفع ${productPrice} بعد 30 يوم`}
-              </div>
-            </Label>
-          </div>
-        </RadioGroup>
-        
-        <Alert className="bg-primary/5 border-primary/20">
-          <AlertCircle className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-xs">
-            {language === 'en' 
-              ? 'Instant approval with Saudi phone number and bank card.' 
-              : 'موافقة فورية برقم هاتف سعودي وبطاقة بنكية.'}
-          </AlertDescription>
-        </Alert>
-      </div>
-    </div>
-  );
 
-  // Render Tamara payment option details
-  const renderTamaraDetails = () => (
-    <div className="space-y-4 mt-4 p-4 border rounded-lg bg-secondary/50">
-      <div className="flex items-center gap-2">
-        <TamaraIcon />
-        <div>
-          <h4 className="font-medium">Tamara - Buy Now, Pay Later</h4>
-          <p className="text-sm text-muted-foreground">
-            {language === 'en' 
-              ? 'Split your payment or pay later with no fees' 
-              : 'قسّم دفعتك أو ادفع لاحقًا بدون رسوم'}
-          </p>
-        </div>
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-jam3a-purple" />
+            <h2 className="text-2xl font-semibold">Loading...</h2>
+          </div>
+        </main>
+        <Footer />
       </div>
-      
-      <div className="space-y-3">
-        <RadioGroup 
-          value={formData.installmentOption} 
-          onValueChange={handleInstallmentOptionChange}
-          className="space-y-2"
-        >
-          <div className="flex items-center space-x-2 border p-3 rounded-md bg-background">
-            <RadioGroupItem value="3_installments" id="3_installments" />
-            <Label htmlFor="3_installments" className="flex-1 cursor-pointer">
-              <div className="font-medium">
-                {language === 'en' ? '3 interest-free installments' : '3 أقساط بدون فوائد'}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {language === 'en' 
-                  ? `${Math.round(parseInt(productPrice) / 3)} SAR today & 2 monthly payments` 
-                  : `${Math.round(parseInt(productPrice) / 3)} ريال اليوم و 2 دفعات شهرية`}
-              </div>
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2 border p-3 rounded-md bg-background">
-            <RadioGroupItem value="pay_in_30" id="pay_in_30" />
-            <Label htmlFor="pay_in_30" className="flex-1 cursor-pointer">
-              <div className="font-medium">
-                {language === 'en' ? 'Pay in 30 days' : 'ادفع خلال 30 يوم'}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {language === 'en' 
-                  ? `Pay ${productPrice} after 30 days` 
-                  : `ادفع ${productPrice} بعد 30 يوم`}
-              </div>
-            </Label>
-          </div>
-        </RadioGroup>
-        
-        <Alert className="bg-primary/5 border-primary/20">
-          <AlertCircle className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-xs">
-            {language === 'en' 
-              ? 'Quick approval process. Verify with Saudi phone number and ID.' 
-              : 'عملية موافقة سريعة. تحقق برقم الهاتف السعودي والهوية.'}
-          </AlertDescription>
-        </Alert>
-        
-        {/* Tamara verification requirements */}
-        <div className="mt-4 space-y-2">
-          <h5 className="text-sm font-medium">
-            {language === 'en' ? 'Verification Requirements' : 'متطلبات التحقق'}
-          </h5>
-          <div className="grid grid-cols-1 gap-2">
-            <div className="flex items-center gap-2 text-xs">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>{language === 'en' ? 'Saudi mobile number' : 'رقم جوال سعودي'}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>{language === 'en' ? 'National ID or Iqama' : 'الهوية الوطنية أو الإقامة'}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>{language === 'en' ? 'OTP verification' : 'التحقق برمز OTP'}</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Tamara payment steps */}
-        <div className="mt-4 space-y-2">
-          <h5 className="text-sm font-medium">
-            {language === 'en' ? 'How it works' : 'كيف تعمل'}
-          </h5>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="flex items-start gap-2 text-xs">
-              <div className="bg-primary/10 text-primary rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
-              <div>
-                <span className="font-medium">{language === 'en' ? 'Select Tamara at checkout' : 'اختر تمارا عند الدفع'}</span>
-                <p className="text-muted-foreground mt-0.5">
-                  {language === 'en' 
-                    ? 'Choose to pay in 3 installments or after 30 days' 
-                    : 'اختر الدفع على 3 أقساط أو بعد 30 يومًا'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 text-xs">
-              <div className="bg-primary/10 text-primary rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
-              <div>
-                <span className="font-medium">{language === 'en' ? 'Complete verification' : 'أكمل التحقق'}</span>
-                <p className="text-muted-foreground mt-0.5">
-                  {language === 'en' 
-                    ? 'Provide your phone number and ID information' 
-                    : 'قدم رقم هاتفك ومعلومات الهوية الخاصة بك'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 text-xs">
-              <div className="bg-primary/10 text-primary rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 mt-0.5">3</div>
-              <div>
-                <span className="font-medium">{language === 'en' ? 'Manage payments' : 'إدارة المدفوعات'}</span>
-                <p className="text-muted-foreground mt-0.5">
-                  {language === 'en' 
-                    ? 'Track and pay installments through the Tamara app' 
-                    : 'تتبع وادفع الأقساط من خلال تطبيق تمارا'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  }
 
-  // Render payment success state
-  const renderPaymentSuccess = () => (
-    <div className="space-y-6 py-8">
-      <div className="flex flex-col items-center justify-center text-center space-y-4">
-        <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-          <CheckCircle2 className="h-8 w-8 text-green-600" />
-        </div>
-        <h2 className="text-2xl font-bold">
-          {language === 'en' ? 'Payment Successful!' : 'تمت عملية الدفع بنجاح!'}
-        </h2>
-        <p className="text-muted-foreground max-w-md">
-          {language === 'en' 
-            ? `You have successfully joined the ${productName} Jam3a! You will receive a confirmation email shortly.` 
-            : `لقد انضممت بنجاح إلى جمعة ${productName}! ستصلك رسالة تأكيد بالبريد الإلكتروني قريبًا.`}
-        </p>
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow p-4">
+          <div className="max-w-3xl mx-auto mt-8">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{currentContent.errorTitle}</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <div className="mt-6 text-center">
+              <Button onClick={() => navigate('/')} className="bg-jam3a-purple hover:bg-jam3a-deep-purple">
+                {currentContent.continueShopping}
+              </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
       </div>
-      
-      <div className="border rounded-lg p-4 space-y-3">
-        <h3 className="font-medium">
-          {language === 'en' ? 'Order Details' : 'تفاصيل الطلب'}
-        </h3>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>{language === 'en' ? 'Order Number' : 'رقم الطلب'}</span>
-            <span className="font-medium">JAM-{Date.now().toString().slice(-8)}</span>
+    );
+  }
+
+  // If no deal found
+  if (!deal) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow p-4">
+          <div className="max-w-3xl mx-auto mt-8">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{currentContent.errorTitle}</AlertTitle>
+              <AlertDescription>Deal not found</AlertDescription>
+            </Alert>
+            <div className="mt-6 text-center">
+              <Button onClick={() => navigate('/')} className="bg-jam3a-purple hover:bg-jam3a-deep-purple">
+                {currentContent.continueShopping}
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-between text-sm">
-            <span>{language === 'en' ? 'Product' : 'المنتج'}</span>
-            <span className="font-medium">{productName}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>{language === 'en' ? 'Payment Method' : 'طريقة الدفع'}</span>
-            <span className="font-medium">
-              {formData.paymentMethod === 'credit-card' 
-                ? (language === 'en' ? 'Credit Card' : 'بطاقة ائتمان')
-                : formData.paymentMethod === 'apple-pay'
-                  ? 'Apple Pay'
-                  : formData.paymentMethod === 'tabby'
-                    ? 'Tabby'
-                    : 'Tamara'}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>{language === 'en' ? 'Total' : 'المجموع'}</span>
-            <span className="font-medium">{productPrice}</span>
-          </div>
-        </div>
+        </main>
+        <Footer />
       </div>
-      
-      <div className="flex flex-col space-y-3">
-        <Button onClick={() => navigate('/')} className="w-full">
-          {language === 'en' ? 'Return to Home' : 'العودة إلى الصفحة الرئيسية'}
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/my-jam3a')} className="w-full">
-          {language === 'en' ? 'View My Jam3as' : 'عرض جمعاتي'}
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col ${isRtl ? 'rtl' : 'ltr'}`}>
       <ScrollToTop />
       <Header />
-      <main className="flex-1 container max-w-4xl mx-auto px-4 py-8">
-        {isProcessing ? (
-          <div className="flex flex-col items-center justify-center py-16 space-y-4">
-            <Loader2 className="h-12 w-12 text-primary animate-spin" />
-            <h2 className="text-xl font-bold">
-              {language === 'en' ? 'Processing Payment...' : 'جاري معالجة الدفع...'}
-            </h2>
-            <p className="text-muted-foreground text-center max-w-md">
-              {language === 'en' 
-                ? 'Please do not close this page. We are processing your payment.' 
-                : 'يرجى عدم إغلاق هذه الصفحة. نحن نعالج عملية الدفع الخاصة بك.'}
-            </p>
-            
-            <div className="w-full max-w-md mt-4">
-              <Progress value={100} className="h-2 animate-progress" />
+      
+      <main className="flex-grow p-4 md:p-8">
+        <div className="max-w-5xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6 text-center">{currentContent.title}</h1>
+          
+          {/* Deal information */}
+          <div className="mb-8 p-4 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-2">{deal.title}</h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <div>
+                <p className="text-muted-foreground">{currentContent.categoryTitle}: {deal.category.name}</p>
+                <p className="text-muted-foreground">{currentContent.discount}: {deal.discount}%</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">{currentContent.participants}: {deal.currentParticipants}/{deal.maxParticipants}</p>
+                <p className="text-muted-foreground">{currentContent.timeLeft}: {deal.timeRemaining}</p>
+              </div>
             </div>
-            
-            {formData.paymentMethod === 'tabby' || formData.paymentMethod === 'tamara' ? (
-              <Alert className="bg-primary/5 border-primary/20 max-w-md mt-4">
-                <AlertCircle className="h-4 w-4 text-primary" />
-                <AlertDescription className="text-xs">
-                  {language === 'en' 
-                    ? 'You will be redirected to complete verification with your phone number and ID.' 
-                    : 'سيتم توجيهك لإكمال التحقق برقم هاتفك وهويتك.'}
-                </AlertDescription>
-              </Alert>
-            ) : null}
+            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+              <div 
+                className="bg-jam3a-purple h-2.5 rounded-full" 
+                style={{ width: `${deal.progress}%` }}
+              ></div>
+            </div>
           </div>
-        ) : paymentSuccess ? (
-          renderPaymentSuccess()
-        ) : (
-          <>
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">
-                {language === 'en' ? 'Join Jam3a' : 'انضم للجمعة'}
-              </h1>
-              <p className="text-muted-foreground">
-                {language === 'en' 
-                  ? 'Complete the steps below to join this Jam3a group purchase' 
-                  : 'أكمل الخطوات أدناه للانضمام إلى مجموعة الشراء هذه'}
-              </p>
-            </div>
+          
+          {/* Tabs */}
+          <Tabs value={activeTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="product" disabled={activeTab !== 'product' && !paymentSuccess}>
+                1. {currentContent.productSelection}
+              </TabsTrigger>
+              <TabsTrigger value="details" disabled={activeTab !== 'details' && !paymentSuccess}>
+                2. {currentContent.personalInfo}
+              </TabsTrigger>
+              <TabsTrigger value="payment" disabled={activeTab !== 'payment' && !paymentSuccess}>
+                3. {currentContent.payment}
+              </TabsTrigger>
+              <TabsTrigger value="confirmation" disabled={activeTab !== 'confirmation'}>
+                4. {currentContent.confirmation}
+              </TabsTrigger>
+            </TabsList>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Product details sidebar */}
-              <div className="md:col-span-1 order-2 md:order-1">
-                <div className="sticky top-24 space-y-6">
-                  <div className="rounded-xl border overflow-hidden">
-                    <div className="aspect-square relative">
-                      <img 
-                        src={getProductImage()} 
-                        alt={productName}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg mb-1">{productName}</h3>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xl font-bold text-primary">{productPrice}</span>
-                        <span className="text-sm line-through text-muted-foreground">
-                          {parseInt(productPrice) * 1.2} SAR
-                        </span>
-                        <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
-                          {productDiscount} OFF
-                        </span>
-                      </div>
-                      <div className="text-sm text-muted-foreground mb-4">
-                        {language === 'en' 
-                          ? 'Group purchase ends in 2 days' 
-                          : 'ينتهي الشراء الجماعي خلال يومين'}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>
-                            {language === 'en' ? 'Group progress' : 'تقدم المجموعة'}
-                          </span>
-                          <span className="font-medium">
-                            {language === 'en' ? '7 of 10 joined' : '7 من 10 انضموا'}
-                          </span>
-                        </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-primary w-[70%]"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-xl border p-4 space-y-3">
-                    <h3 className="font-medium">
-                      {language === 'en' ? 'Order Summary' : 'ملخص الطلب'}
-                    </h3>
-                    <div className="flex justify-between text-sm">
-                      <span>{language === 'en' ? 'Product Price' : 'سعر المنتج'}</span>
-                      <span>{productPrice}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>{language === 'en' ? 'Shipping' : 'الشحن'}</span>
-                      <span>{language === 'en' ? 'Free' : 'مجاني'}</span>
-                    </div>
-                    <div className="border-t pt-3 flex justify-between font-bold">
-                      <span>{language === 'en' ? 'Total' : 'المجموع'}</span>
-                      <span>{productPrice}</span>
-                    </div>
-                  </div>
+            {/* Product Selection Tab */}
+            <TabsContent value="product" className="p-4 border rounded-md mt-4">
+              <h2 className="text-xl font-semibold mb-4">{currentContent.selectProduct}</h2>
+              
+              {categoryProducts.length > 0 ? (
+                <ProductSelector 
+                  products={categoryProducts}
+                  selectedProduct={selectedProduct}
+                  onSelectProduct={handleProductSelect}
+                  language={language}
+                  discount={deal.discount}
+                  currency={currentContent.currency}
+                />
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No products available</AlertTitle>
+                  <AlertDescription>
+                    There are no products available in this category.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="mt-6 flex justify-end">
+                <Button 
+                  onClick={handleContinue}
+                  className="bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                  disabled={!selectedProduct}
+                >
+                  {currentContent.continue}
+                  <ArrowRight className={`ml-2 h-4 w-4 ${isRtl ? 'transform rotate-180' : ''}`} />
+                </Button>
+              </div>
+            </TabsContent>
+            
+            {/* Personal Information Tab */}
+            <TabsContent value="details" className="p-4 border rounded-md mt-4">
+              <h2 className="text-xl font-semibold mb-4">{currentContent.personalInfoTitle}</h2>
+              
+              <div className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">{currentContent.nameLabel}</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className={formErrors.name ? 'border-red-500' : ''}
+                  />
+                  {formErrors.name && (
+                    <p className="text-red-500 text-sm">{currentContent.requiredField}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="email">{currentContent.emailLabel}</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={formErrors.email ? 'border-red-500' : ''}
+                  />
+                  {formErrors.email === 'required' && (
+                    <p className="text-red-500 text-sm">{currentContent.requiredField}</p>
+                  )}
+                  {formErrors.email === 'invalid' && (
+                    <p className="text-red-500 text-sm">{currentContent.invalidEmail}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">{currentContent.phoneLabel}</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className={formErrors.phone ? 'border-red-500' : ''}
+                  />
+                  {formErrors.phone === 'required' && (
+                    <p className="text-red-500 text-sm">{currentContent.requiredField}</p>
+                  )}
+                  {formErrors.phone === 'invalid' && (
+                    <p className="text-red-500 text-sm">{currentContent.invalidPhone}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="address">{currentContent.addressLabel}</Label>
+                  <Textarea
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    className={formErrors.address ? 'border-red-500' : ''}
+                    rows={3}
+                  />
+                  {formErrors.address && (
+                    <p className="text-red-500 text-sm">{currentContent.requiredField}</p>
+                  )}
                 </div>
               </div>
               
-              {/* Join form */}
-              <div className="md:col-span-2 order-1 md:order-2">
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-                  <TabsList className="grid grid-cols-3 mb-4">
-                    <TabsTrigger value="details">
-                      {language === 'en' ? 'Product Details' : 'تفاصيل المنتج'}
-                    </TabsTrigger>
-                    <TabsTrigger value="info">
-                      {language === 'en' ? 'Your Info' : 'معلوماتك'}
-                    </TabsTrigger>
-                    <TabsTrigger value="payment">
-                      {language === 'en' ? 'Payment' : 'الدفع'}
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  {/* Product Details Tab */}
-                  <TabsContent value="details" className="space-y-6">
-                    <div className="space-y-4">
-                      <h2 className="text-2xl font-bold">
-                        {language === 'en' ? 'Product Details' : 'تفاصيل المنتج'}
-                      </h2>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="font-bold text-lg mb-2">{productName}</h3>
-                          <p className="text-muted-foreground">
-                            {productName.includes('iPhone') 
-                              ? 'Experience the latest innovation with revolutionary camera and A18 Pro chip'
-                              : productName.includes('Galaxy S') 
-                                ? 'Unleash creativity with AI-powered tools and 200MP camera system'
-                                : 'Multitask like never before with a stunning foldable display'}
-                          </p>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="border rounded-lg p-4">
-                            <h4 className="font-medium mb-1">
-                              {language === 'en' ? 'Group Pricing' : 'تسعير المجموعة'}
-                            </h4>
-                            <ul className="space-y-2 text-sm">
-                              <li className="flex justify-between">
-                                <span>2+ {language === 'en' ? 'people' : 'أشخاص'}</span>
-                                <span className="font-medium">{parseInt(productPrice) * 1.1} SAR</span>
-                              </li>
-                              <li className="flex justify-between">
-                                <span>5+ {language === 'en' ? 'people' : 'أشخاص'}</span>
-                                <span className="font-medium">{parseInt(productPrice) * 1.05} SAR</span>
-                              </li>
-                              <li className="flex justify-between">
-                                <span>10+ {language === 'en' ? 'people' : 'أشخاص'}</span>
-                                <span className="font-medium">{productPrice}</span>
-                              </li>
-                            </ul>
-                          </div>
-                          
-                          <div className="border rounded-lg p-4">
-                            <h4 className="font-medium mb-1">
-                              {language === 'en' ? 'Jam3a Status' : 'حالة الجمعة'}
-                            </h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>{language === 'en' ? 'Current Price' : 'السعر الحالي'}</span>
-                                <span className="font-medium">{productPrice}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>{language === 'en' ? 'Members' : 'الأعضاء'}</span>
-                                <span className="font-medium">7 / 10</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>{language === 'en' ? 'Time Left' : 'الوقت المتبقي'}</span>
-                                <span className="font-medium">2 {language === 'en' ? 'days' : 'أيام'}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="border rounded-lg p-4">
-                          <h4 className="font-medium mb-2">
-                            {language === 'en' ? 'Product Specifications' : 'مواصفات المنتج'}
-                          </h4>
-                          <ul className="space-y-2 text-sm">
-                            {productName.includes('iPhone') ? (
-                              <>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Display' : 'الشاشة'}</span>
-                                  <span>6.7" Super Retina XDR</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Processor' : 'المعالج'}</span>
-                                  <span>A18 Pro chip</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Camera' : 'الكاميرا'}</span>
-                                  <span>48MP Triple camera</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Storage' : 'التخزين'}</span>
-                                  <span>256GB</span>
-                                </li>
-                              </>
-                            ) : productName.includes('Galaxy S') ? (
-                              <>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Display' : 'الشاشة'}</span>
-                                  <span>6.8" Dynamic AMOLED 2X</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Processor' : 'المعالج'}</span>
-                                  <span>Snapdragon 8 Gen 3</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Camera' : 'الكاميرا'}</span>
-                                  <span>200MP Quad camera</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Storage' : 'التخزين'}</span>
-                                  <span>512GB</span>
-                                </li>
-                              </>
-                            ) : (
-                              <>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Display' : 'الشاشة'}</span>
-                                  <span>7.6" Dynamic AMOLED 2X</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Processor' : 'المعالج'}</span>
-                                  <span>Snapdragon 8 Gen 3</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Camera' : 'الكاميرا'}</span>
-                                  <span>50MP Triple camera</span>
-                                </li>
-                                <li className="flex justify-between">
-                                  <span>{language === 'en' ? 'Storage' : 'التخزين'}</span>
-                                  <span>512GB</span>
-                                </li>
-                              </>
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                      
-                      <Button onClick={handleNext} className="w-full">
-                        {language === 'en' ? 'Next: Your Information' : 'التالي: معلوماتك'}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TabsContent>
-                  
-                  {/* Your Info Tab */}
-                  <TabsContent value="info" className="space-y-6">
-                    <div className="space-y-4">
-                      <h2 className="text-2xl font-bold">
-                        {language === 'en' ? 'Your Information' : 'معلوماتك'}
-                      </h2>
-                      
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="name">
-                              {language === 'en' ? 'Full Name' : 'الاسم الكامل'} *
-                            </Label>
-                            <Input 
-                              id="name" 
-                              name="name" 
-                              value={formData.name} 
-                              onChange={handleInputChange} 
-                              placeholder={language === 'en' ? 'Enter your full name' : 'أدخل اسمك الكامل'} 
-                              className={formErrors.name ? 'border-destructive' : ''}
-                            />
-                            {formErrors.name && (
-                              <p className="text-destructive text-sm">
-                                {language === 'en' ? 'Name is required' : 'الاسم مطلوب'}
-                              </p>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label htmlFor="email">
-                              {language === 'en' ? 'Email Address' : 'البريد الإلكتروني'} *
-                            </Label>
-                            <Input 
-                              id="email" 
-                              name="email" 
-                              type="email" 
-                              value={formData.email} 
-                              onChange={handleInputChange} 
-                              placeholder={language === 'en' ? 'Enter your email' : 'أدخل بريدك الإلكتروني'} 
-                              className={formErrors.email ? 'border-destructive' : ''}
-                            />
-                            {formErrors.email && (
-                              <p className="text-destructive text-sm">
-                                {language === 'en' ? 'Valid email is required' : 'البريد الإلكتروني الصحيح مطلوب'}
-                              </p>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label htmlFor="phone">
-                              {language === 'en' ? 'Phone Number' : 'رقم الهاتف'} *
-                            </Label>
-                            <Input 
-                              id="phone" 
-                              name="phone" 
-                              value={formData.phone} 
-                              onChange={handleInputChange} 
-                              placeholder={language === 'en' ? 'Enter your phone number' : 'أدخل رقم هاتفك'} 
-                              className={formErrors.phone ? 'border-destructive' : ''}
-                            />
-                            {formErrors.phone && (
-                              <p className="text-destructive text-sm">
-                                {language === 'en' ? 'Valid Saudi phone number is required (05xxxxxxxx)' : 'رقم هاتف سعودي صحيح مطلوب (05xxxxxxxx)'}
-                              </p>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="address">
-                              {language === 'en' ? 'Delivery Address' : 'عنوان التوصيل'} *
-                            </Label>
-                            <Textarea 
-                              id="address" 
-                              name="address" 
-                              value={formData.address} 
-                              onChange={handleInputChange} 
-                              placeholder={language === 'en' ? 'Enter your full address' : 'أدخل عنوانك الكامل'} 
-                              className={formErrors.address ? 'border-destructive' : ''}
-                              rows={3}
-                            />
-                            {formErrors.address && (
-                              <p className="text-destructive text-sm">
-                                {language === 'en' ? 'Address is required' : 'العنوان مطلوب'}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <Button onClick={handleNext} className="w-full">
-                        {language === 'en' ? 'Next: Payment' : 'التالي: الدفع'}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TabsContent>
-                  
-                  {/* Payment Tab */}
-                  <TabsContent value="payment" className="space-y-6">
-                    <div className="space-y-4">
-                      <h2 className="text-2xl font-bold">
-                        {language === 'en' ? 'Payment Method' : 'طريقة الدفع'}
-                      </h2>
-                      
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div 
-                            className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                              formData.paymentMethod === 'credit-card' 
-                                ? 'border-primary bg-primary/5' 
-                                : 'hover:border-primary/50'
-                            }`}
-                            onClick={() => handlePaymentMethodChange('credit-card')}
-                          >
-                            <div className="flex items-center gap-3">
-                              <CreditCard className="h-6 w-6 text-primary" />
-                              <div>
-                                <h3 className="font-medium">
-                                  {language === 'en' ? 'Credit / Debit Card' : 'بطاقة ائتمان / خصم'}
-                                </h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {language === 'en' ? 'Pay with Visa, Mastercard, or mada' : 'ادفع بواسطة فيزا، ماستركارد، أو مدى'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div 
-                            className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                              formData.paymentMethod === 'apple-pay' 
-                                ? 'border-primary bg-primary/5' 
-                                : 'hover:border-primary/50'
-                            }`}
-                            onClick={() => handlePaymentMethodChange('apple-pay')}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Apple className="h-6 w-6 text-primary" />
-                              <div>
-                                <h3 className="font-medium">Apple Pay</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {language === 'en' ? 'Quick and secure payment' : 'دفع سريع وآمن'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div 
-                            className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                              formData.paymentMethod === 'tabby' 
-                                ? 'border-primary bg-primary/5' 
-                                : 'hover:border-primary/50'
-                            }`}
-                            onClick={() => handlePaymentMethodChange('tabby')}
-                          >
-                            <div className="flex items-center gap-3">
-                              <TabbyIcon />
-                              <div>
-                                <h3 className="font-medium">Tabby</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {language === 'en' ? 'Buy now, pay later - 0% interest' : 'اشترِ الآن، ادفع لاحقًا - 0% فوائد'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div 
-                            className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                              formData.paymentMethod === 'tamara' 
-                                ? 'border-primary bg-primary/5' 
-                                : 'hover:border-primary/50'
-                            }`}
-                            onClick={() => handlePaymentMethodChange('tamara')}
-                          >
-                            <div className="flex items-center gap-3">
-                              <TamaraIcon />
-                              <div>
-                                <h3 className="font-medium">Tamara</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {language === 'en' ? 'Split into 3 payments or pay in 30 days' : 'قسّم على 3 دفعات أو ادفع خلال 30 يوم'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Credit Card Details */}
-                        {formData.paymentMethod === 'credit-card' && (
-                          <div className="space-y-4 mt-4 p-4 border rounded-lg bg-secondary/50">
-                            <h3 className="font-medium">
-                              {language === 'en' ? 'Card Details' : 'تفاصيل البطاقة'}
-                            </h3>
-                            
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="cardNumber">
-                                  {language === 'en' ? 'Card Number' : 'رقم البطاقة'}
-                                </Label>
-                                <div className="relative">
-                                  <Input 
-                                    id="cardNumber" 
-                                    name="cardNumber" 
-                                    value={formData.cardNumber} 
-                                    onChange={handleInputChange} 
-                                    placeholder="1234 5678 9012 3456" 
-                                    className={`pl-10 ${formErrors.cardNumber ? 'border-destructive' : ''}`}
-                                    maxLength={19}
-                                  />
-                                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                </div>
-                                {formErrors.cardNumber && (
-                                  <p className="text-destructive text-sm">
-                                    {language === 'en' ? 'Valid card number is required' : 'رقم بطاقة صالح مطلوب'}
-                                  </p>
-                                )}
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="cardExpiry">
-                                    {language === 'en' ? 'Expiry Date' : 'تاريخ الانتهاء'}
-                                  </Label>
-                                  <div className="relative">
-                                    <Input 
-                                      id="cardExpiry" 
-                                      name="cardExpiry" 
-                                      value={formData.cardExpiry} 
-                                      onChange={handleInputChange} 
-                                      placeholder="MM/YY" 
-                                      className={`pl-10 ${formErrors.cardExpiry ? 'border-destructive' : ''}`}
-                                      maxLength={5}
-                                    />
-                                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                  {formErrors.cardExpiry && (
-                                    <p className="text-destructive text-sm">
-                                      {language === 'en' ? 'Valid expiry date is required' : 'تاريخ انتهاء صالح مطلوب'}
-                                    </p>
-                                  )}
-                                </div>
-                                
-                                <div className="space-y-2">
-                                  <Label htmlFor="cardCvv">
-                                    {language === 'en' ? 'CVV' : 'رمز الأمان'}
-                                  </Label>
-                                  <div className="relative">
-                                    <Input 
-                                      id="cardCvv" 
-                                      name="cardCvv" 
-                                      value={formData.cardCvv} 
-                                      onChange={handleInputChange} 
-                                      placeholder="123" 
-                                      className={`pl-10 ${formErrors.cardCvv ? 'border-destructive' : ''}`}
-                                      maxLength={3}
-                                    />
-                                    <CreditCardIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                  {formErrors.cardCvv && (
-                                    <p className="text-destructive text-sm">
-                                      {language === 'en' ? 'Valid CVV is required' : 'رمز أمان صالح مطلوب'}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center space-x-2">
-                                <Checkbox 
-                                  id="savePaymentInfo" 
-                                  checked={formData.savePaymentInfo} 
-                                  onCheckedChange={(checked) => handleCheckboxChange('savePaymentInfo', checked)}
-                                />
-                                <Label htmlFor="savePaymentInfo" className="text-sm">
-                                  {language === 'en' 
-                                    ? 'Save card for future purchases' 
-                                    : 'حفظ البطاقة للمشتريات المستقبلية'}
-                                </Label>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Apple Pay Details */}
-                        {formData.paymentMethod === 'apple-pay' && (
-                          <div className="space-y-4 mt-4 p-4 border rounded-lg bg-secondary/50">
-                            <div className="flex items-center gap-2">
-                              <Apple className="h-6 w-6" />
-                              <div>
-                                <h4 className="font-medium">Apple Pay</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {language === 'en' 
-                                    ? 'You will be redirected to Apple Pay to complete your payment' 
-                                    : 'سيتم توجيهك إلى Apple Pay لإكمال عملية الدفع'}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <Button variant="outline" className="w-full bg-black text-white hover:bg-black/90 hover:text-white">
-                              <Apple className="h-5 w-5 mr-2" />
-                              {language === 'en' ? 'Pay with Apple Pay' : 'الدفع باستخدام Apple Pay'}
-                            </Button>
-                          </div>
-                        )}
-                        
-                        {/* Tabby Details */}
-                        {formData.paymentMethod === 'tabby' && renderTabbyDetails()}
-                        
-                        {/* Tamara Details */}
-                        {formData.paymentMethod === 'tamara' && renderTamaraDetails()}
-                        
-                        <div className="flex items-center space-x-2 mt-4">
-                          <Checkbox 
-                            id="terms" 
-                            checked={formData.termsAccepted} 
-                            onCheckedChange={(checked) => handleCheckboxChange('termsAccepted', checked)}
-                            className={formErrors.termsAccepted ? 'border-destructive' : ''}
-                          />
-                          <Label 
-                            htmlFor="terms" 
-                            className={`text-sm ${formErrors.termsAccepted ? 'text-destructive' : ''}`}
-                          >
-                            {language === 'en' 
-                              ? 'I agree to the Terms of Service and Privacy Policy' 
-                              : 'أوافق على شروط الخدمة وسياسة الخصوصية'}
-                          </Label>
-                        </div>
-                      </div>
-                      
-                      <Button onClick={handleSubmit} className="w-full">
-                        {language === 'en' 
-                          ? `Complete Purchase - ${productPrice}` 
-                          : `إتمام الشراء - ${productPrice}`}
-                      </Button>
-                    </div>
-                  </TabsContent>
-                </Tabs>
+              <div className="mt-6 flex justify-between">
+                <Button 
+                  onClick={handleBack}
+                  variant="outline"
+                >
+                  {currentContent.back}
+                </Button>
+                <Button 
+                  onClick={handleContinue}
+                  className="bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                >
+                  {currentContent.continue}
+                  <ArrowRight className={`ml-2 h-4 w-4 ${isRtl ? 'transform rotate-180' : ''}`} />
+                </Button>
               </div>
-            </div>
-          </>
-        )}
+            </TabsContent>
+            
+            {/* Payment Tab */}
+            <TabsContent value="payment" className="p-4 border rounded-md mt-4">
+              <h2 className="text-xl font-semibold mb-4">{currentContent.paymentTitle}</h2>
+              
+              <RadioGroup
+                value={formData.paymentMethod}
+                onValueChange={(value) => setFormData({...formData, paymentMethod: value})}
+                className="mb-6"
+              >
+                <div className="flex items-center space-x-2 space-y-0 mb-4">
+                  <RadioGroupItem value="credit-card" id="credit-card" />
+                  <Label htmlFor="credit-card" className="flex items-center">
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    {currentContent.creditCard}
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 space-y-0 mb-4">
+                  <RadioGroupItem value="bank-transfer" id="bank-transfer" />
+                  <Label htmlFor="bank-transfer" className="flex items-center">
+                    <BanknoteIcon className="mr-2 h-5 w-5" />
+                    {currentContent.bankTransfer}
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 space-y-0 mb-4">
+                  <RadioGroupItem value="cash-on-delivery" id="cash-on-delivery" />
+                  <Label htmlFor="cash-on-delivery" className="flex items-center">
+                    <Wallet className="mr-2 h-5 w-5" />
+                    {currentContent.cashOnDelivery}
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 space-y-0 mb-4">
+                  <RadioGroupItem value="tabby" id="tabby" />
+                  <Label htmlFor="tabby" className="flex items-center">
+                    <TabbyIcon />
+                    <span className="ml-2">{currentContent.tabby}</span>
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 space-y-0">
+                  <RadioGroupItem value="tamara" id="tamara" />
+                  <Label htmlFor="tamara" className="flex items-center">
+                    <TamaraIcon />
+                    <span className="ml-2">{currentContent.tamara}</span>
+                  </Label>
+                </div>
+              </RadioGroup>
+              
+              {formData.paymentMethod === 'credit-card' && (
+                <div className="space-y-4 mb-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="cardNumber">{currentContent.cardNumberLabel}</Label>
+                    <Input
+                      id="cardNumber"
+                      name="cardNumber"
+                      value={formData.cardNumber}
+                      onChange={handleInputChange}
+                      className={formErrors.cardNumber ? 'border-red-500' : ''}
+                      placeholder="1234 5678 9012 3456"
+                      maxLength={19}
+                    />
+                    {formErrors.cardNumber === 'required' && (
+                      <p className="text-red-500 text-sm">{currentContent.requiredField}</p>
+                    )}
+                    {formErrors.cardNumber === 'invalid' && (
+                      <p className="text-red-500 text-sm">{currentContent.invalidCard}</p>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="cardExpiry">{currentContent.cardExpiryLabel}</Label>
+                      <Input
+                        id="cardExpiry"
+                        name="cardExpiry"
+                        value={formData.cardExpiry}
+                        onChange={handleInputChange}
+                        className={formErrors.cardExpiry ? 'border-red-500' : ''}
+                        placeholder="MM/YY"
+                        maxLength={5}
+                      />
+                      {formErrors.cardExpiry === 'required' && (
+                        <p className="text-red-500 text-sm">{currentContent.requiredField}</p>
+                      )}
+                      {formErrors.cardExpiry === 'invalid' && (
+                        <p className="text-red-500 text-sm">{currentContent.invalidExpiry}</p>
+                      )}
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="cardCvv">{currentContent.cardCvvLabel}</Label>
+                      <Input
+                        id="cardCvv"
+                        name="cardCvv"
+                        value={formData.cardCvv}
+                        onChange={handleInputChange}
+                        className={formErrors.cardCvv ? 'border-red-500' : ''}
+                        placeholder="123"
+                        maxLength={4}
+                      />
+                      {formErrors.cardCvv === 'required' && (
+                        <p className="text-red-500 text-sm">{currentContent.requiredField}</p>
+                      )}
+                      {formErrors.cardCvv === 'invalid' && (
+                        <p className="text-red-500 text-sm">{currentContent.invalidCvv}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                      id="savePaymentInfo"
+                      name="savePaymentInfo"
+                      checked={formData.savePaymentInfo}
+                      onCheckedChange={(checked) => 
+                        setFormData({...formData, savePaymentInfo: checked})
+                      }
+                    />
+                    <Label htmlFor="savePaymentInfo">{currentContent.saveCardLabel}</Label>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-2 mb-6">
+                <Checkbox
+                  id="termsAccepted"
+                  name="termsAccepted"
+                  checked={formData.termsAccepted}
+                  onCheckedChange={(checked) => {
+                    setFormData({...formData, termsAccepted: checked});
+                    if (checked) {
+                      setFormErrors({...formErrors, termsAccepted: false});
+                    }
+                  }}
+                  className={formErrors.termsAccepted ? 'border-red-500' : ''}
+                />
+                <Label htmlFor="termsAccepted">{currentContent.termsLabel}</Label>
+              </div>
+              {formErrors.termsAccepted && (
+                <p className="text-red-500 text-sm mb-4">{currentContent.termsRequired}</p>
+              )}
+              
+              <div className="mt-6 flex justify-between">
+                <Button 
+                  onClick={handleBack}
+                  variant="outline"
+                  disabled={isProcessing}
+                >
+                  {currentContent.back}
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  className="bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {currentContent.processingPayment}
+                    </>
+                  ) : (
+                    currentContent.payNow
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+            
+            {/* Confirmation Tab */}
+            <TabsContent value="confirmation" className="p-4 border rounded-md mt-4">
+              <div className="text-center py-8">
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">{currentContent.paymentSuccessTitle}</h2>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  {currentContent.paymentSuccessMessage}
+                </p>
+                
+                <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate('/orders')}
+                  >
+                    {currentContent.viewOrder}
+                  </Button>
+                  <Button 
+                    className="bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                    onClick={() => navigate('/')}
+                  >
+                    {currentContent.continueShopping}
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </main>
+      
       <Footer />
     </div>
   );
