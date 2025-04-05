@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Jam3a - Saudi Arabia's first and most advanced group-buying platform. Join forces with others to unlock better prices on premium products." />
     <meta name="theme-color" content="#4f46e5" />
@@ -12,14 +12,14 @@
     <meta property="og:url" content="https://jam3a.sa/" />
     <meta property="og:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
     <meta property="og:description" content="Join forces with others to unlock better prices on premium products." />
-    <meta property="og:image" content="/og-image.jpg" />
+    <meta property="og:image" content="./og-image.jpg" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://jam3a.sa/" />
     <meta property="twitter:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
     <meta property="twitter:description" content="Join forces with others to unlock better prices on premium products." />
-    <meta property="twitter:image" content="/og-image.jpg" />
+    <meta property="twitter:image" content="./og-image.jpg" />
     
     <!-- Preload critical assets -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,7 +98,7 @@
         <div class="app-loading-text">Loading Jam3a...</div>
       </div>
     </div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
     
     <!-- Fallback script in case main bundle fails to load -->
     <script>
@@ -130,8 +130,97 @@
             window.location.reload();
           };
           appLoading.appendChild(refreshButton);
+          
+          // Log error to console for debugging
+          console.error('Application failed to load within expected time');
+          
+          // Check for common issues
+          const checkForCommonIssues = function() {
+            let issues = [];
+            
+            // Check if main.tsx script failed to load
+            const scripts = document.querySelectorAll('script');
+            let mainScriptLoaded = false;
+            scripts.forEach(script => {
+              if (script.src && script.src.includes('main.tsx')) {
+                if (script.onerror) {
+                  issues.push('Main script failed to load');
+                } else {
+                  mainScriptLoaded = true;
+                }
+              }
+            });
+            
+            if (!mainScriptLoaded) {
+              issues.push('Main script may not be loading correctly');
+            }
+            
+            // Check for console errors
+            if (window.consoleErrors && window.consoleErrors.length > 0) {
+              issues.push('Console errors detected: ' + window.consoleErrors.join(', '));
+            }
+            
+            // Check for network issues
+            if (!navigator.onLine) {
+              issues.push('Browser is offline');
+            }
+            
+            // Report issues
+            if (issues.length > 0) {
+              console.error('Detected issues:', issues);
+              const issuesElement = document.createElement('div');
+              issuesElement.style.color = '#64748b';
+              issuesElement.style.marginTop = '16px';
+              issuesElement.style.fontSize = '14px';
+              issuesElement.style.maxWidth = '400px';
+              issuesElement.style.textAlign = 'left';
+              issuesElement.style.padding = '0 20px';
+              issuesElement.innerHTML = '<strong>Detected issues:</strong><br>' + issues.map(issue => '- ' + issue).join('<br>');
+              appLoading.appendChild(issuesElement);
+            }
+          };
+          
+          // Capture console errors
+          if (!window.consoleErrors) {
+            window.consoleErrors = [];
+            const originalConsoleError = console.error;
+            console.error = function() {
+              window.consoleErrors.push(Array.from(arguments).join(' '));
+              originalConsoleError.apply(console, arguments);
+            };
+          }
+          
+          // Run checks
+          checkForCommonIssues();
+          
+          // Add manual path fix option
+          const pathFixButton = document.createElement('button');
+          pathFixButton.innerText = 'Try Path Fix';
+          pathFixButton.style.marginTop = '16px';
+          pathFixButton.style.marginLeft = '8px';
+          pathFixButton.style.padding = '8px 16px';
+          pathFixButton.style.backgroundColor = '#64748b';
+          pathFixButton.style.color = 'white';
+          pathFixButton.style.border = 'none';
+          pathFixButton.style.borderRadius = '4px';
+          pathFixButton.style.cursor = 'pointer';
+          pathFixButton.onclick = function() {
+            // Try to load with absolute paths
+            const baseElement = document.createElement('base');
+            baseElement.href = '/';
+            document.head.prepend(baseElement);
+            window.location.reload();
+          };
+          appLoading.appendChild(pathFixButton);
         }
       }, 10000);
+      
+      // Add error handling for the main script
+      window.addEventListener('error', function(event) {
+        if (event.target && event.target.tagName === 'SCRIPT') {
+          console.error('Script loading error:', event);
+        }
+      }, true);
     </script>
   </body>
 </html>
