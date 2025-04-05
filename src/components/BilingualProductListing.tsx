@@ -110,8 +110,13 @@ const BilingualProductListing = ({ product, language }) => {
   
   // Enhanced product image selection based on product name and description
   const getProductImage = () => {
+    // Guard against undefined product
+    if (!product) {
+      return PRODUCT_IMAGES.FALLBACK;
+    }
+    
     // If product already has an image, use it
-    if (product.image && product.image.startsWith('http')) {
+    if (product.image && typeof product.image === 'string' && product.image.startsWith('http')) {
       return product.image;
     }
     
@@ -243,6 +248,13 @@ const BilingualProductListing = ({ product, language }) => {
   };
 
   useEffect(() => {
+    // Guard against undefined product
+    if (!product) {
+      setProgress(0);
+      setTimeLeft(language === 'en' ? 'Not available' : 'غير متاح');
+      return;
+    }
+    
     // Calculate progress based on joined/total
     const joined = product.joined || 0;
     const total = product.total || 10;
@@ -255,7 +267,7 @@ const BilingualProductListing = ({ product, language }) => {
     
     // Format time left
     const formatTimeLeft = () => {
-      if (product.timeLeft) {
+      if (product.timeLeft && typeof product.timeLeft === 'string') {
         if (product.timeLeft.includes('hour')) {
           return language === 'en' ? product.timeLeft : product.timeLeft.replace('hours', 'ساعة').replace('hour', 'ساعة');
         } else if (product.timeLeft.includes('day')) {
@@ -271,22 +283,54 @@ const BilingualProductListing = ({ product, language }) => {
   }, [product, language]);
 
   const handleJoinJam3a = () => {
+    // Guard against undefined product
+    if (!product) {
+      toast({
+        title: language === 'en' ? 'Error' : 'خطأ',
+        description: language === 'en' ? 'Product information is not available' : 'معلومات المنتج غير متوفرة',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     // Navigate to join page with product details
-    navigate(`/join-jam3a?product=${encodeURIComponent(product.name)}&price=${encodeURIComponent(product.price)}&discount=${encodeURIComponent(product.discount)}&id=${encodeURIComponent(product.id || '1')}`);
+    navigate(`/join-jam3a?product=${encodeURIComponent(product.name || 'Unknown')}&price=${encodeURIComponent(product.price || '0')}&discount=${encodeURIComponent(product.discount || '0%')}&id=${encodeURIComponent(product.id || '1')}`);
     
     toast({
       title: language === 'en' ? 'Joining Jam3a' : 'جاري الانضمام للجمعة',
-      description: language === 'en' ? `You're joining the ${product.name} Jam3a` : `أنت تنضم إلى جمعة ${product.name}`,
+      description: language === 'en' ? `You're joining the ${product.name || 'product'} Jam3a` : `أنت تنضم إلى جمعة ${product.name || 'المنتج'}`,
     });
   };
+
+  // Guard against undefined product in render
+  if (!product) {
+    return (
+      <Card className="overflow-hidden transition-all hover:shadow-md">
+        <div className="aspect-square relative overflow-hidden">
+          <img 
+            src={PRODUCT_IMAGES.FALLBACK} 
+            alt={language === 'en' ? 'Product unavailable' : 'المنتج غير متوفر'} 
+            className="w-full h-full object-cover transition-transform hover:scale-105"
+          />
+          <div className="p-4">
+            <h3 className="font-semibold">{language === 'en' ? 'Product unavailable' : 'المنتج غير متوفر'}</h3>
+            <p className="text-sm text-gray-500">{language === 'en' ? 'Please try again later' : 'يرجى المحاولة لاحقًا'}</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
       <div className="aspect-square relative overflow-hidden">
         <img 
-          src={product.image || getProductImage()} 
-          alt={product.name} 
+          src={getProductImage()} 
+          alt={product.name || (language === 'en' ? 'Product' : 'منتج')} 
           className="w-full h-full object-cover transition-transform hover:scale-105"
+          onError={(e) => {
+            e.currentTarget.src = PRODUCT_IMAGES.FALLBACK;
+          }}
         />
         <div className="absolute top-2 right-2 flex flex-col gap-2">
           <Badge variant="destructive" className="bg-black/80 hover:bg-black/70">
