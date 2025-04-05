@@ -2,23 +2,136 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jam3a - Saudi Arabia's First Group Buying Platform</title>
-    <meta name="description" content="Join Jam3a, Saudi Arabia's first group buying platform. Buy together with others to unlock better prices on premium tech products and more." />
-    <meta name="author" content="Jam3a" />
-
-    <meta property="og:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
-    <meta property="og:description" content="Join Jam3a, Saudi Arabia's first group buying platform. Buy together with others to unlock better prices on premium tech products and more." />
+    <meta name="description" content="Jam3a - Saudi Arabia's first and most advanced group-buying platform. Join forces with others to unlock better prices on premium products." />
+    <meta name="theme-color" content="#4f46e5" />
+    
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@jam3a_me" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://jam3a.sa/" />
+    <meta property="og:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
+    <meta property="og:description" content="Join forces with others to unlock better prices on premium products." />
+    <meta property="og:image" content="/og-image.jpg" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://jam3a.sa/" />
+    <meta property="twitter:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
+    <meta property="twitter:description" content="Join forces with others to unlock better prices on premium products." />
+    <meta property="twitter:image" content="/og-image.jpg" />
+    
+    <!-- Preload critical assets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" as="style">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap">
+    
+    <!-- Prevent flash of unstyled content -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Cairo', 'Tajawal', sans-serif;
+      }
+      .app-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        background-color: #f8fafc;
+      }
+      .app-loading-logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        animation: pulse 1.5s infinite;
+      }
+      .app-loading-logo svg {
+        width: 40px;
+        height: 40px;
+        color: white;
+      }
+      .app-loading-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-top: 16px;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
+        }
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+        }
+        100% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+        }
+      }
+    </style>
+    
+    <title>Jam3a - Saudi Arabia's First Group Buying Platform</title>
   </head>
-
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Loading state that will be shown until React loads -->
+      <div class="app-loading">
+        <div class="app-loading-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="app-loading-text">Loading Jam3a...</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Fallback script in case main bundle fails to load -->
+    <script>
+      // Check if the app has loaded within 10 seconds
+      setTimeout(function() {
+        const appLoading = document.querySelector('.app-loading');
+        if (appLoading && appLoading.parentNode) {
+          // If the loading screen is still visible after 10 seconds, show error message
+          const errorMessage = document.createElement('div');
+          errorMessage.style.color = '#ef4444';
+          errorMessage.style.marginTop = '16px';
+          errorMessage.style.maxWidth = '400px';
+          errorMessage.style.textAlign = 'center';
+          errorMessage.style.padding = '0 20px';
+          errorMessage.innerHTML = 'It seems like the app is taking longer than expected to load. Please try refreshing the page. If the problem persists, please contact support.';
+          appLoading.appendChild(errorMessage);
+          
+          // Add refresh button
+          const refreshButton = document.createElement('button');
+          refreshButton.innerText = 'Refresh Page';
+          refreshButton.style.marginTop = '16px';
+          refreshButton.style.padding = '8px 16px';
+          refreshButton.style.backgroundColor = '#4f46e5';
+          refreshButton.style.color = 'white';
+          refreshButton.style.border = 'none';
+          refreshButton.style.borderRadius = '4px';
+          refreshButton.style.cursor = 'pointer';
+          refreshButton.onclick = function() {
+            window.location.reload();
+          };
+          appLoading.appendChild(refreshButton);
+        }
+      }, 10000);
+    </script>
   </body>
 </html>

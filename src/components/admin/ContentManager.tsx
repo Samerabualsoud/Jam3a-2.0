@@ -63,6 +63,29 @@ const mockProducts = [
   },
 ];
 
+// Configuration for image upload services
+const UPLOAD_SERVICES = {
+  CLOUDINARY: {
+    name: 'Cloudinary',
+    uploadUrl: 'https://api.cloudinary.com/v1_1/jam3a-cloud/image/upload',
+    uploadPreset: 'jam3a_uploads',
+    cloudName: 'jam3a-cloud'
+  },
+  IMGBB: {
+    name: 'ImgBB',
+    uploadUrl: 'https://api.imgbb.com/1/upload',
+    apiKey: '9c7eb7b7a0e5d64b1b4f5c5e5d64b1b4' // Replace with your actual API key
+  },
+  LOCAL: {
+    name: 'Local Storage',
+    uploadUrl: '/api/upload', // This would be your backend endpoint
+    maxSize: 10 * 1024 * 1024 // 10MB
+  }
+};
+
+// Default to Cloudinary for production, ImgBB as fallback
+const DEFAULT_UPLOAD_SERVICE = UPLOAD_SERVICES.CLOUDINARY;
+
 // Functional Image upload component with actual upload capability
 const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -72,6 +95,7 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
   const [preview, setPreview] = useState(currentImage || "");
   const fileInputRef = useRef(null);
   const { toast } = useToast();
+  const [uploadService, setUploadService] = useState(DEFAULT_UPLOAD_SERVICE);
 
   useEffect(() => {
     setPreview(currentImage || "");
@@ -131,14 +155,6 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
     setUploadProgress(0);
     
     try {
-      // Create a FormData object to send the file
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Use Cloudinary or similar service for actual implementation
-      // For demo purposes, we'll use a mock upload with progress
-      const uploadUrl = 'https://api.cloudinary.com/v1_1/demo/image/upload';
-      
       // Create a reader for preview while uploading
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -147,54 +163,89 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
       };
       reader.readAsDataURL(file);
       
-      // Actual upload with progress tracking
-      const response = await axios.post(uploadUrl, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
-      }).catch(error => {
-        // If the actual upload fails, we'll use a fallback for demo purposes
-        console.error("Upload failed, using fallback for demo:", error);
-        return new Promise(resolve => {
-          let progress = 0;
-          const interval = setInterval(() => {
-            progress += 5;
-            setUploadProgress(progress);
-            
-            if (progress >= 100) {
-              clearInterval(interval);
-              resolve({ 
-                data: { 
-                  secure_url: URL.createObjectURL(file),
-                  public_id: `demo_${Date.now()}`
-                } 
-              });
-            }
-          }, 100);
+      // Prepare for actual upload based on selected service
+      let formData = new FormData();
+      let uploadUrl = '';
+      let headers = { 'Content-Type': 'multipart/form-data' };
+      
+      // Configure upload based on service
+      if (uploadService === UPLOAD_SERVICES.CLOUDINARY) {
+        uploadUrl = uploadService.uploadUrl;
+        formData.append('file', file);
+        formData.append('upload_preset', uploadService.uploadPreset);
+        formData.append('cloud_name', uploadService.cloudName);
+      } else if (uploadService === UPLOAD_SERVICES.IMGBB) {
+        uploadUrl = `${uploadService.uploadUrl}?key=${uploadService.apiKey}`;
+        formData.append('image', file);
+      } else if (uploadService === UPLOAD_SERVICES.LOCAL) {
+        uploadUrl = uploadService.uploadUrl;
+        formData.append('file', file);
+      }
+      
+      // Attempt actual upload with progress tracking
+      try {
+        const response = await axios.post(uploadUrl, formData, {
+          headers,
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          }
         });
-      });
-      
-      // Get the URL from the response
-      const imageUrl = response.data.secure_url;
-      const imageId = response.data.public_id;
-      
-      // Call the callback with the URL and file name
-      onImageUpload(imageUrl, file.name, imageId);
-      
-      toast({
-        title: "Image uploaded successfully",
-        description: `${file.name} has been uploaded`,
-      });
+        
+        // Process response based on service
+        let imageUrl = '';
+        let imageId = '';
+        
+        if (uploadService === UPLOAD_SERVICES.CLOUDINARY) {
+          imageUrl = response.data.secure_url;
+          imageId = response.data.public_id;
+        } else if (uploadService === UPLOAD_SERVICES.IMGBB) {
+          imageUrl = response.data.data.url;
+          imageId = response.data.data.id;
+        } else if (uploadService === UPLOAD_SERVICES.LOCAL) {
+          imageUrl = response.data.url;
+          imageId = response.data.id || `local_${Date.now()}`;
+        }
+        
+        // Call the callback with the URL and file name
+        onImageUpload(imageUrl, file.name, imageId);
+        
+        toast({
+          title: "Image uploaded successfully",
+          description: `${file.name} has been uploaded to ${uploadService.name}`,
+        });
+      } catch (uploadError) {
+        console.error("Upload failed, using local fallback:", uploadError);
+        
+        // Fallback to local storage if remote upload fails
+        const localImageUrl = URL.createObjectURL(file);
+        const localImageId = `local_${Date.now()}`;
+        
+        // Simulate upload progress for better UX
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          setUploadProgress(progress);
+          
+          if (progress >= 100) {
+            clearInterval(interval);
+            
+            // Call the callback with the local URL
+            onImageUpload(localImageUrl, file.name, localImageId);
+            
+            toast({
+              title: "Image stored locally",
+              description: `${file.name} has been stored in local browser storage`,
+            });
+          }
+        }, 100);
+      }
     } catch (error) {
-      console.error("Error uploading image:", error);
-      setError("Failed to upload image. Please try again.");
+      console.error("Error handling image:", error);
+      setError("Failed to process image. Please try again.");
       toast({
         title: "Upload failed",
-        description: "There was a problem uploading your image. Please try again.",
+        description: "There was a problem processing your image. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -325,6 +376,29 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      
+      {/* Upload service selection */}
+      <div className="flex items-center gap-2 mt-2">
+        <Label className="text-xs text-muted-foreground">Upload service:</Label>
+        <Select 
+          value={uploadService === UPLOAD_SERVICES.CLOUDINARY ? 'cloudinary' : 
+                 uploadService === UPLOAD_SERVICES.IMGBB ? 'imgbb' : 'local'}
+          onValueChange={(value) => {
+            if (value === 'cloudinary') setUploadService(UPLOAD_SERVICES.CLOUDINARY);
+            else if (value === 'imgbb') setUploadService(UPLOAD_SERVICES.IMGBB);
+            else setUploadService(UPLOAD_SERVICES.LOCAL);
+          }}
+        >
+          <SelectTrigger className="h-7 text-xs w-auto min-w-[120px]">
+            <SelectValue placeholder="Select service" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cloudinary">Cloudinary</SelectItem>
+            <SelectItem value="imgbb">ImgBB</SelectItem>
+            <SelectItem value="local">Local Storage</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 };
@@ -401,7 +475,7 @@ const ContentManager = () => {
   };
   
   // Handle FAQ form change
-  const handleFaqFormChange = (e) => {
+  const handleFAQFormChange = (e) => {
     const { name, value } = e.target;
     setFaqForm(prev => ({
       ...prev,
@@ -410,19 +484,19 @@ const ContentManager = () => {
   };
   
   // Handle product image upload
-  const handleProductImageUpload = (imageUrl, fileName, imageId) => {
+  const handleProductImageUpload = (url, fileName, imageId) => {
     setProductForm(prev => ({
       ...prev,
-      image: imageUrl,
+      image: url,
       imageId: imageId
     }));
   };
   
   // Handle banner image upload
-  const handleBannerImageUpload = (imageUrl, fileName, imageId) => {
+  const handleBannerImageUpload = (url, fileName, imageId) => {
     setBannerForm(prev => ({
       ...prev,
-      image: imageUrl,
+      image: url,
       imageId: imageId
     }));
   };
@@ -461,7 +535,7 @@ const ContentManager = () => {
   };
   
   // Reset FAQ form
-  const resetFaqForm = () => {
+  const resetFAQForm = () => {
     setFaqForm({
       question: '',
       answer: ''
@@ -503,7 +577,7 @@ const ContentManager = () => {
   };
   
   // Edit FAQ
-  const editFaq = (faq) => {
+  const editFAQ = (faq) => {
     setFaqForm({
       question: faq.question,
       answer: faq.answer
@@ -514,19 +588,10 @@ const ContentManager = () => {
   // Save product
   const saveProduct = () => {
     // Validate form
-    if (!productForm.name || !productForm.price || !productForm.stock || !productForm.description) {
+    if (!productForm.name || !productForm.price || !productForm.stock) {
       toast({
-        title: "Missing information",
+        title: "Missing fields",
         description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!productForm.image) {
-      toast({
-        title: "Missing image",
-        description: "Please upload a product image",
         variant: "destructive"
       });
       return;
@@ -548,25 +613,25 @@ const ContentManager = () => {
       
       toast({
         title: "Product updated",
-        description: `${productForm.name} has been updated successfully`
+        description: `${productForm.name} has been updated`
       });
     } else {
       // Add new product
       const newProduct = {
-        id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
+        id: Date.now(),
         name: productForm.name,
         category: productForm.category,
         price: parseFloat(productForm.price),
         stock: parseInt(productForm.stock),
         description: productForm.description,
-        image: productForm.image
+        image: productForm.image || 'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
       };
       
       setProducts(prev => [...prev, newProduct]);
       
       toast({
         title: "Product added",
-        description: `${productForm.name} has been added successfully`
+        description: `${productForm.name} has been added`
       });
     }
     
@@ -578,8 +643,8 @@ const ContentManager = () => {
     // Validate form
     if (!bannerForm.title || !bannerForm.image) {
       toast({
-        title: "Missing information",
-        description: "Please fill in all required fields and upload an image",
+        title: "Missing fields",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
@@ -598,12 +663,12 @@ const ContentManager = () => {
       
       toast({
         title: "Banner updated",
-        description: `${bannerForm.title} has been updated successfully`
+        description: `${bannerForm.title} has been updated`
       });
     } else {
       // Add new banner
       const newBanner = {
-        id: banners.length > 0 ? Math.max(...banners.map(b => b.id)) + 1 : 1,
+        id: Date.now(),
         title: bannerForm.title,
         image: bannerForm.image,
         active: bannerForm.active
@@ -613,7 +678,7 @@ const ContentManager = () => {
       
       toast({
         title: "Banner added",
-        description: `${bannerForm.title} has been added successfully`
+        description: `${bannerForm.title} has been added`
       });
     }
     
@@ -625,7 +690,7 @@ const ContentManager = () => {
     // Validate form
     if (!pageForm.title || !pageForm.slug) {
       toast({
-        title: "Missing information",
+        title: "Missing fields",
         description: "Please fill in all required fields",
         variant: "destructive"
       });
@@ -646,12 +711,12 @@ const ContentManager = () => {
       
       toast({
         title: "Page updated",
-        description: `${pageForm.title} has been updated successfully`
+        description: `${pageForm.title} has been updated`
       });
     } else {
       // Add new page
       const newPage = {
-        id: pages.length > 0 ? Math.max(...pages.map(p => p.id)) + 1 : 1,
+        id: Date.now(),
         title: pageForm.title,
         slug: pageForm.slug,
         content: pageForm.content,
@@ -662,7 +727,7 @@ const ContentManager = () => {
       
       toast({
         title: "Page added",
-        description: `${pageForm.title} has been added successfully`
+        description: `${pageForm.title} has been added`
       });
     }
     
@@ -670,12 +735,12 @@ const ContentManager = () => {
   };
   
   // Save FAQ
-  const saveFaq = () => {
+  const saveFAQ = () => {
     // Validate form
     if (!faqForm.question || !faqForm.answer) {
       toast({
-        title: "Missing information",
-        description: "Please fill in both question and answer fields",
+        title: "Missing fields",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
@@ -693,25 +758,25 @@ const ContentManager = () => {
       
       toast({
         title: "FAQ updated",
-        description: "FAQ has been updated successfully"
+        description: "FAQ has been updated"
       });
     } else {
       // Add new FAQ
-      const newFaq = {
-        id: faqs.length > 0 ? Math.max(...faqs.map(f => f.id)) + 1 : 1,
+      const newFAQ = {
+        id: Date.now(),
         question: faqForm.question,
         answer: faqForm.answer
       };
       
-      setFAQs(prev => [...prev, newFaq]);
+      setFAQs(prev => [...prev, newFAQ]);
       
       toast({
         title: "FAQ added",
-        description: "FAQ has been added successfully"
+        description: "FAQ has been added"
       });
     }
     
-    resetFaqForm();
+    resetFAQForm();
   };
   
   // Delete product
@@ -720,7 +785,7 @@ const ContentManager = () => {
     
     toast({
       title: "Product deleted",
-      description: "The product has been deleted successfully"
+      description: "The product has been deleted"
     });
   };
   
@@ -730,7 +795,7 @@ const ContentManager = () => {
     
     toast({
       title: "Banner deleted",
-      description: "The banner has been deleted successfully"
+      description: "The banner has been deleted"
     });
   };
   
@@ -740,33 +805,26 @@ const ContentManager = () => {
     
     toast({
       title: "Page deleted",
-      description: "The page has been deleted successfully"
+      description: "The page has been deleted"
     });
   };
   
   // Delete FAQ
-  const deleteFaq = (id) => {
+  const deleteFAQ = (id) => {
     setFAQs(prev => prev.filter(faq => faq.id !== id));
     
     toast({
       title: "FAQ deleted",
-      description: "The FAQ has been deleted successfully"
+      description: "The FAQ has been deleted"
     });
   };
   
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Content Management</h2>
-          <p className="text-muted-foreground">
-            Manage your website content, products, banners, and more.
-          </p>
-        </div>
-      </div>
+    <div className="container mx-auto py-6">
+      <h1 className="text-3xl font-bold mb-6">Content Manager</h1>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="banners">Banners</TabsTrigger>
           <TabsTrigger value="pages">Pages</TabsTrigger>
@@ -774,83 +832,89 @@ const ContentManager = () => {
         </TabsList>
         
         {/* Products Tab */}
-        <TabsContent value="products" className="space-y-4">
+        <TabsContent value="products" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</CardTitle>
               <CardDescription>
-                {editingProduct ? 'Update product information' : 'Add a new product to your store'}
+                {editingProduct ? 'Update product details' : 'Create a new product listing'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Product Name</Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    value={productForm.name} 
-                    onChange={handleProductFormChange} 
-                    placeholder="Enter product name" 
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Product Name</Label>
+                    <Input 
+                      id="name" 
+                      name="name" 
+                      value={productForm.name} 
+                      onChange={handleProductFormChange} 
+                      placeholder="e.g. iPhone 16 Pro Max"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Select 
+                      value={productForm.category} 
+                      onValueChange={(value) => setProductForm(prev => ({ ...prev, category: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Electronics">Electronics</SelectItem>
+                        <SelectItem value="Home & Kitchen">Home & Kitchen</SelectItem>
+                        <SelectItem value="Fashion">Fashion</SelectItem>
+                        <SelectItem value="Beauty">Beauty</SelectItem>
+                        <SelectItem value="Sports">Sports</SelectItem>
+                        <SelectItem value="Toys">Toys</SelectItem>
+                        <SelectItem value="Books">Books</SelectItem>
+                        <SelectItem value="Automotive">Automotive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="price">Price (SAR)</Label>
+                      <Input 
+                        id="price" 
+                        name="price" 
+                        value={productForm.price} 
+                        onChange={handleProductFormChange} 
+                        placeholder="e.g. 4999"
+                        type="number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="stock">Stock</Label>
+                      <Input 
+                        id="stock" 
+                        name="stock" 
+                        value={productForm.stock} 
+                        onChange={handleProductFormChange} 
+                        placeholder="e.g. 50"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea 
+                      id="description" 
+                      name="description" 
+                      value={productForm.description} 
+                      onChange={handleProductFormChange} 
+                      placeholder="Enter product description"
+                      rows={4}
+                    />
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={productForm.category} 
-                    onValueChange={(value) => setProductForm(prev => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Electronics">Electronics</SelectItem>
-                      <SelectItem value="Clothing">Clothing</SelectItem>
-                      <SelectItem value="Home">Home & Kitchen</SelectItem>
-                      <SelectItem value="Beauty">Beauty & Personal Care</SelectItem>
-                      <SelectItem value="Sports">Sports & Outdoors</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (SAR)</Label>
-                  <Input 
-                    id="price" 
-                    name="price" 
-                    type="number" 
-                    value={productForm.price} 
-                    onChange={handleProductFormChange} 
-                    placeholder="Enter price" 
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock</Label>
-                  <Input 
-                    id="stock" 
-                    name="stock" 
-                    type="number" 
-                    value={productForm.stock} 
-                    onChange={handleProductFormChange} 
-                    placeholder="Enter stock quantity" 
-                  />
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea 
-                    id="description" 
-                    name="description" 
-                    value={productForm.description} 
-                    onChange={handleProductFormChange} 
-                    placeholder="Enter product description" 
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="md:col-span-2">
+                <div>
                   <ImageUploader 
                     onImageUpload={handleProductImageUpload} 
                     currentImage={productForm.image}
@@ -861,7 +925,7 @@ const ContentManager = () => {
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" onClick={resetProductForm}>
-                Cancel
+                {editingProduct ? 'Cancel' : 'Reset'}
               </Button>
               <Button onClick={saveProduct}>
                 <Save className="h-4 w-4 mr-2" />
@@ -870,28 +934,29 @@ const ContentManager = () => {
             </CardFooter>
           </Card>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map(product => (
               <Card key={product.id} className="overflow-hidden">
-                <div className="aspect-video relative">
+                <div className="aspect-video relative overflow-hidden">
                   <img 
-                    src={product.image || 'https://placehold.co/600x400?text=No+Image'} 
-                    alt={product.name}
+                    src={product.image || 'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'} 
+                    alt={product.name} 
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <CardHeader>
-                  <CardTitle>{product.name}</CardTitle>
-                  <CardDescription>{product.category}</CardDescription>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{product.name}</CardTitle>
+                  <CardDescription>
+                    {product.category} • {product.stock} in stock
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-lg">{product.price} SAR</span>
-                    <span className="text-sm text-muted-foreground">Stock: {product.stock}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                <CardContent className="pb-2">
+                  <p className="text-xl font-bold">{product.price} SAR</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                    {product.description}
+                  </p>
                 </CardContent>
-                <CardFooter className="flex justify-between">
+                <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={() => editProduct(product)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
@@ -907,47 +972,55 @@ const ContentManager = () => {
         </TabsContent>
         
         {/* Banners Tab */}
-        <TabsContent value="banners" className="space-y-4">
+        <TabsContent value="banners" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{editingBanner ? 'Edit Banner' : 'Add New Banner'}</CardTitle>
               <CardDescription>
-                {editingBanner ? 'Update banner information' : 'Add a new banner to your website'}
+                {editingBanner ? 'Update banner details' : 'Create a new promotional banner'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Banner Title</Label>
-                  <Input 
-                    id="title" 
-                    name="title" 
-                    value={bannerForm.title} 
-                    onChange={handleBannerFormChange} 
-                    placeholder="Enter banner title" 
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">Banner Title</Label>
+                    <Input 
+                      id="title" 
+                      name="title" 
+                      value={bannerForm.title} 
+                      onChange={handleBannerFormChange} 
+                      placeholder="e.g. Summer Sale"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="active"
+                      name="active"
+                      checked={bannerForm.active}
+                      onChange={handleBannerFormChange}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="active" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Active
+                    </Label>
+                  </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="active" 
-                    name="active" 
-                    checked={bannerForm.active} 
-                    onCheckedChange={(checked) => setBannerForm(prev => ({ ...prev, active: checked }))} 
+                <div>
+                  <ImageUploader 
+                    onImageUpload={handleBannerImageUpload} 
+                    currentImage={bannerForm.image}
+                    label="Banner Image"
                   />
-                  <Label htmlFor="active" className="cursor-pointer">Active</Label>
                 </div>
-                
-                <ImageUploader 
-                  onImageUpload={handleBannerImageUpload} 
-                  currentImage={bannerForm.image}
-                  label="Banner Image"
-                />
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" onClick={resetBannerForm}>
-                Cancel
+                {editingBanner ? 'Cancel' : 'Reset'}
               </Button>
               <Button onClick={saveBanner}>
                 <Save className="h-4 w-4 mr-2" />
@@ -956,25 +1029,27 @@ const ContentManager = () => {
             </CardFooter>
           </Card>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {banners.map(banner => (
               <Card key={banner.id} className="overflow-hidden">
-                <div className="aspect-[21/9] relative">
+                <div className="aspect-[21/9] relative overflow-hidden">
                   <img 
                     src={banner.image} 
-                    alt={banner.title}
+                    alt={banner.title} 
                     className="w-full h-full object-cover"
                   />
                   {banner.active && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                      Active
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                        Active
+                      </Badge>
                     </div>
                   )}
                 </div>
-                <CardHeader>
-                  <CardTitle>{banner.title}</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{banner.title}</CardTitle>
                 </CardHeader>
-                <CardFooter className="flex justify-between">
+                <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={() => editBanner(banner)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
@@ -990,54 +1065,53 @@ const ContentManager = () => {
         </TabsContent>
         
         {/* Pages Tab */}
-        <TabsContent value="pages" className="space-y-4">
+        <TabsContent value="pages" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{editingPage ? 'Edit Page' : 'Add New Page'}</CardTitle>
               <CardDescription>
-                {editingPage ? 'Update page content' : 'Add a new page to your website'}
+                {editingPage ? 'Update page content' : 'Create a new static page'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="pageTitle">Page Title</Label>
                   <Input 
                     id="pageTitle" 
                     name="title" 
                     value={pageForm.title} 
                     onChange={handlePageFormChange} 
-                    placeholder="Enter page title" 
+                    placeholder="e.g. About Us"
                   />
                 </div>
-                
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="slug">URL Slug</Label>
                   <Input 
                     id="slug" 
                     name="slug" 
                     value={pageForm.slug} 
                     onChange={handlePageFormChange} 
-                    placeholder="Enter URL slug (e.g., about-us)" 
+                    placeholder="e.g. about-us"
                   />
                 </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="content">Page Content</Label>
-                  <Textarea 
-                    id="content" 
-                    name="content" 
-                    value={pageForm.content} 
-                    onChange={handlePageFormChange} 
-                    placeholder="Enter page content" 
-                    rows={10}
-                  />
-                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="content">Page Content</Label>
+                <Textarea 
+                  id="content" 
+                  name="content" 
+                  value={pageForm.content} 
+                  onChange={handlePageFormChange} 
+                  placeholder="Enter page content (supports Markdown)"
+                  rows={10}
+                />
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" onClick={resetPageForm}>
-                Cancel
+                {editingPage ? 'Cancel' : 'Reset'}
               </Button>
               <Button onClick={savePage}>
                 <Save className="h-4 w-4 mr-2" />
@@ -1046,20 +1120,26 @@ const ContentManager = () => {
             </CardFooter>
           </Card>
           
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-4">
             {pages.map(page => (
               <Card key={page.id}>
-                <CardHeader>
+                <CardHeader className="pb-2">
                   <div className="flex justify-between items-center">
-                    <CardTitle>{page.title}</CardTitle>
-                    <span className="text-sm text-muted-foreground">Last updated: {page.lastUpdated}</span>
+                    <CardTitle className="text-lg">{page.title}</CardTitle>
+                    <Badge variant="outline">{page.lastUpdated}</Badge>
                   </div>
-                  <CardDescription>/{page.slug}</CardDescription>
+                  <CardDescription>
+                    Slug: /{page.slug}
+                  </CardDescription>
                 </CardHeader>
-                <CardFooter className="flex justify-between">
+                <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={() => editPage(page)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
+                  </Button>
+                  <Button variant="secondary" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => deletePage(page.id)}>
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -1072,66 +1152,66 @@ const ContentManager = () => {
         </TabsContent>
         
         {/* FAQs Tab */}
-        <TabsContent value="faqs" className="space-y-4">
+        <TabsContent value="faqs" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{editingFAQ ? 'Edit FAQ' : 'Add New FAQ'}</CardTitle>
               <CardDescription>
-                {editingFAQ ? 'Update FAQ content' : 'Add a new frequently asked question'}
+                {editingFAQ ? 'Update FAQ details' : 'Create a new frequently asked question'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="question">Question</Label>
-                  <Input 
-                    id="question" 
-                    name="question" 
-                    value={faqForm.question} 
-                    onChange={handleFaqFormChange} 
-                    placeholder="Enter question" 
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="answer">Answer</Label>
-                  <Textarea 
-                    id="answer" 
-                    name="answer" 
-                    value={faqForm.answer} 
-                    onChange={handleFaqFormChange} 
-                    placeholder="Enter answer" 
-                    rows={4}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="question">Question</Label>
+                <Input 
+                  id="question" 
+                  name="question" 
+                  value={faqForm.question} 
+                  onChange={handleFAQFormChange} 
+                  placeholder="e.g. What is Jam3a?"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="answer">Answer</Label>
+                <Textarea 
+                  id="answer" 
+                  name="answer" 
+                  value={faqForm.answer} 
+                  onChange={handleFAQFormChange} 
+                  placeholder="Enter the answer to the question"
+                  rows={4}
+                />
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={resetFaqForm}>
-                Cancel
+              <Button variant="outline" onClick={resetFAQForm}>
+                {editingFAQ ? 'Cancel' : 'Reset'}
               </Button>
-              <Button onClick={saveFaq}>
+              <Button onClick={saveFAQ}>
                 <Save className="h-4 w-4 mr-2" />
                 {editingFAQ ? 'Update FAQ' : 'Add FAQ'}
               </Button>
             </CardFooter>
           </Card>
           
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-4">
             {faqs.map(faq => (
               <Card key={faq.id}>
-                <CardHeader>
-                  <CardTitle>{faq.question}</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{faq.question}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p>{faq.answer}</p>
+                <CardContent className="pb-2">
+                  <p className="text-muted-foreground">
+                    {faq.answer}
+                  </p>
                 </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline" size="sm" onClick={() => editFaq(faq)}>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => editFAQ(faq)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => deleteFaq(faq.id)}>
+                  <Button variant="destructive" size="sm" onClick={() => deleteFAQ(faq.id)}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </Button>

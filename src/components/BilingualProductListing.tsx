@@ -11,39 +11,235 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 
+// Comprehensive product image mapping system
+const PRODUCT_IMAGES = {
+  // Apple Products
+  IPHONE: {
+    DEFAULT: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '16 PRO': 'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '16 PRO MAX': 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '15': 'https://images.pexels.com/photos/341523/pexels-photo-341523.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '15 PRO': 'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  MACBOOK: {
+    DEFAULT: 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'PRO': 'https://images.pexels.com/photos/1229861/pexels-photo-1229861.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'AIR': 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  IPAD: {
+    DEFAULT: 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'PRO': 'https://images.pexels.com/photos/1716539/pexels-photo-1716539.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'AIR': 'https://images.pexels.com/photos/1038628/pexels-photo-1038628.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'MINI': 'https://images.pexels.com/photos/221185/pexels-photo-221185.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  AIRPODS: {
+    DEFAULT: 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'PRO': 'https://images.pexels.com/photos/8533266/pexels-photo-8533266.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'MAX': 'https://images.pexels.com/photos/8532616/pexels-photo-8532616.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  WATCH: {
+    DEFAULT: 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'SERIES 9': 'https://images.pexels.com/photos/393047/pexels-photo-393047.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'ULTRA': 'https://images.pexels.com/photos/9979927/pexels-photo-9979927.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  
+  // Samsung Products
+  GALAXY: {
+    DEFAULT: 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'S25': 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'S25 ULTRA': 'https://images.pexels.com/photos/15351642/pexels-photo-15351642.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'S24': 'https://images.pexels.com/photos/13028507/pexels-photo-13028507.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'S24 ULTRA': 'https://images.pexels.com/photos/13028507/pexels-photo-13028507.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'NOTE': 'https://images.pexels.com/photos/47261/pexels-photo-47261.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  FOLD: {
+    DEFAULT: 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '6': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '5': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '4': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  FLIP: {
+    DEFAULT: 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '6': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '5': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    '4': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  
+  // Other Electronics
+  TV: {
+    DEFAULT: 'https://images.pexels.com/photos/6976094/pexels-photo-6976094.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'SAMSUNG': 'https://images.pexels.com/photos/6782342/pexels-photo-6782342.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'LG': 'https://images.pexels.com/photos/6976094/pexels-photo-6976094.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'SONY': 'https://images.pexels.com/photos/6976094/pexels-photo-6976094.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  HEADPHONES: {
+    DEFAULT: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'SONY': 'https://images.pexels.com/photos/577769/pexels-photo-577769.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'BOSE': 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'BEATS': 'https://images.pexels.com/photos/1591/technology-music-sound-things.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  LAPTOP: {
+    DEFAULT: 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'DELL': 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'HP': 'https://images.pexels.com/photos/705675/pexels-photo-705675.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'LENOVO': 'https://images.pexels.com/photos/5082579/pexels-photo-5082579.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'ASUS': 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  CAMERA: {
+    DEFAULT: 'https://images.pexels.com/photos/90946/pexels-photo-90946.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'CANON': 'https://images.pexels.com/photos/51383/photo-camera-subject-photographer-51383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'NIKON': 'https://images.pexels.com/photos/1787235/pexels-photo-1787235.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'SONY': 'https://images.pexels.com/photos/90946/pexels-photo-90946.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  GAMING: {
+    DEFAULT: 'https://images.pexels.com/photos/275033/pexels-photo-275033.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'PLAYSTATION': 'https://images.pexels.com/photos/275033/pexels-photo-275033.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'XBOX': 'https://images.pexels.com/photos/13189272/pexels-photo-13189272.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'NINTENDO': 'https://images.pexels.com/photos/371924/pexels-photo-371924.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  
+  // Fallback image for any product not matched
+  FALLBACK: 'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+};
+
 const BilingualProductListing = ({ product, language }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState('');
   
-  // Get product image based on product name or ID
+  // Enhanced product image selection based on product name and description
   const getProductImage = () => {
-    const productName = product.name.toLowerCase();
-    
-    // Map of product keywords to image URLs
-    const imageMap = {
-      'iphone': 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'galaxy s': 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'fold': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'flip': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'macbook': 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'airpods': 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'watch': 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'ipad': 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'tv': 'https://images.pexels.com/photos/6976094/pexels-photo-6976094.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      'headphones': 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-    };
-    
-    // Find matching image based on product name
-    for (const [keyword, url] of Object.entries(imageMap)) {
-      if (productName.includes(keyword.toLowerCase())) {
-        return url;
-      }
+    // If product already has an image, use it
+    if (product.image && product.image.startsWith('http')) {
+      return product.image;
     }
     
-    // Default image if no match found
-    return 'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
+    const productName = (product.name || '').toLowerCase();
+    const productDescription = (product.description || '').toLowerCase();
+    const combinedText = `${productName} ${productDescription}`;
+    
+    // Try to match product with our image mapping system
+    
+    // Check for iPhone models
+    if (combinedText.includes('iphone')) {
+      if (combinedText.includes('16 pro max')) return PRODUCT_IMAGES.IPHONE['16 PRO MAX'];
+      if (combinedText.includes('16 pro')) return PRODUCT_IMAGES.IPHONE['16 PRO'];
+      if (combinedText.includes('16')) return PRODUCT_IMAGES.IPHONE['16 PRO'];
+      if (combinedText.includes('15 pro')) return PRODUCT_IMAGES.IPHONE['15 PRO'];
+      if (combinedText.includes('15')) return PRODUCT_IMAGES.IPHONE['15'];
+      return PRODUCT_IMAGES.IPHONE.DEFAULT;
+    }
+    
+    // Check for Samsung Galaxy models
+    if (combinedText.includes('galaxy s')) {
+      if (combinedText.includes('s25 ultra')) return PRODUCT_IMAGES.GALAXY['S25 ULTRA'];
+      if (combinedText.includes('s25')) return PRODUCT_IMAGES.GALAXY['S25'];
+      if (combinedText.includes('s24 ultra')) return PRODUCT_IMAGES.GALAXY['S24 ULTRA'];
+      if (combinedText.includes('s24')) return PRODUCT_IMAGES.GALAXY['S24'];
+      if (combinedText.includes('note')) return PRODUCT_IMAGES.GALAXY['NOTE'];
+      return PRODUCT_IMAGES.GALAXY.DEFAULT;
+    }
+    
+    // Check for Samsung Fold models
+    if (combinedText.includes('fold') || combinedText.includes('z fold')) {
+      if (combinedText.includes('fold 6') || combinedText.includes('z fold 6')) return PRODUCT_IMAGES.FOLD['6'];
+      if (combinedText.includes('fold 5') || combinedText.includes('z fold 5')) return PRODUCT_IMAGES.FOLD['5'];
+      if (combinedText.includes('fold 4') || combinedText.includes('z fold 4')) return PRODUCT_IMAGES.FOLD['4'];
+      return PRODUCT_IMAGES.FOLD.DEFAULT;
+    }
+    
+    // Check for Samsung Flip models
+    if (combinedText.includes('flip') || combinedText.includes('z flip')) {
+      if (combinedText.includes('flip 6') || combinedText.includes('z flip 6')) return PRODUCT_IMAGES.FLIP['6'];
+      if (combinedText.includes('flip 5') || combinedText.includes('z flip 5')) return PRODUCT_IMAGES.FLIP['5'];
+      if (combinedText.includes('flip 4') || combinedText.includes('z flip 4')) return PRODUCT_IMAGES.FLIP['4'];
+      return PRODUCT_IMAGES.FLIP.DEFAULT;
+    }
+    
+    // Check for MacBook models
+    if (combinedText.includes('macbook')) {
+      if (combinedText.includes('pro')) return PRODUCT_IMAGES.MACBOOK['PRO'];
+      if (combinedText.includes('air')) return PRODUCT_IMAGES.MACBOOK['AIR'];
+      return PRODUCT_IMAGES.MACBOOK.DEFAULT;
+    }
+    
+    // Check for iPad models
+    if (combinedText.includes('ipad')) {
+      if (combinedText.includes('pro')) return PRODUCT_IMAGES.IPAD['PRO'];
+      if (combinedText.includes('air')) return PRODUCT_IMAGES.IPAD['AIR'];
+      if (combinedText.includes('mini')) return PRODUCT_IMAGES.IPAD['MINI'];
+      return PRODUCT_IMAGES.IPAD.DEFAULT;
+    }
+    
+    // Check for AirPods models
+    if (combinedText.includes('airpod') || combinedText.includes('air pod')) {
+      if (combinedText.includes('pro')) return PRODUCT_IMAGES.AIRPODS['PRO'];
+      if (combinedText.includes('max')) return PRODUCT_IMAGES.AIRPODS['MAX'];
+      return PRODUCT_IMAGES.AIRPODS.DEFAULT;
+    }
+    
+    // Check for Apple Watch models
+    if (combinedText.includes('apple watch') || combinedText.includes('watch')) {
+      if (combinedText.includes('series 9')) return PRODUCT_IMAGES.WATCH['SERIES 9'];
+      if (combinedText.includes('ultra')) return PRODUCT_IMAGES.WATCH['ULTRA'];
+      return PRODUCT_IMAGES.WATCH.DEFAULT;
+    }
+    
+    // Check for TV models
+    if (combinedText.includes('tv') || combinedText.includes('television')) {
+      if (combinedText.includes('samsung')) return PRODUCT_IMAGES.TV['SAMSUNG'];
+      if (combinedText.includes('lg')) return PRODUCT_IMAGES.TV['LG'];
+      if (combinedText.includes('sony')) return PRODUCT_IMAGES.TV['SONY'];
+      return PRODUCT_IMAGES.TV.DEFAULT;
+    }
+    
+    // Check for headphones/earbuds
+    if (combinedText.includes('headphone') || combinedText.includes('earphone') || 
+        combinedText.includes('earbud') || combinedText.includes('headset')) {
+      if (combinedText.includes('sony')) return PRODUCT_IMAGES.HEADPHONES['SONY'];
+      if (combinedText.includes('bose')) return PRODUCT_IMAGES.HEADPHONES['BOSE'];
+      if (combinedText.includes('beats')) return PRODUCT_IMAGES.HEADPHONES['BEATS'];
+      return PRODUCT_IMAGES.HEADPHONES.DEFAULT;
+    }
+    
+    // Check for laptops
+    if (combinedText.includes('laptop') || combinedText.includes('notebook')) {
+      if (combinedText.includes('dell')) return PRODUCT_IMAGES.LAPTOP['DELL'];
+      if (combinedText.includes('hp')) return PRODUCT_IMAGES.LAPTOP['HP'];
+      if (combinedText.includes('lenovo')) return PRODUCT_IMAGES.LAPTOP['LENOVO'];
+      if (combinedText.includes('asus')) return PRODUCT_IMAGES.LAPTOP['ASUS'];
+      return PRODUCT_IMAGES.LAPTOP.DEFAULT;
+    }
+    
+    // Check for cameras
+    if (combinedText.includes('camera') || combinedText.includes('dslr') || 
+        combinedText.includes('mirrorless')) {
+      if (combinedText.includes('canon')) return PRODUCT_IMAGES.CAMERA['CANON'];
+      if (combinedText.includes('nikon')) return PRODUCT_IMAGES.CAMERA['NIKON'];
+      if (combinedText.includes('sony')) return PRODUCT_IMAGES.CAMERA['SONY'];
+      return PRODUCT_IMAGES.CAMERA.DEFAULT;
+    }
+    
+    // Check for gaming consoles
+    if (combinedText.includes('gaming') || combinedText.includes('game console') || 
+        combinedText.includes('console')) {
+      if (combinedText.includes('playstation') || combinedText.includes('ps5') || 
+          combinedText.includes('ps4')) return PRODUCT_IMAGES.GAMING['PLAYSTATION'];
+      if (combinedText.includes('xbox')) return PRODUCT_IMAGES.GAMING['XBOX'];
+      if (combinedText.includes('nintendo') || combinedText.includes('switch')) 
+        return PRODUCT_IMAGES.GAMING['NINTENDO'];
+      return PRODUCT_IMAGES.GAMING.DEFAULT;
+    }
+    
+    // Generic category matching as fallback
+    if (combinedText.includes('phone') || combinedText.includes('smartphone')) 
+      return PRODUCT_IMAGES.GALAXY.DEFAULT;
+    if (combinedText.includes('tablet')) return PRODUCT_IMAGES.IPAD.DEFAULT;
+    if (combinedText.includes('computer')) return PRODUCT_IMAGES.LAPTOP.DEFAULT;
+    
+    // Final fallback for any product not matched
+    return PRODUCT_IMAGES.FALLBACK;
   };
 
   useEffect(() => {
