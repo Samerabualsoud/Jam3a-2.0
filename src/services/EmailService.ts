@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-toast';
 const EMAIL_CONFIG = {
   sender: 'Samer@jam3a.me',
   service: 'Microsoft Outlook',
-  apiEndpoint: '/api/email', // This would be your server endpoint that handles actual email sending
+  apiEndpoint: '/api/email', // Server endpoint that handles actual email sending
   templates: {
     welcome: {
       subject: 'Welcome to Jam3a!',
@@ -34,8 +34,7 @@ const EmailService = {
   // Send email through API endpoint
   sendEmail: async ({ to, subject, template, data }) => {
     try {
-      // In production, this would call your server API endpoint
-      // that handles the actual email sending with Microsoft Outlook
+      // Call the server API endpoint that handles the actual email sending with Microsoft Outlook
       console.log('Email request:', {
         from: EMAIL_CONFIG.sender,
         to,
@@ -44,7 +43,7 @@ const EmailService = {
         data
       });
       
-      // For development/testing, simulate API call
+      // Real API call to server endpoint
       const response = await fetch(EMAIL_CONFIG.apiEndpoint, {
         method: 'POST',
         headers: {
@@ -57,17 +56,12 @@ const EmailService = {
           template,
           data
         }),
-      }).catch(error => {
-        // Handle network errors or when API is not available
-        console.log('API not available in development mode, simulating success');
-        return { 
-          ok: true, 
-          json: () => Promise.resolve({ 
-            success: true, 
-            messageId: `mock-${Date.now()}` 
-          })
-        };
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send email');
+      }
       
       const result = await response.json();
       return result;

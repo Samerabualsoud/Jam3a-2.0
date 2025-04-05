@@ -115,7 +115,7 @@ const App = () => {
   const [queryClient] = useState(() => new QueryClient());
 
   // Google Analytics measurement ID
-  const GA_MEASUREMENT_ID = "G-XXXXXXXXXX"; // Replace with your actual GA measurement ID
+  const GA_MEASUREMENT_ID = "G-G3N8DYCLBM"; // Updated with the correct GA measurement ID
 
   // Define routes configuration
   const routesConfig: RouteConfig[] = [

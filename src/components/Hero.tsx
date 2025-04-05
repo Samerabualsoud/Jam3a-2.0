@@ -89,8 +89,9 @@ const Hero = () => {
                     src="https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
                     alt="iPhone 16 Pro" 
                     className="w-full h-48 object-cover"
+                    loading="eager"
                   />
-                  <div className="absolute top-2 right-2 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
+                  <div className="absolute top-2 right-2 rounded-full bg-green-500 px-3 py-1.5 text-xs font-semibold text-white">
                     12% {isRtl ? 'خصم' : 'OFF'}
                   </div>
                 </div>
@@ -126,17 +127,17 @@ const Hero = () => {
                       <span>{isRtl ? '4 من 5 انضموا' : '4 of 5 joined'}</span>
                       <span className="text-primary font-medium">{isRtl ? 'اكتمل 80%' : '80% complete'}</span>
                     </div>
-                    <div className="mt-2 progress-bar">
-                      <div className="progress-value" style={{ width: '80%' }}></div>
+                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/20">
+                      <div className="h-full bg-primary transition-all duration-500 ease-in-out" style={{ width: '80%' }}></div>
                     </div>
                   </div>
                   <div className="mt-4">
                     <Button 
-                      className="w-full gradient-bg hover:opacity-90 transition-opacity flex items-center justify-center gap-2" 
+                      className="w-full gradient-bg hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 font-medium shadow-md" 
                       onClick={handleJoinJam3a}
                     >
                       {isRtl ? 'انضم للجمعة هذي' : 'Join This Jam3a'}
-                      {isRtl ? null : <ArrowRight className="h-4 w-4" />}
+                      {isRtl ? null : <ArrowRight className="h-4 w-4 animate-pulse" />}
                     </Button>
                   </div>
                 </div>

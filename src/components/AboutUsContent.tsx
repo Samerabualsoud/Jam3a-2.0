@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Users, TrendingUp, ShieldCheck, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -148,19 +147,9 @@ const AboutUsContent = () => {
         {/* Our Story Section */}
         <div className="mb-16 max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold tracking-tight mb-6 text-center">{currentContent.story.title}</h2>
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="relative">
-              <div className="absolute -right-4 -bottom-4 h-40 w-40 rounded-full bg-jam3a-purple/20 blur-3xl"></div>
-              <img 
-                src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80" 
-                alt="Jam3a founding team" 
-                className="rounded-xl w-full h-full object-cover shadow-lg"
-              />
-            </div>
-            <div className="flex flex-col justify-center space-y-4">
-              <p className="text-lg">{currentContent.story.part1}</p>
-              <p className="text-lg">{currentContent.story.part2}</p>
-            </div>
+          <div className="flex flex-col space-y-4">
+            <p className="text-lg">{currentContent.story.part1}</p>
+            <p className="text-lg">{currentContent.story.part2}</p>
           </div>
         </div>
 

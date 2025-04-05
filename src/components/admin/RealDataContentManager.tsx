@@ -288,90 +288,149 @@ const RealDataContentManager = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // In a real implementation, these would be API calls
-        // For now, we'll simulate API responses with a timeout
+        // Real API calls to fetch data from backend
+        const fetchBanners = async () => {
+          try {
+            const response = await axios.get('/api/banners');
+            setBanners(response.data);
+            return true;
+          } catch (error) {
+            console.error("Error fetching banners:", error);
+            return false;
+          }
+        };
+
+        const fetchPages = async () => {
+          try {
+            const response = await axios.get('/api/pages');
+            setPages(response.data);
+            return true;
+          } catch (error) {
+            console.error("Error fetching pages:", error);
+            return false;
+          }
+        };
+
+        const fetchFAQs = async () => {
+          try {
+            const response = await axios.get('/api/faqs');
+            setFaqs(response.data);
+            return true;
+          } catch (error) {
+            console.error("Error fetching FAQs:", error);
+            return false;
+          }
+        };
+
+        const fetchProducts = async () => {
+          try {
+            const response = await axios.get('/api/products');
+            setProducts(response.data);
+            return true;
+          } catch (error) {
+            console.error("Error fetching products:", error);
+            return false;
+          }
+        };
+
+        // Execute all fetch operations in parallel
+        const results = await Promise.allSettled([
+          fetchBanners(),
+          fetchPages(),
+          fetchFAQs(),
+          fetchProducts()
+        ]);
+
+        // Check if any of the fetch operations failed
+        const anyFailed = results.some(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value));
         
-        // Simulate API call for banners
-        setTimeout(() => {
-          const fetchedBanners = [
-            { id: 1, title: 'Summer Collection 2025', image: 'https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&w=1600&q=80', active: true },
-            { id: 2, title: 'Eid Special Offers', image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=1600&q=80', active: false },
-            { id: 3, title: 'New Arrivals - Spring 2025', image: 'https://images.unsplash.com/photo-1615380547903-c456276b7702?auto=format&fit=crop&w=1600&q=80', active: false },
-          ];
-          setBanners(fetchedBanners);
+        if (anyFailed) {
+          // If API calls fail, fall back to local data as a backup
+          console.warn("Some API calls failed, using fallback data");
           
-          // Simulate API call for pages
-          const fetchedPages = [
-            { id: 1, title: 'About Jam3a', slug: 'about', lastUpdated: '2025-04-01' },
-            { id: 2, title: 'Frequently Asked Questions', slug: 'faq', lastUpdated: '2025-04-02' },
-            { id: 3, title: 'Terms & Conditions', slug: 'terms', lastUpdated: '2025-04-03' },
-            { id: 4, title: 'Privacy Policy', slug: 'privacy', lastUpdated: '2025-04-03' },
-            { id: 5, title: 'Shipping Information', slug: 'shipping', lastUpdated: '2025-04-04' },
-          ];
-          setPages(fetchedPages);
+          // Fallback data (only used if API calls fail)
+          if (!banners.length) {
+            const fallbackBanners = [
+              { id: 1, title: 'Summer Collection 2025', image: 'https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&w=1600&q=80', active: true },
+              { id: 2, title: 'Eid Special Offers', image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=1600&q=80', active: false },
+              { id: 3, title: 'New Arrivals - Spring 2025', image: 'https://images.unsplash.com/photo-1615380547903-c456276b7702?auto=format&fit=crop&w=1600&q=80', active: false },
+            ];
+            setBanners(fallbackBanners);
+          }
           
-          // Simulate API call for FAQs
-          const fetchedFAQs = [
-            { id: 1, question: 'What is Jam3a?', answer: 'Jam3a is a social shopping platform where people team up to get better prices on products through group buying.' },
-            { id: 2, question: 'How does a Jam3a deal work?', answer: 'A Jam3a starts when someone selects a product and shares it with others. Once enough people join the deal within a set time, everyone gets the discounted price.' },
-            { id: 3, question: 'Can I start my own Jam3a?', answer: 'Yes! You can start your own Jam3a by picking a product and inviting others to join.' },
-            { id: 4, question: 'How are payments processed?', answer: 'We use secure payment gateways including credit/debit cards, Apple Pay, and bank transfers through our partner Moyasar.' },
-            { id: 5, question: 'What happens if not enough people join my Jam3a?', answer: 'If the minimum group size isn\'t reached within the timeframe, no charges will be made and the Jam3a will be canceled.' },
-          ];
-          setFaqs(fetchedFAQs);
+          if (!pages.length) {
+            const fallbackPages = [
+              { id: 1, title: 'About Jam3a', slug: 'about', lastUpdated: '2025-04-01' },
+              { id: 2, title: 'Frequently Asked Questions', slug: 'faq', lastUpdated: '2025-04-02' },
+              { id: 3, title: 'Terms & Conditions', slug: 'terms', lastUpdated: '2025-04-03' },
+              { id: 4, title: 'Privacy Policy', slug: 'privacy', lastUpdated: '2025-04-03' },
+              { id: 5, title: 'Shipping Information', slug: 'shipping', lastUpdated: '2025-04-04' },
+            ];
+            setPages(fallbackPages);
+          }
           
-          // Simulate API call for products
-          const fetchedProducts = [
-            { 
-              id: 1, 
-              name: 'iPhone 16 Pro Max', 
-              category: 'Electronics', 
-              price: 4999, 
-              stock: 50,
-              description: 'Experience the latest innovation with revolutionary camera and A18 Pro chip',
-              image: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-            },
-            { 
-              id: 2, 
-              name: 'Samsung Galaxy S25 Ultra', 
-              category: 'Electronics', 
-              price: 3899, 
-              stock: 35,
-              description: 'Unleash creativity with AI-powered tools and 200MP camera system',
-              image: 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-            },
-            { 
-              id: 3, 
-              name: 'Galaxy Z Fold 6', 
-              category: 'Electronics', 
-              price: 5799, 
-              stock: 20,
-              description: 'Multitask like never before with a stunning foldable display',
-              image: 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-            },
-            { 
-              id: 4, 
-              name: 'MacBook Pro 16" M3 Max', 
-              category: 'Computers', 
-              price: 9999, 
-              stock: 15,
-              description: 'Unmatched performance for creative professionals with the M3 Max chip',
-              image: 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-            },
-            { 
-              id: 5, 
-              name: 'Sony WH-1000XM5', 
-              category: 'Audio', 
-              price: 1299, 
-              stock: 45,
-              description: 'Industry-leading noise cancellation with exceptional sound quality',
-              image: 'https://images.pexels.com/photos/577769/pexels-photo-577769.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-            },
-          ];
-          setProducts(fetchedProducts);
+          if (!faqs.length) {
+            const fallbackFAQs = [
+              { id: 1, question: 'What is Jam3a?', answer: 'Jam3a is a social shopping platform where people team up to get better prices on products through group buying.' },
+              { id: 2, question: 'How does a Jam3a deal work?', answer: 'A Jam3a starts when someone selects a product and shares it with others. Once enough people join the deal within a set time, everyone gets the discounted price.' },
+              { id: 3, question: 'Can I start my own Jam3a?', answer: 'Yes! You can start your own Jam3a by picking a product and inviting others to join.' },
+              { id: 4, question: 'How are payments processed?', answer: 'We use secure payment gateways including credit/debit cards, Apple Pay, and bank transfers through our partner Moyasar.' },
+              { id: 5, question: 'What happens if not enough people join my Jam3a?', answer: 'If the minimum group size isn\'t reached within the timeframe, no charges will be made and the Jam3a will be canceled.' },
+            ];
+            setFaqs(fallbackFAQs);
+          }
           
-          setIsLoading(false);
-        }, 1000);
+          if (!products.length) {
+            const fallbackProducts = [
+              { 
+                id: 1, 
+                name: 'iPhone 16 Pro Max', 
+                category: 'Electronics', 
+                price: 4999, 
+                stock: 50,
+                description: 'Experience the latest innovation with revolutionary camera and A18 Pro chip',
+                image: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+              },
+              { 
+                id: 2, 
+                name: 'Samsung Galaxy S25 Ultra', 
+                category: 'Electronics', 
+                price: 3899, 
+                stock: 35,
+                description: 'Unleash creativity with AI-powered tools and 200MP camera system',
+                image: 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+              },
+              { 
+                id: 3, 
+                name: 'Galaxy Z Fold 6', 
+                category: 'Electronics', 
+                price: 5799, 
+                stock: 20,
+                description: 'Multitask like never before with a stunning foldable display',
+                image: 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+              },
+              { 
+                id: 4, 
+                name: 'MacBook Pro 16" M3 Max', 
+                category: 'Computers', 
+                price: 9999, 
+                stock: 15,
+                description: 'Unmatched performance for creative professionals with the M3 Max chip',
+                image: 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+              },
+              { 
+                id: 5, 
+                name: 'Sony WH-1000XM5', 
+                category: 'Audio', 
+                price: 1299, 
+                stock: 45,
+                description: 'Industry-leading noise cancellation with exceptional sound quality',
+                image: 'https://images.pexels.com/photos/577769/pexels-photo-577769.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+              },
+            ];
+            setProducts(fallbackProducts);
+          }
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -379,12 +438,13 @@ const RealDataContentManager = () => {
           description: "Failed to load content. Please try again.",
           variant: "destructive"
         });
+      } finally {
         setIsLoading(false);
       }
     };
     
     fetchData();
-  }, [toast]);
+  }, [toast, banners.length, pages.length, faqs.length, products.length]);
 
   // Banner management functions
   const handleAddBanner = () => {

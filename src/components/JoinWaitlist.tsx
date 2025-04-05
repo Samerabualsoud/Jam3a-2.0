@@ -38,6 +38,13 @@ const JoinWaitlist = () => {
         await EmailService.subscribeToNewsletter(email, name);
       }
       
+      // Track waitlist join in analytics
+      if (window.gtag) {
+        window.gtag('event', 'join_waitlist', {
+          has_subscribed: isSubscribed
+        });
+      }
+      
       setIsSubmitting(false);
       toast({
         title: "Success!",
