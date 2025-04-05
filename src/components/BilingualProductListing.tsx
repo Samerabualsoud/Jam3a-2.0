@@ -11,95 +11,100 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 
-// Comprehensive product image mapping system
+// Updated product image mapping system using local images
 const PRODUCT_IMAGES = {
   // Apple Products
   IPHONE: {
-    DEFAULT: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '16 PRO': 'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '16 PRO MAX': 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '15': 'https://images.pexels.com/photos/341523/pexels-photo-341523.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '15 PRO': 'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/iphone_16_pro_max_desert_titanium.webp',
+    '16 PRO': '/images/iphone_16_pro_max_desert_titanium.webp',
+    '16 PRO MAX': '/images/iphone_16_pro_max_desert_titanium.webp',
+    '16': '/images/iphone_16_pink.webp',
+    '15': '/images/iphone_16_pink.webp',
+    '15 PRO': '/images/iphone_16_pro_max_desert_titanium.webp',
   },
   MACBOOK: {
-    DEFAULT: 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'PRO': 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'AIR': 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/macbook_air_m1_space_grey.webp',
+    'PRO': '/images/macbook_air_m4.webp',
+    'AIR': '/images/macbook_air_m1_space_grey.webp',
+    'M1': '/images/macbook_air_m1_space_grey.webp',
+    'M4': '/images/macbook_air_m4.webp',
   },
   IPAD: {
-    DEFAULT: 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'PRO': 'https://images.pexels.com/photos/1716539/pexels-photo-1716539.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'AIR': 'https://images.pexels.com/photos/1038628/pexels-photo-1038628.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'MINI': 'https://images.pexels.com/photos/221185/pexels-photo-221185.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/iphone_16_pink.webp',
+    'PRO': '/images/iphone_16_pink.webp',
+    'AIR': '/images/iphone_16_pink.webp',
+    'MINI': '/images/iphone_16_pink.webp',
   },
   AIRPODS: {
-    DEFAULT: 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'PRO': 'https://images.pexels.com/photos/8533266/pexels-photo-8533266.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'MAX': 'https://images.pexels.com/photos/8532616/pexels-photo-8532616.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/iphone_16_pink.webp',
+    'PRO': '/images/iphone_16_pink.webp',
+    'MAX': '/images/iphone_16_pink.webp',
   },
   WATCH: {
-    DEFAULT: 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'SERIES 9': 'https://images.pexels.com/photos/393047/pexels-photo-393047.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'ULTRA': 'https://images.pexels.com/photos/9979927/pexels-photo-9979927.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/iphone_16_pink.webp',
+    'SERIES 9': '/images/iphone_16_pink.webp',
+    'ULTRA': '/images/iphone_16_pink.webp',
   },
   
   // Samsung Products
   GALAXY: {
-    DEFAULT: 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'S25': 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'S25 ULTRA': 'https://images.pexels.com/photos/15351642/pexels-photo-15351642.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'S24': 'https://images.pexels.com/photos/13028507/pexels-photo-13028507.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'S24 ULTRA': 'https://images.pexels.com/photos/13028507/pexels-photo-13028507.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'NOTE': 'https://images.pexels.com/photos/47261/pexels-photo-47261.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/samsung_galaxy_s23_fe_clear.webp',
+    'S25': '/images/samsung_galaxy_s23_fe_clear.webp',
+    'S25 ULTRA': '/images/samsung_galaxy_s23_fe_mint.webp',
+    'S24': '/images/samsung_galaxy_s23_fe_clear.webp',
+    'S24 ULTRA': '/images/samsung_galaxy_s23_fe_mint.webp',
+    'S23': '/images/samsung_galaxy_s23_fe_clear.webp',
+    'S23 FE': '/images/samsung_galaxy_s23_fe_clear.webp',
+    'NOTE': '/images/samsung_galaxy_s23_fe_mint.webp',
   },
   FOLD: {
-    DEFAULT: 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '6': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '5': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '4': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/samsung_galaxy_s23_fe_mint.webp',
+    '6': '/images/samsung_galaxy_s23_fe_mint.webp',
+    '5': '/images/samsung_galaxy_s23_fe_mint.webp',
+    '4': '/images/samsung_galaxy_s23_fe_mint.webp',
   },
   FLIP: {
-    DEFAULT: 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '6': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '5': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    '4': 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/samsung_galaxy_s23_fe_clear.webp',
+    '6': '/images/samsung_galaxy_s23_fe_clear.webp',
+    '5': '/images/samsung_galaxy_s23_fe_clear.webp',
+    '4': '/images/samsung_galaxy_s23_fe_clear.webp',
   },
   
   // Other Electronics
   TV: {
-    DEFAULT: 'https://images.pexels.com/photos/6976094/pexels-photo-6976094.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'SAMSUNG': 'https://images.pexels.com/photos/6782342/pexels-photo-6782342.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'LG': 'https://images.pexels.com/photos/6976094/pexels-photo-6976094.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'SONY': 'https://images.pexels.com/photos/6976094/pexels-photo-6976094.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/macbook_air_m4.webp',
+    'SAMSUNG': '/images/macbook_air_m4.webp',
+    'LG': '/images/macbook_air_m4.webp',
+    'SONY': '/images/macbook_air_m4.webp',
   },
   HEADPHONES: {
-    DEFAULT: 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'SONY': 'https://images.pexels.com/photos/577769/pexels-photo-577769.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'BOSE': 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'BEATS': 'https://images.pexels.com/photos/1591/technology-music-sound-things.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/macbook_air_m1_space_grey.webp',
+    'SONY': '/images/macbook_air_m1_space_grey.webp',
+    'BOSE': '/images/macbook_air_m1_space_grey.webp',
+    'BEATS': '/images/macbook_air_m1_space_grey.webp',
   },
   LAPTOP: {
-    DEFAULT: 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'DELL': 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'HP': 'https://images.pexels.com/photos/705675/pexels-photo-705675.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'LENOVO': 'https://images.pexels.com/photos/5082579/pexels-photo-5082579.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'ASUS': 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/macbook_air_m1_space_grey.webp',
+    'DELL': '/images/macbook_air_m4.webp',
+    'HP': '/images/macbook_air_m1_space_grey.webp',
+    'LENOVO': '/images/macbook_air_m4.webp',
+    'ASUS': '/images/macbook_air_m1_space_grey.webp',
   },
   CAMERA: {
-    DEFAULT: 'https://images.pexels.com/photos/90946/pexels-photo-90946.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'CANON': 'https://images.pexels.com/photos/51383/photo-camera-subject-photographer-51383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'NIKON': 'https://images.pexels.com/photos/1787235/pexels-photo-1787235.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'SONY': 'https://images.pexels.com/photos/90946/pexels-photo-90946.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/iphone_16_pro_max_desert_titanium.webp',
+    'CANON': '/images/iphone_16_pro_max_desert_titanium.webp',
+    'NIKON': '/images/iphone_16_pro_max_desert_titanium.webp',
+    'SONY': '/images/iphone_16_pro_max_desert_titanium.webp',
   },
   GAMING: {
-    DEFAULT: 'https://images.pexels.com/photos/275033/pexels-photo-275033.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'PLAYSTATION': 'https://images.pexels.com/photos/275033/pexels-photo-275033.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'XBOX': 'https://images.pexels.com/photos/13189272/pexels-photo-13189272.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'NINTENDO': 'https://images.pexels.com/photos/371924/pexels-photo-371924.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    DEFAULT: '/images/macbook_air_m4.webp',
+    'PLAYSTATION': '/images/macbook_air_m4.webp',
+    'XBOX': '/images/macbook_air_m4.webp',
+    'NINTENDO': '/images/macbook_air_m4.webp',
   },
   
   // Fallback image for any product not matched
-  FALLBACK: 'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+  FALLBACK: '/images/iphone_16_pink.webp'
 };
 
 const BilingualProductListing = ({ product, language }) => {
@@ -130,7 +135,7 @@ const BilingualProductListing = ({ product, language }) => {
     if (combinedText.includes('iphone')) {
       if (combinedText.includes('16 pro max')) return PRODUCT_IMAGES.IPHONE['16 PRO MAX'];
       if (combinedText.includes('16 pro')) return PRODUCT_IMAGES.IPHONE['16 PRO'];
-      if (combinedText.includes('16')) return PRODUCT_IMAGES.IPHONE['16 PRO'];
+      if (combinedText.includes('16')) return PRODUCT_IMAGES.IPHONE['16'];
       if (combinedText.includes('15 pro')) return PRODUCT_IMAGES.IPHONE['15 PRO'];
       if (combinedText.includes('15')) return PRODUCT_IMAGES.IPHONE['15'];
       return PRODUCT_IMAGES.IPHONE.DEFAULT;
@@ -142,6 +147,8 @@ const BilingualProductListing = ({ product, language }) => {
       if (combinedText.includes('s25')) return PRODUCT_IMAGES.GALAXY['S25'];
       if (combinedText.includes('s24 ultra')) return PRODUCT_IMAGES.GALAXY['S24 ULTRA'];
       if (combinedText.includes('s24')) return PRODUCT_IMAGES.GALAXY['S24'];
+      if (combinedText.includes('s23 fe')) return PRODUCT_IMAGES.GALAXY['S23 FE'];
+      if (combinedText.includes('s23')) return PRODUCT_IMAGES.GALAXY['S23'];
       if (combinedText.includes('note')) return PRODUCT_IMAGES.GALAXY['NOTE'];
       return PRODUCT_IMAGES.GALAXY.DEFAULT;
     }
@@ -166,6 +173,8 @@ const BilingualProductListing = ({ product, language }) => {
     if (combinedText.includes('macbook')) {
       if (combinedText.includes('pro')) return PRODUCT_IMAGES.MACBOOK['PRO'];
       if (combinedText.includes('air')) return PRODUCT_IMAGES.MACBOOK['AIR'];
+      if (combinedText.includes('m1')) return PRODUCT_IMAGES.MACBOOK['M1'];
+      if (combinedText.includes('m4')) return PRODUCT_IMAGES.MACBOOK['M4'];
       return PRODUCT_IMAGES.MACBOOK.DEFAULT;
     }
     
@@ -185,7 +194,7 @@ const BilingualProductListing = ({ product, language }) => {
     }
     
     // Check for Apple Watch models
-    if (combinedText.includes('apple watch') || combinedText.includes('watch')) {
+    if (combinedText.includes('watch') && combinedText.includes('apple')) {
       if (combinedText.includes('series 9')) return PRODUCT_IMAGES.WATCH['SERIES 9'];
       if (combinedText.includes('ultra')) return PRODUCT_IMAGES.WATCH['ULTRA'];
       return PRODUCT_IMAGES.WATCH.DEFAULT;
@@ -199,16 +208,15 @@ const BilingualProductListing = ({ product, language }) => {
       return PRODUCT_IMAGES.TV.DEFAULT;
     }
     
-    // Check for headphones/earbuds
-    if (combinedText.includes('headphone') || combinedText.includes('earphone') || 
-        combinedText.includes('earbud') || combinedText.includes('headset')) {
+    // Check for Headphone models
+    if (combinedText.includes('headphone') || combinedText.includes('earphone') || combinedText.includes('earbud')) {
       if (combinedText.includes('sony')) return PRODUCT_IMAGES.HEADPHONES['SONY'];
       if (combinedText.includes('bose')) return PRODUCT_IMAGES.HEADPHONES['BOSE'];
       if (combinedText.includes('beats')) return PRODUCT_IMAGES.HEADPHONES['BEATS'];
       return PRODUCT_IMAGES.HEADPHONES.DEFAULT;
     }
     
-    // Check for laptops
+    // Check for Laptop models
     if (combinedText.includes('laptop') || combinedText.includes('notebook')) {
       if (combinedText.includes('dell')) return PRODUCT_IMAGES.LAPTOP['DELL'];
       if (combinedText.includes('hp')) return PRODUCT_IMAGES.LAPTOP['HP'];
@@ -217,210 +225,157 @@ const BilingualProductListing = ({ product, language }) => {
       return PRODUCT_IMAGES.LAPTOP.DEFAULT;
     }
     
-    // Check for cameras
-    if (combinedText.includes('camera') || combinedText.includes('dslr') || 
-        combinedText.includes('mirrorless')) {
+    // Check for Camera models
+    if (combinedText.includes('camera') || combinedText.includes('dslr') || combinedText.includes('mirrorless')) {
       if (combinedText.includes('canon')) return PRODUCT_IMAGES.CAMERA['CANON'];
       if (combinedText.includes('nikon')) return PRODUCT_IMAGES.CAMERA['NIKON'];
       if (combinedText.includes('sony')) return PRODUCT_IMAGES.CAMERA['SONY'];
       return PRODUCT_IMAGES.CAMERA.DEFAULT;
     }
     
-    // Check for gaming consoles
-    if (combinedText.includes('gaming') || combinedText.includes('game console') || 
-        combinedText.includes('console')) {
-      if (combinedText.includes('playstation') || combinedText.includes('ps5') || 
-          combinedText.includes('ps4')) return PRODUCT_IMAGES.GAMING['PLAYSTATION'];
+    // Check for Gaming models
+    if (combinedText.includes('gaming') || combinedText.includes('game') || combinedText.includes('console')) {
+      if (combinedText.includes('playstation') || combinedText.includes('ps5') || combinedText.includes('ps4')) return PRODUCT_IMAGES.GAMING['PLAYSTATION'];
       if (combinedText.includes('xbox')) return PRODUCT_IMAGES.GAMING['XBOX'];
-      if (combinedText.includes('nintendo') || combinedText.includes('switch')) 
-        return PRODUCT_IMAGES.GAMING['NINTENDO'];
+      if (combinedText.includes('nintendo') || combinedText.includes('switch')) return PRODUCT_IMAGES.GAMING['NINTENDO'];
       return PRODUCT_IMAGES.GAMING.DEFAULT;
     }
     
-    // Generic category matching as fallback
-    if (combinedText.includes('phone') || combinedText.includes('smartphone')) 
-      return PRODUCT_IMAGES.GALAXY.DEFAULT;
-    if (combinedText.includes('tablet')) return PRODUCT_IMAGES.IPAD.DEFAULT;
-    if (combinedText.includes('computer')) return PRODUCT_IMAGES.LAPTOP.DEFAULT;
-    
-    // Final fallback for any product not matched
+    // If no match found, return fallback image
     return PRODUCT_IMAGES.FALLBACK;
   };
-
+  
+  // Calculate and update progress
   useEffect(() => {
-    // Guard against undefined product
-    if (!product) {
-      setProgress(0);
-      setTimeLeft(language === 'en' ? 'Not available' : 'غير متاح');
-      return;
-    }
-    
-    // Calculate progress based on joined/total
-    const joined = product.joined || 0;
-    const total = product.total || 10;
-    const calculatedProgress = (joined / total) * 100;
-    
-    // Animate progress bar
-    const timer = setTimeout(() => {
-      setProgress(calculatedProgress);
-    }, 200);
-    
-    // Format time left
-    const formatTimeLeft = () => {
-      if (product.timeLeft && typeof product.timeLeft === 'string') {
-        if (product.timeLeft.includes('hour')) {
-          return language === 'en' ? product.timeLeft : product.timeLeft.replace('hours', 'ساعة').replace('hour', 'ساعة');
-        } else if (product.timeLeft.includes('day')) {
-          return language === 'en' ? product.timeLeft : product.timeLeft.replace('days', 'يوم').replace('day', 'يوم');
-        }
+    if (product && product.currentAmount && product.targetAmount) {
+      const calculatedProgress = (product.currentAmount / product.targetAmount) * 100;
+      setProgress(calculatedProgress > 100 ? 100 : calculatedProgress);
+      
+      // Calculate time left based on average join rate and remaining amount
+      const remainingAmount = product.targetAmount - product.currentAmount;
+      if (remainingAmount > 0 && product.averageJoinRate) {
+        const hoursLeft = Math.ceil(remainingAmount / product.averageJoinRate);
+        setTimeLeft(hoursLeft <= 24 
+          ? `${hoursLeft} ${language === 'ar' ? 'ساعة' : 'hours'}`
+          : `${Math.ceil(hoursLeft / 24)} ${language === 'ar' ? 'يوم' : 'days'}`);
+      } else if (remainingAmount <= 0) {
+        setTimeLeft(language === 'ar' ? 'مكتمل!' : 'Complete!');
+      } else {
+        setTimeLeft(language === 'ar' ? 'قريباً' : 'Soon');
       }
-      return language === 'en' ? '1 day left' : 'متبقي يوم واحد';
-    };
-    
-    setTimeLeft(formatTimeLeft());
-    
-    return () => clearTimeout(timer);
-  }, [product, language]);
-
-  const handleJoinJam3a = () => {
-    // Guard against undefined product
-    if (!product) {
-      toast({
-        title: language === 'en' ? 'Error' : 'خطأ',
-        description: language === 'en' ? 'Product information is not available' : 'معلومات المنتج غير متوفرة',
-        variant: 'destructive'
-      });
-      return;
     }
-    
-    // Navigate to join page with product details
-    navigate(`/join-jam3a?product=${encodeURIComponent(product.name || 'Unknown')}&price=${encodeURIComponent(product.price || '0')}&discount=${encodeURIComponent(product.discount || '0%')}&id=${encodeURIComponent(product.id || '1')}`);
-    
-    toast({
-      title: language === 'en' ? 'Joining Jam3a' : 'جاري الانضمام للجمعة',
-      description: language === 'en' ? `You're joining the ${product.name || 'product'} Jam3a` : `أنت تنضم إلى جمعة ${product.name || 'المنتج'}`,
-    });
+  }, [product, language]);
+  
+  // Handle navigation to product detail
+  const handleViewDetails = () => {
+    if (product && product.id) {
+      navigate(`/product/${product.id}`);
+    }
   };
-
-  // Guard against undefined product in render
+  
+  // Handle joining a Jam3a
+  const handleJoinJam3a = () => {
+    if (product && product.id) {
+      navigate(`/join-jam3a/${product.id}`);
+    }
+  };
+  
   if (!product) {
-    return (
-      <Card className="overflow-hidden transition-all hover:shadow-md">
-        <div className="aspect-square relative overflow-hidden">
-          <img 
-            src={PRODUCT_IMAGES.FALLBACK} 
-            alt={language === 'en' ? 'Product unavailable' : 'المنتج غير متوفر'} 
-            className="w-full h-full object-cover transition-transform hover:scale-105"
-          />
-          <div className="p-4">
-            <h3 className="font-semibold">{language === 'en' ? 'Product unavailable' : 'المنتج غير متوفر'}</h3>
-            <p className="text-sm text-gray-500">{language === 'en' ? 'Please try again later' : 'يرجى المحاولة لاحقًا'}</p>
-          </div>
-        </div>
-      </Card>
-    );
+    return null;
   }
-
+  
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <div className="aspect-square relative overflow-hidden">
+    <Card className="w-full max-w-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <div className="relative h-48 overflow-hidden">
         <img 
           src={getProductImage()} 
-          alt={product.name || (language === 'en' ? 'Product' : 'منتج')} 
+          alt={language === 'ar' ? 'المنتج غير متوفر' : 'Product not available'} 
           className="w-full h-full object-cover transition-transform hover:scale-105"
-          onError={(e) => {
-            e.currentTarget.src = PRODUCT_IMAGES.FALLBACK;
-          }}
         />
-        <div className="absolute top-2 right-2 flex flex-col gap-2">
-          <Badge variant="destructive" className="bg-black/80 hover:bg-black/70">
-            {product.discount || '15% OFF'}
+        {product.featured && (
+          <Badge className="absolute top-2 right-2 bg-yellow-500">
+            {language === 'ar' ? 'مميز' : 'Featured'}
           </Badge>
-          {product.tag && (
-            <Badge variant="secondary" className="bg-primary/80 hover:bg-primary/70">
-              {product.tag === 'HOT DEAL' 
-                ? (language === 'en' ? 'HOT DEAL' : 'عرض ساخن')
-                : product.tag === 'TRENDING'
-                  ? (language === 'en' ? 'TRENDING' : 'رائج')
-                  : product.tag}
-            </Badge>
-          )}
-        </div>
+        )}
+        {product.discount > 0 && (
+          <Badge className="absolute top-2 left-2 bg-red-500">
+            {`-${product.discount}%`}
+          </Badge>
+        )}
       </div>
       
-      <CardHeader className="p-4">
-        <CardTitle className="text-lg font-bold">{product.name}</CardTitle>
-        <CardDescription>
-          {product.description || (language === 'en' 
-            ? 'Experience the latest technology with premium features and design'
-            : 'استمتع بأحدث التقنيات مع ميزات وتصميم متميز')}
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <CardTitle className={`text-lg font-bold ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+            {language === 'ar' ? product.nameAr || product.name : product.name}
+          </CardTitle>
+          <Badge variant="outline" className="text-xs">
+            {product.category}
+          </Badge>
+        </div>
+        <CardDescription className={`text-sm ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+          {language === 'ar' ? product.descriptionAr || product.description : product.description}
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="p-4 pt-0">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl font-bold text-primary">{product.price}</span>
-          <span className="text-sm line-through text-muted-foreground">{product.originalPrice}</span>
+      <CardContent className="pb-2">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-1">
+            <span className="text-lg font-bold">{product.price} SAR</span>
+            {product.originalPrice > product.price && (
+              <span className="text-sm line-through text-gray-500">{product.originalPrice} SAR</span>
+            )}
+          </div>
+          <Badge variant={progress >= 100 ? "success" : "secondary"} className="text-xs">
+            {progress >= 100 
+              ? (language === 'ar' ? 'مكتمل' : 'Complete') 
+              : (language === 'ar' ? 'قيد التقدم' : 'In Progress')}
+          </Badge>
         </div>
         
-        {product.groupPricing && (
-          <div className="mb-4">
-            <h4 className="font-medium flex items-center gap-2 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4"/>
-                <path d="M12 8h.01"/>
-              </svg>
-              {language === 'en' ? 'Group Pricing' : 'تسعير المجموعة'}
-            </h4>
-            <div className="space-y-1 text-sm">
-              {product.groupPricing.map((pricing, index) => (
-                <div key={index} className="flex justify-between">
-                  <span>{pricing.people} {language === 'en' ? 'people' : 'أشخاص'}</span>
-                  <span className="font-medium">{pricing.price}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        <div className="space-y-2 mb-4">
+        <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>
-              {language === 'en' 
-                ? `${product.joined || 0} of ${product.total || 10} joined` 
-                : `${product.joined || 0} من ${product.total || 10} انضموا`}
-            </span>
-            <span>{timeLeft}</span>
+            <span>{language === 'ar' ? 'التقدم:' : 'Progress:'}</span>
+            <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+          
+          <div className="flex justify-between text-sm">
+            <span>{language === 'ar' ? 'المبلغ الحالي:' : 'Current Amount:'}</span>
+            <span>{product.currentAmount} / {product.targetAmount} SAR</span>
+          </div>
+          
+          {timeLeft && (
+            <div className="flex justify-between text-sm">
+              <span>{language === 'ar' ? 'الوقت المتبقي:' : 'Time Left:'}</span>
+              <span>{timeLeft}</span>
+            </div>
+          )}
+          
+          <div className="flex justify-between text-sm">
+            <span>{language === 'ar' ? 'المشاركين:' : 'Participants:'}</span>
+            <span>{product.participants || 0}</span>
+          </div>
         </div>
       </CardContent>
       
-      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+      <Separator />
+      
+      <CardFooter className="pt-4 flex gap-2">
         <Button 
-          className="w-full" 
-          onClick={handleJoinJam3a}
+          variant="outline" 
+          className="flex-1" 
+          onClick={handleViewDetails}
         >
-          {language === 'en' ? 'Join Jam3a' : 'انضم للجمعة'}
+          {language === 'ar' ? 'عرض التفاصيل' : 'View Details'}
         </Button>
-        
-        <div className="flex justify-between w-full text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            {language === 'en' ? 'Limited Time' : 'وقت محدود'}
-          </div>
-          <div className="flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-              <path d="m9 12 2 2 4-4"/>
-            </svg>
-            {language === 'en' ? 'Money-back Guarantee' : 'ضمان استرداد الأموال'}
-          </div>
-        </div>
+        <Button 
+          className="flex-1" 
+          onClick={handleJoinJam3a}
+          disabled={progress >= 100}
+        >
+          {language === 'ar' ? 'انضم للجمعة' : 'Join Jam3a'}
+        </Button>
       </CardFooter>
     </Card>
   );
