@@ -9,7 +9,7 @@ import ProductsManager from "@/components/admin/ProductsManager";
 import UsersManager from "@/components/admin/UsersManager";
 import OrdersManager from "@/components/admin/OrdersManager";
 import AdminSettings from "@/components/admin/AdminSettings";
-import BilingualContentManager from "@/components/admin/BilingualContentManager";
+import RealDataContentManager from "@/components/admin/RealDataContentManager";
 import AnalyticsIntegration from "@/components/admin/AnalyticsIntegration";
 import PaymentIntegration from "@/components/admin/PaymentIntegration";
 import EnhancedEmailManager from "@/components/admin/EnhancedEmailManager";
@@ -136,7 +136,7 @@ const Admin = () => {
           <OrdersManager />
         </TabsContent>
         <TabsContent value="content">
-          <BilingualContentManager />
+          <RealDataContentManager />
         </TabsContent>
         <TabsContent value="payments">
           <PaymentIntegration />

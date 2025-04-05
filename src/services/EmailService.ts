@@ -2,15 +2,15 @@ import { useState } from 'react';
 import nodemailer from 'nodemailer';
 import { toast } from '@/hooks/use-toast';
 
-// Email service configuration
+// Email service configuration for Microsoft
 const emailConfig = {
-  service: 'gmail',
-  host: 'smtp.gmail.com',
+  service: 'outlook',
+  host: 'smtp.office365.com',
   port: 587,
   secure: false,
   auth: {
-    user: process.env.EMAIL_USER || 'jam3a.notifications@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password-here'
+    user: process.env.EMAIL_USER || 'your-microsoft-email@outlook.com',
+    pass: process.env.EMAIL_PASSWORD || 'your-microsoft-password-here'
   }
 };
 

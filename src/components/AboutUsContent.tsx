@@ -116,21 +116,9 @@ const AboutUsContent = () => {
 
         {/* How It Works */}
         <div className="mb-16 bg-gradient-to-br from-purple-50 to-white rounded-2xl p-8 md:p-12">
-          <div className="grid gap-6 md:grid-cols-2 items-center">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight mb-4">{currentContent.howItWorksTitle}</h2>
-              <p className="text-lg">{currentContent.howItWorksDesc}</p>
-            </div>
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="absolute -left-4 -top-4 h-40 w-40 rounded-full bg-jam3a-purple/20 blur-3xl"></div>
-                <img 
-                  src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80" 
-                  alt="People shopping together" 
-                  className="rounded-xl relative z-10 w-full max-w-md object-cover shadow-lg"
-                />
-              </div>
-            </div>
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight mb-4">{currentContent.howItWorksTitle}</h2>
+            <p className="text-lg max-w-3xl mx-auto">{currentContent.howItWorksDesc}</p>
           </div>
         </div>
 

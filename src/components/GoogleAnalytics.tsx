@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // Google Analytics Measurement ID
-const GA_MEASUREMENT_ID = 'G-LNHB23E5JK'; // Real GA measurement ID for Jam3a
+const GA_MEASUREMENT_ID = 'G-G3N8DYCLBM'; // Updated GA measurement ID for Jam3a
 
 // Initialize Google Analytics
 const initializeGA = () => {
