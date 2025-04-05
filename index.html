@@ -233,9 +233,8 @@
       </div>
     </div>
     
-    <!-- Load application script directly from dist folder -->
-    <script type="module" src="/assets/index-*.js"></script>
-    <script type="module" src="/assets/vendor-*.js"></script>
+    <!-- Load application script - using standard module import that Vite can process -->
+    <script type="module" src="/src/main.tsx"></script>
     
     <!-- Fallback script for handling loading errors and showing appropriate content -->
     <script>
@@ -299,55 +298,17 @@
       let appLoaded = false;
       
       window.addEventListener('DOMContentLoaded', () => {
-        // Try to load scripts dynamically if the direct approach fails
         setTimeout(() => {
           if (!appLoaded) {
-            console.log('Application not loaded yet, trying to load scripts dynamically');
-            
-            // Find all script files in the assets directory
-            fetch('/assets/')
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error('Failed to fetch assets directory');
-                }
-                return response.text();
-              })
-              .then(html => {
-                // Parse HTML to find script files
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const links = Array.from(doc.querySelectorAll('a'));
-                
-                // Filter for JavaScript files
-                const jsFiles = links
-                  .map(link => link.getAttribute('href'))
-                  .filter(href => href && href.endsWith('.js'));
-                
-                // Load each JavaScript file
-                jsFiles.forEach(file => {
-                  const script = document.createElement('script');
-                  script.type = 'module';
-                  script.src = `/assets/${file}`;
-                  document.body.appendChild(script);
-                  console.log(`Dynamically loading: /assets/${file}`);
-                });
-              })
-              .catch(error => {
-                console.error('Error loading scripts dynamically:', error);
-                
-                // Try direct bundle loading as a last resort
-                const indexScript = document.createElement('script');
-                indexScript.type = 'module';
-                indexScript.src = '/index.js';
-                document.body.appendChild(indexScript);
-                
-                // Show fallback content after a delay
-                setTimeout(() => {
-                  if (!appLoaded) {
-                    showFallbackContent();
-                  }
-                }, 2000);
-              });
+            // Check if React has taken over
+            const appLoading = document.getElementById('app-loading');
+            if (appLoading && appLoading.parentNode && appLoading.style.display !== 'none') {
+              // React hasn't loaded, show fallback content
+              showFallbackContent();
+              
+              // Log error for debugging
+              console.warn('React application did not load within expected time, showing fallback content');
+            }
           }
         }, 5000);
       });
