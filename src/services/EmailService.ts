@@ -9,7 +9,7 @@ const emailConfig = {
   port: 587,
   secure: false,
   auth: {
-    user: process.env.EMAIL_USER || 'your-microsoft-email@outlook.com',
+    user: process.env.EMAIL_USER || 'Samer@jam3a.me',
     pass: process.env.EMAIL_PASSWORD || 'your-microsoft-password-here'
   }
 };

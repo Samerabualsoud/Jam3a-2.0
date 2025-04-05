@@ -84,6 +84,16 @@ const Hero = () => {
               <div className="absolute -left-4 -top-4 h-64 w-64 rounded-full bg-primary/30 blur-3xl"></div>
               <div className="absolute -bottom-4 -right-4 h-64 w-64 rounded-full bg-[hsl(var(--jam3a-accent))]]/20 blur-3xl"></div>
               <div className="product-card relative overflow-hidden border border-border bg-card shadow-xl max-w-md mx-auto">
+                <div className="relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1695048133142-1a20484bce71?q=80&w=2070&auto=format&fit=crop" 
+                    alt="iPhone 16 Pro" 
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="absolute top-2 right-2 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
+                    12% {isRtl ? 'خصم' : 'OFF'}
+                  </div>
+                </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

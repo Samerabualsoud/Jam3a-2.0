@@ -284,6 +284,9 @@ const JoinJam3a = () => {
       setIsProcessing(false);
       setPaymentSuccess(true);
       
+      // Send confirmation email
+      sendConfirmationEmail();
+      
       // Show success toast
       toast({
         title: language === 'en' ? 'Payment Successful!' : 'تمت عملية الدفع بنجاح!',
@@ -293,14 +296,44 @@ const JoinJam3a = () => {
         variant: 'default'
       });
       
-      // Redirect to home page after successful join
-      setTimeout(() => {
-        navigate('/');
-      }, 3000);
+      // Track conversion with Google Analytics
+      if (window.gtag) {
+        window.gtag('event', 'purchase', {
+          transaction_id: 'JAM-' + Date.now().toString().slice(-8),
+          value: parseInt(productPrice),
+          currency: 'SAR',
+          items: [{
+            id: productId,
+            name: productName,
+            price: parseInt(productPrice)
+          }]
+        });
+      }
     }, processingTime);
   };
 
-  // Get product image based on ID and name
+  // Send confirmation email
+  const sendConfirmationEmail = () => {
+    // Import email service
+    import('@/services/EmailService').then(({ default: EmailService }) => {
+      // Send confirmation email using Microsoft Outlook
+      EmailService.sendEmail({
+        to: formData.email,
+        subject: language === 'en' ? `Your Jam3a ${productName} Purchase Confirmation` : `تأكيد شراء جمعة ${productName}`,
+        template: 'purchase-confirmation',
+        data: {
+          name: formData.name,
+          product: productName,
+          price: productPrice,
+          orderNumber: 'JAM-' + Date.now().toString().slice(-8),
+          paymentMethod: formData.paymentMethod,
+          language: language
+        }
+      });
+    }).catch(error => {
+      console.error('Failed to send confirmation email:', error);
+    });
+  };
   const getProductImage = () => {
     const productNameLower = productName.toLowerCase();
     
