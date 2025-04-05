@@ -23,7 +23,7 @@ const PRODUCT_IMAGES = {
   },
   MACBOOK: {
     DEFAULT: 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    'PRO': 'https://images.pexels.com/photos/1229861/pexels-photo-1229861.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'PRO': 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     'AIR': 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
   },
   IPAD: {
@@ -99,7 +99,7 @@ const PRODUCT_IMAGES = {
   },
   
   // Fallback image for any product not matched
-  FALLBACK: 'https://images.pexels.com/photos/1229861/pexels-photo-1229861.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+  FALLBACK: 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
 };
 
 const BilingualProductListing = ({ product, language }) => {
