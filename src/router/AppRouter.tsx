@@ -8,7 +8,7 @@ import Admin from '@/pages/Admin';
 import Checkout from '@/pages/Checkout';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 import PaymentVerificationHandler from '@/components/payment/PaymentVerificationHandler';
-import ProtectedRoute from '@/components/auth/ProtectedRoutes';
+import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from '@/components/auth/ProtectedRoutes';
 
 const AppRouter: React.FC = () => {
   return (
@@ -16,8 +16,12 @@ const AppRouter: React.FC = () => {
       <Route path="/" element={<Layout />}>
         {/* Public Routes */}
         <Route index element={<Index />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
+        
+        {/* Public Only Routes (redirect if already logged in) */}
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
+        </Route>
         
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
@@ -26,11 +30,9 @@ const AppRouter: React.FC = () => {
         </Route>
         
         {/* Admin Routes */}
-        <Route path="admin/*" element={
-          <ProtectedRoute adminOnly>
-            <Admin />
-          </ProtectedRoute>
-        } />
+        <Route element={<AdminRoute />}>
+          <Route path="admin/*" element={<Admin />} />
+        </Route>
         
         {/* Payment Routes */}
         <Route path="payment/callback" element={<PaymentVerificationHandler />} />

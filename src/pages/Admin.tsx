@@ -14,87 +14,38 @@ import AnalyticsIntegration from "@/components/admin/AnalyticsIntegration";
 import PaymentIntegration from "@/components/admin/PaymentIntegration";
 import EnhancedEmailManager from "@/components/admin/EnhancedEmailManager";
 import { useAuth } from "@/contexts/AuthContext";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAuth();
   const { toast } = useToast();
-  const [adminPassword, setAdminPassword] = useState("");
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
+  // Redirect non-admin users - this is a backup security measure
+  // The main protection is handled by the AdminRoute component
   useEffect(() => {
-    // Check if user is authenticated but not an admin
-    if (isAuthenticated && user && !user.isAdmin) {
-      setShowAdminLogin(true);
-    }
-  }, [isAuthenticated, user]);
-
-  const handleAdminLogin = () => {
-    // In a real application, this would be a server-side check
-    // For demo purposes, we're using a simple password check
-    if (adminPassword === "admin123") {
-      // Update the user object to include admin privileges
-      if (user) {
-        user.isAdmin = true;
-        // Force a re-render
-        setShowAdminLogin(false);
-        toast({
-          title: "Admin Access Granted",
-          description: "You now have access to the admin panel.",
-        });
-      }
-    } else {
+    if (isAuthenticated && user && !isAdmin) {
       toast({
         title: "Access Denied",
-        description: "Incorrect admin password.",
+        description: "You don't have permission to access the admin panel.",
         variant: "destructive",
       });
+      navigate("/");
     }
-  };
+  }, [isAuthenticated, user, isAdmin, navigate, toast]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Card className="w-[400px]">
           <CardHeader>
             <CardTitle>Admin Access Required</CardTitle>
-            <CardDescription>You need to be logged in to access the admin panel.</CardDescription>
+            <CardDescription>You need admin privileges to access this page.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/login")} className="w-full">
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (showAdminLogin) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Card className="w-[400px]">
-          <CardHeader>
-            <CardTitle>Admin Verification</CardTitle>
-            <CardDescription>Enter the admin password to access the admin panel.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="admin-password">Admin Password</Label>
-              <Input 
-                id="admin-password" 
-                type="password" 
-                placeholder="Enter admin password" 
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleAdminLogin} className="w-full">
-              Verify Admin Access
+            <Button onClick={() => navigate("/")} className="w-full">
+              Back to Home
             </Button>
           </CardContent>
         </Card>
