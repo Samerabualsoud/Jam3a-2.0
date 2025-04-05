@@ -8,6 +8,25 @@ This guide provides detailed instructions for deploying the Jam3a application to
 - npm 8.x or higher
 - Git
 
+## Important Note About ES Modules
+
+This project uses ES Modules (ESM) instead of CommonJS. The `package.json` file includes `"type": "module"`, which means:
+
+- All `.js` files are treated as ES modules by default
+- Use `import` instead of `require()` for importing modules
+- The `server.js` file uses ES module syntax for compatibility
+
+If you need to modify the server code, remember to use ES module syntax:
+```javascript
+// Correct (ES Modules):
+import express from 'express';
+import { join } from 'path';
+
+// Incorrect (CommonJS):
+const express = require('express');
+const path = require('path');
+```
+
 ## Deployment Options
 
 ### Option 1: Deploying to Vercel (Recommended)
@@ -110,6 +129,18 @@ This guide provides detailed instructions for deploying the Jam3a application to
    - Click "Next" and then "Create Resources"
 
 ## Troubleshooting Deployment Issues
+
+### ES Module Errors
+
+If you see errors like `require is not defined in ES module scope` or `Cannot use import statement outside a module`:
+
+1. **Check server.js syntax**
+   - Ensure server.js uses ES module syntax (import/export) not CommonJS (require)
+   - The project uses `"type": "module"` in package.json, so all .js files are ES modules
+
+2. **Check for CommonJS dependencies**
+   - Some packages may not be compatible with ES modules
+   - You may need to use dynamic imports for such packages
 
 ### Blank Screen After Deployment
 
