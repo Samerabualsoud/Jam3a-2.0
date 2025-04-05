@@ -1,181 +1,105 @@
-# Jam3a Deployment Guide
+# Jam3a 2.0 Deployment Guide for Digital Ocean
 
-This guide provides detailed instructions for deploying the Jam3a application to various platforms.
+This guide provides step-by-step instructions for deploying the Jam3a 2.0 platform on Digital Ocean.
 
 ## Prerequisites
 
-- Node.js 16.x or higher
-- npm 8.x or higher
-- Git
+- A Digital Ocean account
+- Git installed on your local machine
+- Access to the Jam3a 2.0 GitHub repository
 
-## Important Note About ES Modules
+## Deployment Steps
 
-This project uses ES Modules (ESM) instead of CommonJS. The `package.json` file includes `"type": "module"`, which means:
+### 1. Create a Digital Ocean App
 
-- All `.js` files are treated as ES modules by default
-- Use `import` instead of `require()` for importing modules
-- The `server.js` file uses ES module syntax for compatibility
+1. Log in to your Digital Ocean account
+2. Navigate to the Apps section
+3. Click "Create App"
+4. Select "GitHub" as the source
+5. Connect to your GitHub account if not already connected
+6. Select the `Samerabualsoud/Jam3a-2.0` repository
+7. Select the `main` branch
 
-If you need to modify the server code, remember to use ES module syntax:
-```javascript
-// Correct (ES Modules):
-import express from 'express';
-import { join } from 'path';
+### 2. Configure the App
 
-// Incorrect (CommonJS):
-const express = require('express');
-const path = require('path');
-```
+1. **Environment Variables**: Add the following environment variables:
+   - `NODE_ENV`: `production`
+   - `MOYASSER_API_KEY`: Your Moyasser API key
+   - `MOYASSER_SECRET_KEY`: Your Moyasser secret key
+   - `MOYASSER_API_URL`: `https://api.moyasser.com/v1`
+   - `JWT_SECRET`: A secure random string for JWT token signing
+   - `MONGODB_URI`: Your MongoDB connection string
+   - `EMAIL_SERVICE`: `outlook`
+   - `EMAIL_USER`: Your email address for sending emails
+   - `EMAIL_PASSWORD`: Your email password or app password
 
-## Deployment Options
+2. **Resources**: Select the appropriate plan based on your needs
+   - Recommended: Basic plan with 1 GB RAM / 1 vCPU
 
-### Option 1: Deploying to Vercel (Recommended)
+3. **Region**: Select the region closest to your target audience
+   - Recommended for Middle East: `fra1` (Frankfurt)
 
-1. **Fork or clone the repository**
-   ```
-   git clone https://github.com/Samerabualsoud/Jam3a-2.0.git
-   cd Jam3a-2.0
-   ```
+### 3. Configure Build and Run Commands
 
-2. **Install Vercel CLI (optional)**
-   ```
-   npm install -g vercel
-   ```
+1. **Build Command**: `npm install && npm run build`
+2. **Run Command**: `npm start`
 
-3. **Deploy to Vercel**
-   - Using Vercel Dashboard:
-     1. Go to [vercel.com](https://vercel.com) and sign in
-     2. Click "New Project" and import your GitHub repository
-     3. Select the Jam3a repository
-     4. Configure as follows:
-        - Framework Preset: Vite
-        - Build Command: `npm run build`
-        - Output Directory: `dist`
-        - Install Command: `npm install`
-     5. Click "Deploy"
+### 4. Deploy the App
 
-   - Using Vercel CLI:
-     ```
-     vercel
-     ```
+1. Review your configuration
+2. Click "Create Resources"
+3. Wait for the deployment to complete (this may take a few minutes)
 
-### Option 2: Deploying to Netlify
+### 5. Verify Deployment
 
-1. **Fork or clone the repository**
-   ```
-   git clone https://github.com/Samerabualsoud/Jam3a-2.0.git
-   cd Jam3a-2.0
-   ```
+1. Once deployment is complete, Digital Ocean will provide a URL for your app
+2. Visit the URL to verify that the app is running correctly
+3. Test the following functionality:
+   - User registration and login
+   - Product browsing
+   - Group creation
+   - Payment processing
+   - Admin panel access
 
-2. **Deploy to Netlify**
-   - Using Netlify Dashboard:
-     1. Go to [netlify.com](https://netlify.com) and sign in
-     2. Click "New site from Git" and select your GitHub repository
-     3. Configure as follows:
-        - Build Command: `npm run build`
-        - Publish Directory: `dist`
-     4. Click "Deploy site"
+## Troubleshooting
 
-   - Using Netlify CLI:
-     ```
-     npm install -g netlify-cli
-     netlify deploy
-     ```
+### Common Issues
 
-3. **Configure Netlify for SPA routing**
-   - Create a file named `_redirects` in the `public` folder with the following content:
-     ```
-     /* /index.html 200
-     ```
+1. **Authentication Error**: If you see "ri.clearToken is not a function", ensure you're using the latest code from the main branch.
 
-### Option 3: Deploying to Heroku
+2. **Payment Integration Issues**: Verify that your Moyasser API keys are correctly set in the environment variables.
 
-1. **Fork or clone the repository**
-   ```
-   git clone https://github.com/Samerabualsoud/Jam3a-2.0.git
-   cd Jam3a-2.0
-   ```
+3. **Email Sending Failures**: Check that your email service credentials are correct and that the email service allows sending from apps.
 
-2. **Create a new Heroku app**
-   ```
-   heroku create jam3a-app
-   ```
+### Logs and Monitoring
 
-3. **Deploy to Heroku**
-   ```
-   git push heroku main
-   ```
+1. Access logs from the Digital Ocean dashboard:
+   - Navigate to your app
+   - Click on "Components"
+   - Select the component you want to check
+   - Click "Logs"
 
-4. **Open the deployed app**
-   ```
-   heroku open
-   ```
+2. Set up monitoring:
+   - In the Digital Ocean dashboard, navigate to your app
+   - Click "Insights" to view performance metrics
+   - Set up alerts for critical metrics
 
-### Option 4: Deploying to DigitalOcean App Platform
+## Updating the Application
 
-1. **Fork or clone the repository**
-   ```
-   git clone https://github.com/Samerabualsoud/Jam3a-2.0.git
-   ```
+To update the application after making changes:
 
-2. **Deploy to DigitalOcean**
-   - Go to [DigitalOcean App Platform](https://cloud.digitalocean.com/apps)
-   - Click "Create App" and connect your GitHub repository
-   - Configure as follows:
-     - Type: Web Service
-     - Source Directory: `/`
-     - Build Command: `npm run build`
-     - Run Command: `npm start`
-   - Click "Next" and then "Create Resources"
+1. Push your changes to the GitHub repository
+2. Digital Ocean will automatically detect the changes and rebuild the app
+3. Monitor the build process in the Digital Ocean dashboard
 
-## Troubleshooting Deployment Issues
+## Security Considerations
 
-### ES Module Errors
+1. Ensure your JWT_SECRET is strong and unique
+2. Regularly rotate API keys and passwords
+3. Enable HTTPS for all traffic
+4. Implement rate limiting for API endpoints
+5. Regularly update dependencies to patch security vulnerabilities
 
-If you see errors like `require is not defined in ES module scope` or `Cannot use import statement outside a module`:
+## Support
 
-1. **Check server.js syntax**
-   - Ensure server.js uses ES module syntax (import/export) not CommonJS (require)
-   - The project uses `"type": "module"` in package.json, so all .js files are ES modules
-
-2. **Check for CommonJS dependencies**
-   - Some packages may not be compatible with ES modules
-   - You may need to use dynamic imports for such packages
-
-### Blank Screen After Deployment
-
-If you encounter a blank screen after deployment:
-
-1. **Check browser console for errors**
-   - Open browser developer tools (F12) and look for errors in the console
-
-2. **Verify build output**
-   - Run `npm run build` locally to ensure it builds successfully
-   - Check that the `dist` directory contains all necessary files
-
-3. **Check routing configuration**
-   - Ensure your deployment platform is configured for SPA routing
-   - For Netlify: Add the `_redirects` file as mentioned above
-   - For Vercel: Routing should work automatically
-   - For other platforms: Ensure all routes redirect to index.html
-
-4. **Environment variables**
-   - Make sure any required environment variables are set in your deployment platform
-
-### Common Issues and Solutions
-
-1. **404 errors for routes**
-   - Solution: Configure your hosting platform to redirect all requests to index.html
-
-2. **Missing assets**
-   - Solution: Ensure the base path in vite.config.ts is set correctly
-
-3. **API connection issues**
-   - Solution: Check CORS configuration and API endpoint URLs
-
-4. **Performance issues**
-   - Solution: Enable compression on your server and optimize bundle size
-
-## Contact Support
-
-If you continue to experience issues with deployment, please contact support at support@jam3a.sa or open an issue on the GitHub repository.
+For additional support, contact the Jam3a development team or refer to the documentation in the GitHub repository.
