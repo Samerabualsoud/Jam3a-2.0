@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Define the base API URL - this should be updated based on your deployment environment
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
+export const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://api.jam3a.com/api' // Production URL
   : 'http://localhost:5000/api'; // Development URL
 
