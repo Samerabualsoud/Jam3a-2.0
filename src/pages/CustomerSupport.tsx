@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, MessageCircle, Phone, Mail, HelpCircle, ArrowRight } from 'lucide-react';
+import { Search, MessageCircle, Phone, Mail, HelpCircle, ArrowRight, Package, RefreshCcw } from 'lucide-react';
 
 const CustomerSupport = () => {
   const { language } = useLanguage();
