@@ -53,7 +53,8 @@ export default defineConfig(({ mode }) => ({
       "react/jsx-runtime",
       "react-router-dom",
       "@radix-ui/react-toast",
-      "lucide-react"
+      "lucide-react",
+      "axios"
     ]
   }
 }));
