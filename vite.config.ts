@@ -15,19 +15,14 @@ export default defineConfig(({ mode }) => ({
     assetsDir: "assets",
     sourcemap: mode === "development",
     minify: mode !== "development",
-    // Ensure React is externalized since we're loading it from CDN
+    // Improve chunking strategy
     rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime"],
+      // Remove external declarations that cause JSX runtime issues
       output: {
         // Ensure vendor chunks are properly separated
         manualChunks: (id) => {
           // Create a vendor chunk for third-party libraries
           if (id.includes('node_modules')) {
-            if (id.includes('react') || 
-                id.includes('react-dom') || 
-                id.includes('jsx-runtime')) {
-              return; // Skip React since it's externalized
-            }
             return 'vendor';
           }
         }
@@ -52,8 +47,10 @@ export default defineConfig(({ mode }) => ({
   },
   // Optimize dependencies
   optimizeDeps: {
-    exclude: ["react", "react-dom"], // Exclude React since we're loading from CDN
     include: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
       "react-router-dom",
       "@radix-ui/react-toast",
       "lucide-react"
