@@ -5,7 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "./", // Use relative paths for assets
+  // Use hash-based routing for compatibility with static hosting
+  base: '',
   server: {
     host: "::",
     port: 8080,
@@ -75,4 +76,4 @@ export default defineConfig(({ mode }) => ({
   },
   // Ensure proper handling of public assets
   publicDir: 'public',
-}));
+});

@@ -27,12 +27,13 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" as="style">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap">
     
-    <!-- Prevent flash of unstyled content -->
+    <!-- Inline critical CSS -->
     <style>
       body {
         margin: 0;
         padding: 0;
         font-family: 'Cairo', 'Tajawal', sans-serif;
+        background-color: #f8fafc;
       }
       .app-loading {
         display: flex;
@@ -79,6 +80,82 @@
           box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
         }
       }
+      
+      /* Fallback content styles */
+      .fallback-content {
+        display: none;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+        text-align: center;
+      }
+      .fallback-heading {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #1e293b;
+      }
+      .fallback-text {
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+        color: #64748b;
+      }
+      .fallback-button {
+        display: inline-block;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.375rem;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+      .fallback-button:hover {
+        opacity: 0.9;
+      }
+      
+      /* Error message styles */
+      .error-container {
+        display: none;
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        background-color: #fee2e2;
+        border: 1px solid #fecaca;
+      }
+      .error-heading {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #b91c1c;
+      }
+      .error-message {
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: #ef4444;
+        margin-bottom: 1rem;
+        word-break: break-word;
+      }
+      .error-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+      }
+      .error-button {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        background-color: #ef4444;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .error-button:hover {
+        background-color: #dc2626;
+      }
     </style>
     
     <title>Jam3a - Saudi Arabia's First Group Buying Platform</title>
@@ -86,7 +163,7 @@
   <body>
     <div id="root">
       <!-- Loading state that will be shown until React loads -->
-      <div class="app-loading">
+      <div class="app-loading" id="app-loading">
         <div class="app-loading-logo">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -97,130 +174,212 @@
         </div>
         <div class="app-loading-text">Loading Jam3a...</div>
       </div>
+      
+      <!-- Fallback content for static routes -->
+      <div class="fallback-content" id="fallback-home">
+        <div class="fallback-heading">Welcome to Jam3a</div>
+        <div class="fallback-text">
+          Saudi Arabia's first and most advanced group-buying platform. Join forces with others to unlock better prices on premium products.
+        </div>
+        <a href="#/" class="fallback-button">Explore Jam3a</a>
+      </div>
+      
+      <div class="fallback-content" id="fallback-shop">
+        <div class="fallback-heading">Shop with Jam3a</div>
+        <div class="fallback-text">
+          Browse our collection of group deals and save on your favorite products.
+        </div>
+        <a href="#/shop-jam3a" class="fallback-button">View Deals</a>
+      </div>
+      
+      <div class="fallback-content" id="fallback-join">
+        <div class="fallback-heading">Join a Jam3a</div>
+        <div class="fallback-text">
+          Join an existing group purchase and save money together.
+        </div>
+        <a href="#/join-jam3a" class="fallback-button">Join Now</a>
+      </div>
+      
+      <div class="fallback-content" id="fallback-start">
+        <div class="fallback-heading">Start Your Own Jam3a</div>
+        <div class="fallback-text">
+          Create your own group purchase and invite others to join.
+        </div>
+        <a href="#/start-jam3a" class="fallback-button">Get Started</a>
+      </div>
+      
+      <div class="fallback-content" id="fallback-about">
+        <div class="fallback-heading">About Jam3a</div>
+        <div class="fallback-text">
+          Learn more about our mission to revolutionize group buying in Saudi Arabia.
+        </div>
+        <a href="#/about" class="fallback-button">Learn More</a>
+      </div>
+      
+      <!-- Error container for displaying errors -->
+      <div class="error-container" id="error-container">
+        <div class="error-heading">Something went wrong</div>
+        <div class="error-message" id="error-message">
+          We encountered an error while loading the application. Please try refreshing the page.
+        </div>
+        <div class="error-actions">
+          <button class="error-button" onclick="window.location.reload()">Refresh Page</button>
+          <button class="error-button" onclick="window.location.href='#/'">Go to Home</button>
+        </div>
+      </div>
     </div>
+    
     <script type="module" src="./src/main.tsx"></script>
     
-    <!-- Fallback script in case main bundle fails to load -->
+    <!-- Fallback script for handling loading errors and showing appropriate content -->
     <script>
-      // Check if the app has loaded within 10 seconds
-      setTimeout(function() {
-        const appLoading = document.querySelector('.app-loading');
-        if (appLoading && appLoading.parentNode) {
-          // If the loading screen is still visible after 10 seconds, show error message
-          const errorMessage = document.createElement('div');
-          errorMessage.style.color = '#ef4444';
-          errorMessage.style.marginTop = '16px';
-          errorMessage.style.maxWidth = '400px';
-          errorMessage.style.textAlign = 'center';
-          errorMessage.style.padding = '0 20px';
-          errorMessage.innerHTML = 'It seems like the app is taking longer than expected to load. Please try refreshing the page. If the problem persists, please contact support.';
-          appLoading.appendChild(errorMessage);
-          
-          // Add refresh button
-          const refreshButton = document.createElement('button');
-          refreshButton.innerText = 'Refresh Page';
-          refreshButton.style.marginTop = '16px';
-          refreshButton.style.padding = '8px 16px';
-          refreshButton.style.backgroundColor = '#4f46e5';
-          refreshButton.style.color = 'white';
-          refreshButton.style.border = 'none';
-          refreshButton.style.borderRadius = '4px';
-          refreshButton.style.cursor = 'pointer';
-          refreshButton.onclick = function() {
-            window.location.reload();
-          };
-          appLoading.appendChild(refreshButton);
-          
-          // Log error to console for debugging
-          console.error('Application failed to load within expected time');
-          
-          // Check for common issues
-          const checkForCommonIssues = function() {
-            let issues = [];
+      // Function to show fallback content based on URL
+      function showFallbackContent() {
+        const path = window.location.hash.substring(1) || '/';
+        const appLoading = document.getElementById('app-loading');
+        
+        if (appLoading) {
+          appLoading.style.display = 'none';
+        }
+        
+        // Hide all fallback content first
+        document.querySelectorAll('.fallback-content').forEach(el => {
+          el.style.display = 'none';
+        });
+        
+        // Show appropriate fallback content based on path
+        if (path === '/' || path === '') {
+          document.getElementById('fallback-home').style.display = 'block';
+        } else if (path.startsWith('/shop')) {
+          document.getElementById('fallback-shop').style.display = 'block';
+        } else if (path.startsWith('/join')) {
+          document.getElementById('fallback-join').style.display = 'block';
+        } else if (path.startsWith('/start')) {
+          document.getElementById('fallback-start').style.display = 'block';
+        } else if (path.startsWith('/about')) {
+          document.getElementById('fallback-about').style.display = 'block';
+        } else {
+          // Default to home for unknown routes
+          document.getElementById('fallback-home').style.display = 'block';
+        }
+      }
+      
+      // Function to show error message
+      function showError(message) {
+        const appLoading = document.getElementById('app-loading');
+        const errorContainer = document.getElementById('error-container');
+        const errorMessage = document.getElementById('error-message');
+        
+        if (appLoading) {
+          appLoading.style.display = 'none';
+        }
+        
+        // Hide all fallback content
+        document.querySelectorAll('.fallback-content').forEach(el => {
+          el.style.display = 'none';
+        });
+        
+        // Show error container with message
+        if (errorContainer) {
+          errorContainer.style.display = 'block';
+        }
+        
+        if (errorMessage && message) {
+          errorMessage.textContent = message;
+        }
+      }
+      
+      // Check if the app has loaded within 5 seconds
+      let appLoaded = false;
+      
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          if (!appLoaded) {
+            // Check if React has taken over
+            const appLoading = document.getElementById('app-loading');
+            if (appLoading && appLoading.parentNode && appLoading.style.display !== 'none') {
+              // React hasn't loaded, show fallback content
+              showFallbackContent();
+              
+              // Log error for debugging
+              console.warn('React application did not load within expected time, showing fallback content');
+            }
+          }
+        }, 5000);
+      });
+      
+      // Listen for hash changes to update fallback content
+      window.addEventListener('hashchange', () => {
+        if (!appLoaded) {
+          showFallbackContent();
+        }
+      });
+      
+      // Listen for errors
+      window.addEventListener('error', (event) => {
+        console.error('Global error caught:', event.error || event.message);
+        
+        if (!appLoaded && event.error) {
+          showError(event.error.message || 'An unexpected error occurred while loading the application.');
+        }
+      });
+      
+      // Listen for unhandled promise rejections
+      window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason);
+        
+        if (!appLoaded && event.reason) {
+          showError(event.reason.message || 'An unexpected error occurred while loading the application.');
+        }
+      });
+      
+      // Set a flag when React takes over
+      window.markAppAsLoaded = function() {
+        appLoaded = true;
+        console.log('Application successfully loaded');
+      };
+      
+      // Add performance monitoring
+      window.addEventListener('load', () => {
+        // Mark app as loaded if we got this far
+        if (!appLoaded) {
+          window.markAppAsLoaded();
+        }
+        
+        // Report performance metrics
+        if ('performance' in window) {
+          setTimeout(() => {
+            const timing = performance.timing || {};
+            const navigationStart = timing.navigationStart || 0;
             
-            // Check if main.tsx script failed to load
-            const scripts = document.querySelectorAll('script');
-            let mainScriptLoaded = false;
-            scripts.forEach(script => {
-              if (script.src && script.src.includes('main.tsx')) {
-                if (script.onerror) {
-                  issues.push('Main script failed to load');
-                } else {
-                  mainScriptLoaded = true;
+            if (navigationStart > 0) {
+              const metrics = {
+                loadTime: timing.loadEventEnd - navigationStart,
+                domContentLoaded: timing.domContentLoadedEventEnd - navigationStart,
+                firstPaint: 0,
+                firstContentfulPaint: 0
+              };
+              
+              // Get paint metrics if available
+              if (performance.getEntriesByType) {
+                const paintMetrics = performance.getEntriesByType('paint');
+                const firstPaint = paintMetrics.find(m => m.name === 'first-paint');
+                const firstContentfulPaint = paintMetrics.find(m => m.name === 'first-contentful-paint');
+                
+                if (firstPaint) {
+                  metrics.firstPaint = firstPaint.startTime;
+                }
+                
+                if (firstContentfulPaint) {
+                  metrics.firstContentfulPaint = firstContentfulPaint.startTime;
                 }
               }
-            });
-            
-            if (!mainScriptLoaded) {
-              issues.push('Main script may not be loading correctly');
+              
+              console.log('Performance metrics:', metrics);
             }
-            
-            // Check for console errors
-            if (window.consoleErrors && window.consoleErrors.length > 0) {
-              issues.push('Console errors detected: ' + window.consoleErrors.join(', '));
-            }
-            
-            // Check for network issues
-            if (!navigator.onLine) {
-              issues.push('Browser is offline');
-            }
-            
-            // Report issues
-            if (issues.length > 0) {
-              console.error('Detected issues:', issues);
-              const issuesElement = document.createElement('div');
-              issuesElement.style.color = '#64748b';
-              issuesElement.style.marginTop = '16px';
-              issuesElement.style.fontSize = '14px';
-              issuesElement.style.maxWidth = '400px';
-              issuesElement.style.textAlign = 'left';
-              issuesElement.style.padding = '0 20px';
-              issuesElement.innerHTML = '<strong>Detected issues:</strong><br>' + issues.map(issue => '- ' + issue).join('<br>');
-              appLoading.appendChild(issuesElement);
-            }
-          };
-          
-          // Capture console errors
-          if (!window.consoleErrors) {
-            window.consoleErrors = [];
-            const originalConsoleError = console.error;
-            console.error = function() {
-              window.consoleErrors.push(Array.from(arguments).join(' '));
-              originalConsoleError.apply(console, arguments);
-            };
-          }
-          
-          // Run checks
-          checkForCommonIssues();
-          
-          // Add manual path fix option
-          const pathFixButton = document.createElement('button');
-          pathFixButton.innerText = 'Try Path Fix';
-          pathFixButton.style.marginTop = '16px';
-          pathFixButton.style.marginLeft = '8px';
-          pathFixButton.style.padding = '8px 16px';
-          pathFixButton.style.backgroundColor = '#64748b';
-          pathFixButton.style.color = 'white';
-          pathFixButton.style.border = 'none';
-          pathFixButton.style.borderRadius = '4px';
-          pathFixButton.style.cursor = 'pointer';
-          pathFixButton.onclick = function() {
-            // Try to load with absolute paths
-            const baseElement = document.createElement('base');
-            baseElement.href = '/';
-            document.head.prepend(baseElement);
-            window.location.reload();
-          };
-          appLoading.appendChild(pathFixButton);
+          }, 0);
         }
-      }, 10000);
-      
-      // Add error handling for the main script
-      window.addEventListener('error', function(event) {
-        if (event.target && event.target.tagName === 'SCRIPT') {
-          console.error('Script loading error:', event);
-        }
-      }, true);
+      });
     </script>
   </body>
 </html>

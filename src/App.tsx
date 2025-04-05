@@ -2,8 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { useState } from "react";
+import { HashRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -46,6 +46,68 @@ type RouteConfig = {
   children?: RouteConfig[];
   requireAuth?: boolean;
   requiredRole?: string;
+};
+
+// Error boundary component for catching runtime errors
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("React Error Boundary caught an error:", error, errorInfo);
+    // You could also log to an error reporting service here
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-boundary p-6 max-w-md mx-auto my-8 bg-red-50 border border-red-200 rounded-lg">
+          <h2 className="text-xl font-bold text-red-700 mb-4">Something went wrong</h2>
+          <p className="text-red-600 mb-4">
+            {this.state.error?.message || "An unexpected error occurred"}
+          </p>
+          <button
+            onClick={() => window.location.href = "#/"}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            Go to Home Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Performance monitoring
+const PerformanceMonitor = () => {
+  useEffect(() => {
+    // Report web vitals
+    if ('performance' in window && 'getEntriesByType' in performance) {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const paintMetrics = performance.getEntriesByType('paint');
+          const navigationTiming = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+          
+          console.log('Performance metrics:', {
+            firstPaint: paintMetrics.find(m => m.name === 'first-paint')?.startTime,
+            firstContentfulPaint: paintMetrics.find(m => m.name === 'first-contentful-paint')?.startTime,
+            domContentLoaded: navigationTiming.domContentLoadedEventEnd - navigationTiming.domContentLoadedEventStart,
+            loadTime: navigationTiming.loadEventEnd - navigationTiming.startTime,
+          });
+        }, 0);
+      });
+    }
+  }, []);
+
+  return null;
 };
 
 const App = () => {
@@ -119,26 +181,32 @@ const App = () => {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <LanguageProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              {/* Add Google Analytics tracking */}
-              <GoogleAnalytics measurementId={GA_MEASUREMENT_ID} />
-              
-              {/* Add ScrollToTop component to handle automatic scrolling on route changes */}
-              <ScrollToTop />
-              <Routes>
-                {renderRoutes(routesConfig)}
-              </Routes>
-            </BrowserRouter>
-          </LanguageProvider>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <LanguageProvider>
+              <Toaster />
+              <Sonner />
+              {/* Use HashRouter instead of BrowserRouter for better static site compatibility */}
+              <HashRouter>
+                {/* Add Google Analytics tracking */}
+                <GoogleAnalytics measurementId={GA_MEASUREMENT_ID} />
+                
+                {/* Add performance monitoring */}
+                <PerformanceMonitor />
+                
+                {/* Add ScrollToTop component to handle automatic scrolling on route changes */}
+                <ScrollToTop />
+                <Routes>
+                  {renderRoutes(routesConfig)}
+                </Routes>
+              </HashRouter>
+            </LanguageProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
