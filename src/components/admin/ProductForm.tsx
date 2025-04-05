@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,13 @@ import {
 } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImagePlus, X, Upload } from "lucide-react";
+import { ImagePlus, X, Upload, Check, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import axios from "axios";
 
 const productSchema = z.object({
@@ -24,6 +27,10 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number"),
   stock: z.coerce.number().int().min(0, "Stock must be a positive integer"),
   description: z.string().min(1, "Description is required"),
+  nameAr: z.string().optional(),
+  descriptionAr: z.string().optional(),
+  discount: z.coerce.number().min(0).max(100, "Discount must be between 0 and 100").optional(),
+  featured: z.boolean().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -32,11 +39,15 @@ interface ProductFormProps {
   initialData: {
     id?: number;
     name?: string;
+    nameAr?: string;
     category?: string;
     price?: number;
     stock?: number;
     description?: string;
+    descriptionAr?: string;
     image?: string;
+    discount?: number;
+    featured?: boolean;
   };
   onSubmit: (data: any) => void;
   onCancel: () => void;
@@ -54,11 +65,30 @@ const UPLOAD_SERVICES = {
     name: 'ImgBB',
     uploadUrl: 'https://api.imgbb.com/1/upload',
     apiKey: '9c7eb7b7a0e5d64b1b4f5c5e5d64b1b4' // Replace with your actual API key
+  },
+  LOCAL: {
+    name: 'Local Storage',
+    uploadUrl: '/api/upload', // This would be your backend endpoint
   }
 };
 
 // Default to Cloudinary for production
 const DEFAULT_UPLOAD_SERVICE = UPLOAD_SERVICES.CLOUDINARY;
+
+// Product categories
+const PRODUCT_CATEGORIES = [
+  { value: "electronics", label: "Electronics" },
+  { value: "fashion", label: "Fashion & Apparel" },
+  { value: "home", label: "Home & Kitchen" },
+  { value: "beauty", label: "Beauty & Personal Care" },
+  { value: "toys", label: "Toys & Games" },
+  { value: "sports", label: "Sports & Outdoors" },
+  { value: "automotive", label: "Automotive" },
+  { value: "books", label: "Books & Media" },
+  { value: "health", label: "Health & Wellness" },
+  { value: "grocery", label: "Grocery & Food" },
+  { value: "other", label: "Other" },
+];
 
 const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
   const [imagePreview, setImagePreview] = useState<string | null>(initialData.image || null);
@@ -66,20 +96,45 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState("");
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>(initialData.image || "");
+  const [selectedUploadService, setSelectedUploadService] = useState(DEFAULT_UPLOAD_SERVICE);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
+  const [activeTab, setActiveTab] = useState("english");
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: initialData.name || "",
+      nameAr: initialData.nameAr || "",
       category: initialData.category || "",
       price: initialData.price || 0,
       stock: initialData.stock || 0,
       description: initialData.description || "",
+      descriptionAr: initialData.descriptionAr || "",
+      discount: initialData.discount || 0,
+      featured: initialData.featured || false,
     },
   });
+
+  // Reset form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        name: initialData.name || "",
+        nameAr: initialData.nameAr || "",
+        category: initialData.category || "",
+        price: initialData.price || 0,
+        stock: initialData.stock || 0,
+        description: initialData.description || "",
+        descriptionAr: initialData.descriptionAr || "",
+        discount: initialData.discount || 0,
+        featured: initialData.featured || false,
+      });
+      setImagePreview(initialData.image || null);
+      setUploadedImageUrl(initialData.image || "");
+    }
+  }, [initialData, form]);
 
   const handleSubmit = (data: ProductFormValues) => {
     if (!uploadedImageUrl && !initialData.image) {
@@ -141,6 +196,17 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
       return;
     }
 
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File size exceeds 5MB limit");
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -157,16 +223,18 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
       let formData = new FormData();
       
       // Configure based on selected service
-      if (DEFAULT_UPLOAD_SERVICE === UPLOAD_SERVICES.CLOUDINARY) {
+      if (selectedUploadService === UPLOAD_SERVICES.CLOUDINARY) {
         formData.append('file', file);
-        formData.append('upload_preset', DEFAULT_UPLOAD_SERVICE.uploadPreset);
-        formData.append('cloud_name', DEFAULT_UPLOAD_SERVICE.cloudName);
-      } else if (DEFAULT_UPLOAD_SERVICE === UPLOAD_SERVICES.IMGBB) {
+        formData.append('upload_preset', selectedUploadService.uploadPreset);
+        formData.append('cloud_name', selectedUploadService.cloudName);
+      } else if (selectedUploadService === UPLOAD_SERVICES.IMGBB) {
         formData.append('image', file);
-        formData.append('key', DEFAULT_UPLOAD_SERVICE.apiKey);
+        formData.append('key', selectedUploadService.apiKey);
+      } else if (selectedUploadService === UPLOAD_SERVICES.LOCAL) {
+        formData.append('file', file);
       }
 
-      const response = await axios.post(DEFAULT_UPLOAD_SERVICE.uploadUrl, formData, {
+      const response = await axios.post(selectedUploadService.uploadUrl, formData, {
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -177,10 +245,12 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
 
       // Handle different response formats
       let imageUrl = '';
-      if (DEFAULT_UPLOAD_SERVICE === UPLOAD_SERVICES.CLOUDINARY) {
+      if (selectedUploadService === UPLOAD_SERVICES.CLOUDINARY) {
         imageUrl = response.data.secure_url;
-      } else if (DEFAULT_UPLOAD_SERVICE === UPLOAD_SERVICES.IMGBB) {
+      } else if (selectedUploadService === UPLOAD_SERVICES.IMGBB) {
         imageUrl = response.data.data.url;
+      } else if (selectedUploadService === UPLOAD_SERVICES.LOCAL) {
+        imageUrl = response.data.url;
       }
 
       setUploadedImageUrl(imageUrl);
@@ -213,14 +283,19 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="english">English</TabsTrigger>
+            <TabsTrigger value="arabic">Arabic</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="english" className="space-y-4 mt-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Name</FormLabel>
+                  <FormLabel>Product Name (English)</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter product name" {...field} />
                   </FormControl>
@@ -231,13 +306,84 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
 
             <FormField
               control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (English)</FormLabel>
+                  <FormControl>
+                    <textarea 
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Enter product description" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </TabsContent>
+          
+          <TabsContent value="arabic" className="space-y-4 mt-4">
+            <FormField
+              control={form.control}
+              name="nameAr"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product Name (Arabic)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="أدخل اسم المنتج" {...field} dir="rtl" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="descriptionAr"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (Arabic)</FormLabel>
+                  <FormControl>
+                    <textarea 
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="أدخل وصف المنتج" 
+                      {...field} 
+                      dir="rtl"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </TabsContent>
+        </Tabs>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
               name="category"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter category" {...field} />
-                  </FormControl>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {PRODUCT_CATEGORIES.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -249,7 +395,7 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
+                    <FormLabel>Price (SAR)</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -285,23 +431,48 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <textarea 
-                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="Enter product description" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="discount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Discount (%)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="0" 
+                        min="0" 
+                        max="100" 
+                        step="1" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="featured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-end space-x-2 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Featured Product
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -322,75 +493,91 @@ const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProps) => {
                     alt="Product preview"
                     className="mx-auto max-h-64 rounded-md object-contain"
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemoveImage();
                     }}
+                    className="absolute top-2 right-2 rounded-full bg-destructive p-1 text-white hover:bg-destructive/90"
                   >
                     <X className="h-4 w-4" />
-                  </Button>
+                  </button>
                 </div>
               ) : (
                 <div className="py-4">
                   <ImagePlus className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Drag and drop an image, or{" "}
-                    <span className="text-primary">browse</span>
+                  <p className="mt-2 text-sm font-medium">
+                    Drag and drop an image, or click to browse
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    PNG, JPG or GIF up to 10MB
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    PNG, JPG, GIF up to 5MB
                   </p>
                 </div>
               )}
-
               <input
-                type="file"
                 ref={fileInputRef}
+                type="file"
+                accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
-                accept="image/*"
               />
             </div>
 
             {isUploading && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span>Uploading...</span>
-                  <span>{uploadProgress}%</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Uploading...</span>
+                  <span className="text-sm font-medium">{uploadProgress}%</span>
                 </div>
-                <Progress value={uploadProgress} className="h-1" />
+                <Progress value={uploadProgress} className="h-2" />
               </div>
             )}
 
             {uploadError && (
-              <p className="text-sm text-destructive">{uploadError}</p>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{uploadError}</AlertDescription>
+              </Alert>
             )}
 
-            <Card className="bg-muted/50 mt-4">
-              <CardContent className="p-4">
-                <h4 className="text-sm font-medium mb-2">Image Upload Tips:</h4>
-                <ul className="text-xs space-y-1 text-muted-foreground">
-                  <li>• Use high-quality images with good lighting</li>
-                  <li>• Recommended size: 1200 x 1200 pixels</li>
-                  <li>• Keep file size under 5MB for faster uploads</li>
-                  <li>• Use a white or neutral background</li>
-                </ul>
-              </CardContent>
-            </Card>
+            <div className="space-y-2">
+              <FormLabel>Upload Service</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.values(UPLOAD_SERVICES).map((service) => (
+                  <Button
+                    key={service.name}
+                    type="button"
+                    variant={selectedUploadService === service ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedUploadService(service)}
+                    className="w-full"
+                  >
+                    {selectedUploadService === service && (
+                      <Check className="mr-1 h-3 w-3" />
+                    )}
+                    {service.name}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select where to upload your product images
+              </p>
+            </div>
           </div>
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={isUploading}>
-            {initialData.id ? "Update" : "Create"} Product
+          <Button type="submit">
+            {initialData.id ? "Update Product" : "Add Product"}
           </Button>
         </div>
       </form>

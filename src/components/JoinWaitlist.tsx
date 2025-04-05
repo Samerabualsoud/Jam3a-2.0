@@ -6,14 +6,16 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import EmailService from '@/services/EmailService';
 
 const JoinWaitlist = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email) {
@@ -27,15 +29,30 @@ const JoinWaitlist = () => {
     
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Add to waitlist
+      const waitlistResult = await EmailService.sendWaitlistEmail(email, name);
+      
+      // Subscribe to newsletter if checked
+      if (isSubscribed) {
+        await EmailService.subscribeToNewsletter(email, name);
+      }
+      
       setIsSubmitting(false);
       toast({
         title: "Success!",
         description: "You've been added to our waitlist. We'll notify you soon!",
       });
       setEmail('');
-    }, 1000);
+      setName('');
+    } catch (error) {
+      setIsSubmitting(false);
+      toast({
+        title: "Something went wrong",
+        description: "We couldn't add you to the waitlist. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -63,6 +80,15 @@ const JoinWaitlist = () => {
           
           <form onSubmit={handleSubmit} className="mt-6">
             <div className="grid gap-4">
+              <div className="flex-grow">
+                <Input
+                  type="text"
+                  placeholder="Your name (optional)"
+                  className="h-12 w-full bg-white/95 placeholder-gray-500 border-white/30 focus-visible:ring-white mb-3"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-grow">
                   <Input
@@ -71,6 +97,7 @@ const JoinWaitlist = () => {
                     className="h-12 w-full bg-white/95 placeholder-gray-500 border-white/30 focus-visible:ring-white"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
                 <Button

@@ -23,7 +23,11 @@ const initializeGA = () => {
       send_page_view: false, // We'll send page views manually
       cookie_domain: 'jam3a.sa',
       cookie_flags: 'SameSite=None;Secure',
-      anonymize_ip: true
+      anonymize_ip: true,
+      user_properties: {
+        app_version: '2.0',
+        platform: 'web'
+      }
     });
 
     // Make gtag available globally
@@ -171,6 +175,46 @@ const ecommerce = {
       });
       console.log(`[GA] Custom event: create_jam3a_group - ${groupInfo.productName}`);
     }
+  },
+  
+  // Join waitlist
+  joinWaitlist: (email, hasSubscribed = false) => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'join_waitlist', {
+        has_subscribed: hasSubscribed
+      });
+      console.log(`[GA] Custom event: join_waitlist - ${email}`);
+    }
+  },
+  
+  // User registration
+  userRegistration: (method = 'email') => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'sign_up', {
+        method: method
+      });
+      console.log(`[GA] Event: user_registration - Method: ${method}`);
+    }
+  },
+  
+  // User login
+  userLogin: (method = 'email') => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'login', {
+        method: method
+      });
+      console.log(`[GA] Event: user_login - Method: ${method}`);
+    }
+  }
+};
+
+// Set user ID for cross-device tracking
+const setUserId = (userId) => {
+  if (typeof window !== 'undefined' && window.gtag && userId) {
+    window.gtag('config', GA_MEASUREMENT_ID, {
+      user_id: userId
+    });
+    console.log(`[GA] User ID set: ${userId}`);
   }
 };
 
@@ -198,7 +242,8 @@ export const useAnalytics = () => {
   return {
     trackEvent,
     trackPageView,
-    ecommerce
+    ecommerce,
+    setUserId
   };
 };
 

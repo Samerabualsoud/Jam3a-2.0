@@ -86,7 +86,7 @@ const Hero = () => {
               <div className="product-card relative overflow-hidden border border-border bg-card shadow-xl max-w-md mx-auto">
                 <div className="relative">
                   <img 
-                    src="https://images.unsplash.com/photo-1695048133142-1a20484bce71?q=80&w=2070&auto=format&fit=crop" 
+                    src="https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
                     alt="iPhone 16 Pro" 
                     className="w-full h-48 object-cover"
                   />
