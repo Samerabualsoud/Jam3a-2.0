@@ -233,61 +233,12 @@
       </div>
     </div>
     
-    <!-- React dependency check script -->
+    <!-- Load application script directly from dist folder -->
+    <script type="module" src="/assets/index-*.js"></script>
+    <script type="module" src="/assets/vendor-*.js"></script>
+    
+    <!-- Fallback script for handling loading errors and showing appropriate content -->
     <script>
-      // Check if React is available before loading the application
-      (function checkReactLoaded() {
-        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-          console.error('React or ReactDOM is not loaded. Attempting to load from CDN...');
-          
-          // Create script elements for React and ReactDOM
-          const reactScript = document.createElement('script');
-          reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
-          reactScript.crossOrigin = 'anonymous';
-          
-          const reactDOMScript = document.createElement('script');
-          reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
-          reactDOMScript.crossOrigin = 'anonymous';
-          
-          // Add them to the document
-          document.head.appendChild(reactScript);
-          document.head.appendChild(reactDOMScript);
-          
-          // Wait for scripts to load and retry
-          reactDOMScript.onload = function() {
-            if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
-              console.log('React and ReactDOM successfully loaded from CDN');
-              // Now load the application
-              loadApplication();
-            } else {
-              console.error('Failed to load React from CDN');
-              showError('Failed to load React library. Please check your internet connection and try again.');
-            }
-          };
-          
-          reactDOMScript.onerror = function() {
-            console.error('Failed to load React from CDN');
-            showError('Failed to load React library. Please check your internet connection and try again.');
-          };
-        } else {
-          console.log('React and ReactDOM already loaded');
-          // React is already loaded, proceed with loading the application
-          loadApplication();
-        }
-      })();
-      
-      // Function to load the application script
-      function loadApplication() {
-        const appScript = document.createElement('script');
-        appScript.type = 'module';
-        appScript.src = '/src/main.tsx';
-        appScript.onerror = function() {
-          console.error('Failed to load application script');
-          showError('Failed to load application script. Please check your internet connection and try again.');
-        };
-        document.body.appendChild(appScript);
-      }
-      
       // Function to show fallback content based on URL
       function showFallbackContent() {
         const path = window.location.pathname || '/';
@@ -348,17 +299,55 @@
       let appLoaded = false;
       
       window.addEventListener('DOMContentLoaded', () => {
+        // Try to load scripts dynamically if the direct approach fails
         setTimeout(() => {
           if (!appLoaded) {
-            // Check if React has taken over
-            const appLoading = document.getElementById('app-loading');
-            if (appLoading && appLoading.parentNode && appLoading.style.display !== 'none') {
-              // React hasn't loaded, show fallback content
-              showFallbackContent();
-              
-              // Log error for debugging
-              console.warn('React application did not load within expected time, showing fallback content');
-            }
+            console.log('Application not loaded yet, trying to load scripts dynamically');
+            
+            // Find all script files in the assets directory
+            fetch('/assets/')
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error('Failed to fetch assets directory');
+                }
+                return response.text();
+              })
+              .then(html => {
+                // Parse HTML to find script files
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a'));
+                
+                // Filter for JavaScript files
+                const jsFiles = links
+                  .map(link => link.getAttribute('href'))
+                  .filter(href => href && href.endsWith('.js'));
+                
+                // Load each JavaScript file
+                jsFiles.forEach(file => {
+                  const script = document.createElement('script');
+                  script.type = 'module';
+                  script.src = `/assets/${file}`;
+                  document.body.appendChild(script);
+                  console.log(`Dynamically loading: /assets/${file}`);
+                });
+              })
+              .catch(error => {
+                console.error('Error loading scripts dynamically:', error);
+                
+                // Try direct bundle loading as a last resort
+                const indexScript = document.createElement('script');
+                indexScript.type = 'module';
+                indexScript.src = '/index.js';
+                document.body.appendChild(indexScript);
+                
+                // Show fallback content after a delay
+                setTimeout(() => {
+                  if (!appLoaded) {
+                    showFallbackContent();
+                  }
+                }, 2000);
+              });
           }
         }, 5000);
       });
