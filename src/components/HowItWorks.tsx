@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Users, Timer, Share2, ShoppingBag } from 'lucide-react';
+import { Users, Timer, Share2, ShoppingBag, Package, UserPlus, TrendingUp, Truck } from 'lucide-react';
 import { useLanguage } from './Header';
 
 const HowItWorks = () => {
@@ -8,47 +7,47 @@ const HowItWorks = () => {
 
   const steps = [
     {
-      icon: <Users className="h-10 w-10 text-jam3a-purple" />,
+      icon: <Package className="h-10 w-10 text-jam3a-purple" />,
       title: {
-        en: "Start or Join a Jam3a",
-        ar: "ابدأ أو انضم إلى جمعة"
+        en: "Choose a Product Category",
+        ar: "اختر فئة المنتج"
       },
       description: {
-        en: "Create your own group or join an existing one for the product you want.",
-        ar: "أنشئ مجموعتك الخاصة أو انضم إلى مجموعة موجودة للمنتج الذي تريده."
+        en: "Select a product category you're interested in, such as smartphones, laptops, or audio devices.",
+        ar: "حدد فئة المنتج التي تهتم بها، مثل الهواتف الذكية أو أجهزة الكمبيوتر المحمولة أو الأجهزة الصوتية."
       }
     },
     {
-      icon: <Share2 className="h-10 w-10 text-jam3a-purple" />,
+      icon: <UserPlus className="h-10 w-10 text-jam3a-purple" />,
       title: {
-        en: "Invite Friends",
-        ar: "ادعُ أصدقاءك"
+        en: "Join or Create a Group",
+        ar: "انضم أو أنشئ مجموعة"
       },
       description: {
-        en: "Share your Jam3a link with friends and family via WhatsApp, Snapchat, or social media.",
-        ar: "شارك رابط جمعتك مع الأصدقاء والعائلة عبر واتساب أو سناب شات أو وسائل التواصل الاجتماعي."
+        en: "Join an existing group for your chosen category or start a new one and set a target group size.",
+        ar: "انضم إلى مجموعة موجودة لفئة المنتج التي اخترتها أو ابدأ مجموعة جديدة وحدد حجم المجموعة المستهدف."
       }
     },
     {
-      icon: <Timer className="h-10 w-10 text-jam3a-purple" />,
+      icon: <TrendingUp className="h-10 w-10 text-jam3a-purple" />,
       title: {
-        en: "Fill the Group",
-        ar: "أكمل المجموعة"
+        en: "Reach Target Group Size",
+        ar: "الوصول إلى حجم المجموعة المستهدف"
       },
       description: {
-        en: "Complete your group within the time limit to unlock the group discount.",
-        ar: "أكمل مجموعتك ضمن الوقت المحدد للحصول على الخصم الجماعي."
+        en: "Share your group with others interested in the same category until you reach the target size for bulk pricing.",
+        ar: "شارك مجموعتك مع آخرين مهتمين بنفس الفئة حتى تصل إلى الحجم المستهدف للحصول على أسعار الجملة."
       }
     },
     {
-      icon: <ShoppingBag className="h-10 w-10 text-jam3a-purple" />,
+      icon: <Truck className="h-10 w-10 text-jam3a-purple" />,
       title: {
-        en: "Everyone Saves",
-        ar: "الجميع يوفر"
+        en: "Unlock Bulk Discounts",
+        ar: "احصل على خصومات الجملة"
       },
       description: {
-        en: "Once the group is complete, everyone pays the discounted price and receives their order.",
-        ar: "بمجرد اكتمال المجموعة، يدفع الجميع السعر المخفض ويستلمون طلباتهم."
+        en: "Once the group target is reached, we negotiate with suppliers for the best bulk deal and coordinate delivery.",
+        ar: "بمجرد الوصول إلى هدف المجموعة، نتفاوض مع الموردين للحصول على أفضل صفقة بالجملة وتنسيق التوصيل."
       }
     }
   ];
@@ -62,8 +61,8 @@ const HowItWorks = () => {
           </h2>
           <p className="mt-3 text-muted-foreground">
             {language === 'en' 
-              ? 'Simple steps to save money through the power of group buying' 
-              : 'خطوات بسيطة لتوفير المال من خلال قوة الشراء الجماعي'}
+              ? 'Group together with others to unlock exclusive bulk deals from suppliers' 
+              : 'اجتمع مع الآخرين للحصول على صفقات حصرية بالجملة من الموردين'}
           </p>
         </div>
         <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">

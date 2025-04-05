@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, ArrowRight, PlusCircle, TrendingUp, BadgePercent, Clock, ShieldCheck } from 'lucide-react';
+import { Users, ArrowRight, PlusCircle, TrendingUp, BadgePercent, Clock, ShieldCheck, Package, UserPlus, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -15,37 +15,42 @@ const StartJam3a: React.FC = () => {
   const content = {
     en: {
       title: "Start Your Own Jam3a",
-      subtitle: "Group buying made simple and rewarding",
-      description: "Creating a Jam3a is quick and easy. Select a product you love and watch the prices drop as more friends join!",
+      subtitle: "Group buying for better bulk deals",
+      description: "Jam3a brings people together who want to buy products from the same category so we can negotiate bulk deals with suppliers. The more people join, the better the prices get!",
       whyStartTitle: "Why Start a Jam3a?",
       steps: [
         {
-          title: "Pick Your Product",
-          description: "Choose from our curated selection of premium tech gadgets and more.",
-          icon: PlusCircle
+          title: "Choose a Category",
+          description: "Select a product category you're interested in, such as smartphones, laptops, or audio devices.",
+          icon: Package
         },
         {
-          title: "Invite Friends",
-          description: "Share your unique Jam3a link with friends, family, or colleagues via WhatsApp, social media, or email.",
+          title: "Set Group Target",
+          description: "Decide how many people you want in your group to qualify for the bulk discount from suppliers.",
+          icon: UserPlus
+        },
+        {
+          title: "Invite Participants",
+          description: "Share your Jam3a link with friends, family, or colleagues who might be interested in the same product category.",
           icon: TrendingUp
         }
       ],
       benefits: [
         {
-          text: "Save up to 30% on retail prices",
+          text: "Save up to 30% through bulk supplier deals",
           icon: BadgePercent
         },
         {
-          text: "No payment until the group is complete",
+          text: "No payment until the group size target is reached",
           icon: Clock
         },
         {
-          text: "Full refund if the group doesn't fill",
+          text: "Access to exclusive supplier discounts",
           icon: ShieldCheck
         },
         {
-          text: "Secure transactions and guaranteed delivery",
-          icon: ShieldCheck
+          text: "Coordinated delivery from suppliers",
+          icon: Truck
         }
       ],
       cta: "Start Your Jam3a Now",
@@ -54,37 +59,42 @@ const StartJam3a: React.FC = () => {
     },
     ar: {
       title: "سوّي جمعتك الخاصة",
-      subtitle: "الشراء الجماعي بطريقة سهلة ومجزية",
-      description: "إنشاء جمعة سريع وسهل. اختر منتج تحبه وشاهد الأسعار تنخفض مع انضمام المزيد من الأصدقاء!",
+      subtitle: "الشراء الجماعي لصفقات أفضل بالجملة",
+      description: "جمعة تجمع الناس الذين يرغبون في شراء منتجات من نفس الفئة حتى نتمكن من التفاوض على صفقات بالجملة مع الموردين. كلما انضم المزيد من الناس، كلما أصبحت الأسعار أفضل!",
       whyStartTitle: "ليش تسوي جمعة؟",
       steps: [
         {
-          title: "اختر منتجك",
-          description: "اختر من تشكيلتنا المنتقاة من أجهزة التقنية الفاخرة وغيرها.",
-          icon: PlusCircle
+          title: "اختر فئة",
+          description: "حدد فئة المنتج التي تهتم بها، مثل الهواتف الذكية أو أجهزة الكمبيوتر المحمولة أو الأجهزة الصوتية.",
+          icon: Package
         },
         {
-          title: "ادع أصدقاءك",
-          description: "شارك رابط جمعتك الفريد مع الأصدقاء والعائلة أو الزملاء عبر واتساب أو وسائل التواصل الاجتماعي أو البريد الإلكتروني.",
+          title: "حدد هدف المجموعة",
+          description: "قرر عدد الأشخاص الذين تريدهم في مجموعتك للتأهل للحصول على خصم بالجملة من الموردين.",
+          icon: UserPlus
+        },
+        {
+          title: "ادع المشاركين",
+          description: "شارك رابط جمعتك مع الأصدقاء أو العائلة أو الزملاء الذين قد يهتمون بنفس فئة المنتج.",
           icon: TrendingUp
         }
       ],
       benefits: [
         {
-          text: "وفّر لين 30% على أسعار التجزئة",
+          text: "وفّر لين 30% من خلال صفقات الموردين بالجملة",
           icon: BadgePercent
         },
         {
-          text: "ما فيه دفع إلا لما تكتمل المجموعة",
+          text: "ما فيه دفع إلا لما يتم الوصول إلى حجم المجموعة المستهدف",
           icon: Clock
         },
         {
-          text: "استرداد كامل إذا ما اكتملت المجموعة",
+          text: "الوصول إلى خصومات حصرية من الموردين",
           icon: ShieldCheck
         },
         {
-          text: "معاملات آمنة وتوصيل مضمون",
-          icon: ShieldCheck
+          text: "توصيل منسق من الموردين",
+          icon: Truck
         }
       ],
       cta: "ابدأ جمعتك الآن",

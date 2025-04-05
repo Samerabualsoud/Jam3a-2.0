@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 
-// Product interface
+// Enhanced Product interface with additional fields
 interface Product {
   id: number;
   name: string;
@@ -18,11 +19,26 @@ interface Product {
   discount?: number;
   originalPrice?: number;
   averageJoinRate?: number;
+  supplier?: string;
+  sku?: string;
+  status?: 'active' | 'inactive' | 'draft';
+  tags?: string[];
+  dateAdded?: string;
+  lastUpdated?: string;
 }
 
 interface SyncStatus {
   type: 'success' | 'warning' | 'error';
   message: string;
+  timestamp?: number;
+}
+
+interface SyncLog {
+  action: 'add' | 'update' | 'delete' | 'bulk' | 'import' | 'export';
+  timestamp: number;
+  details: string;
+  status: 'success' | 'error';
+  products: number[];
 }
 
 interface ProductContextType {
@@ -32,8 +48,18 @@ interface ProductContextType {
   activeJam3aDeals: Product[];
   featuredProducts: Product[];
   syncStatus: SyncStatus | null;
-  isLoading?: boolean;
-  refreshJam3aDeals?: () => Promise<void>;
+  isLoading: boolean;
+  refreshJam3aDeals: () => Promise<void>;
+  syncLogs: SyncLog[];
+  addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
+  updateProduct: (product: Product) => Promise<Product>;
+  deleteProduct: (id: number) => Promise<boolean>;
+  bulkUpdateProducts: (ids: number[], updates: Partial<Product>) => Promise<number>;
+  bulkDeleteProducts: (ids: number[]) => Promise<number>;
+  importProducts: (products: Omit<Product, 'id'>[]) => Promise<number>;
+  exportProducts: (ids?: number[]) => Promise<Product[]>;
+  validateProduct: (product: Partial<Product>) => string[];
+  clearSyncStatus: () => void;
 }
 
 // Initial products data
@@ -54,7 +80,12 @@ const initialProducts: Product[] = [
     participants: 7,
     featured: true,
     discount: 12,
-    averageJoinRate: 500
+    averageJoinRate: 500,
+    status: 'active',
+    dateAdded: '2025-03-15',
+    lastUpdated: '2025-03-15',
+    supplier: 'Apple',
+    sku: 'IP16PM-256-TI'
   },
   { 
     id: 2, 
@@ -72,7 +103,12 @@ const initialProducts: Product[] = [
     participants: 5,
     featured: false,
     discount: 13,
-    averageJoinRate: 300
+    averageJoinRate: 300,
+    status: 'active',
+    dateAdded: '2025-03-10',
+    lastUpdated: '2025-03-10',
+    supplier: 'Samsung',
+    sku: 'SGS23FE-128-CL'
   },
   { 
     id: 3, 
@@ -90,7 +126,12 @@ const initialProducts: Product[] = [
     participants: 4,
     featured: true,
     discount: 10,
-    averageJoinRate: 400
+    averageJoinRate: 400,
+    status: 'active',
+    dateAdded: '2025-02-20',
+    lastUpdated: '2025-02-20',
+    supplier: 'Apple',
+    sku: 'MBA-M1-256-SG'
   },
   { 
     id: 4, 
@@ -108,7 +149,12 @@ const initialProducts: Product[] = [
     participants: 6,
     featured: false,
     discount: 16,
-    averageJoinRate: 350
+    averageJoinRate: 350,
+    status: 'active',
+    dateAdded: '2025-03-15',
+    lastUpdated: '2025-03-15',
+    supplier: 'Apple',
+    sku: 'IP16-128-PK'
   },
   { 
     id: 5, 
@@ -126,7 +172,12 @@ const initialProducts: Product[] = [
     participants: 3,
     featured: true,
     discount: 10,
-    averageJoinRate: 450
+    averageJoinRate: 450,
+    status: 'active',
+    dateAdded: '2025-03-01',
+    lastUpdated: '2025-03-01',
+    supplier: 'Apple',
+    sku: 'MBA-M4-512-SL'
   },
   { 
     id: 6, 
@@ -144,55 +195,707 @@ const initialProducts: Product[] = [
     participants: 4,
     featured: false,
     discount: 13,
-    averageJoinRate: 300
+    averageJoinRate: 300,
+    status: 'active',
+    dateAdded: '2025-03-10',
+    lastUpdated: '2025-03-10',
+    supplier: 'Samsung',
+    sku: 'SGS23FE-128-MT'
   },
 ];
 
 // Create the context
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
+// Mock API endpoint for simulating server communication
+const API_ENDPOINT = 'https://api.jam3a.com/v1';
+
 // Provider component
 export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProductsState] = useState<Product[]>(initialProducts);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
+  
+  // Local storage key for products
+  const STORAGE_KEY = 'jam3a_products';
+  
+  // Load products from local storage on initial render
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const storedProducts = localStorage.getItem(STORAGE_KEY);
+        if (storedProducts) {
+          setProductsState(JSON.parse(storedProducts));
+        }
+      } catch (error) {
+        console.error('Failed to load products from local storage:', error);
+      }
+    };
+    
+    loadProducts();
+  }, []);
+  
+  // Save products to local storage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    } catch (error) {
+      console.error('Failed to save products to local storage:', error);
+    }
+  }, [products]);
 
-  // Simulate API refresh
-  const refreshProducts = async (): Promise<void> => {
-    setSyncStatus({ type: 'warning', message: 'Syncing products with database...' });
-    setIsLoading(true);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setSyncStatus({ type: 'success', message: 'Products synced successfully with website!' });
-    setIsLoading(false);
-    
-    // Clear status message after 3 seconds
-    setTimeout(() => {
-      setSyncStatus(null);
-    }, 3000);
+  // Enhanced setProducts function with sync status
+  const setProducts = (newProductsOrFunction: React.SetStateAction<Product[]>) => {
+    setProductsState(prevProducts => {
+      const newProducts = typeof newProductsOrFunction === 'function'
+        ? newProductsOrFunction(prevProducts)
+        : newProductsOrFunction;
+      
+      // Trigger sync status
+      setSyncStatus({
+        type: 'success',
+        message: 'Products synced successfully with website!',
+        timestamp: Date.now()
+      });
+      
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+      
+      return newProducts;
+    });
   };
 
-  // Simulate refreshing Jam3a deals
+  // Simulate API refresh with improved error handling
+  const refreshProducts = async (): Promise<void> => {
+    setSyncStatus({ type: 'warning', message: 'Syncing products with database...', timestamp: Date.now() });
+    setIsLoading(true);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In a real implementation, this would be an API call
+      // const response = await axios.get(`${API_ENDPOINT}/products`);
+      // setProductsState(response.data);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: 'Refreshed all products from database',
+        status: 'success',
+        products: products.map(p => p.id)
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: 'Products synced successfully with website!',
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('Failed to refresh products:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Failed to refresh products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: []
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: 'Failed to sync products. Please try again.',
+        timestamp: Date.now()
+      });
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Simulate refreshing Jam3a deals with improved error handling
   const refreshJam3aDeals = async (): Promise<void> => {
     setIsLoading(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In a real implementation, this would be an API call
+      // const response = await axios.get(`${API_ENDPOINT}/jam3a-deals`);
+      // Update state with the response data
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: 'Refreshed all Jam3a deals from database',
+        status: 'success',
+        products: activeJam3aDeals.map(p => p.id)
+      });
+    } catch (error) {
+      console.error('Failed to refresh Jam3a deals:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Failed to refresh Jam3a deals: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: []
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: 'Failed to sync Jam3a deals. Please try again.',
+        timestamp: Date.now()
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add a new product
+  const addProduct = async (product: Omit<Product, 'id'>): Promise<Product> => {
+    setIsLoading(true);
     
-    setIsLoading(false);
+    try {
+      // Validate product
+      const validationErrors = validateProduct(product);
+      if (validationErrors.length > 0) {
+        throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
+      }
+      
+      // Generate new ID
+      const newId = Math.max(0, ...products.map(p => p.id)) + 1;
+      
+      // Create new product with ID and timestamps
+      const newProduct: Product = {
+        ...product,
+        id: newId,
+        dateAdded: new Date().toISOString().split('T')[0],
+        lastUpdated: new Date().toISOString().split('T')[0],
+        status: product.status || 'active'
+      };
+      
+      // In a real implementation, this would be an API call
+      // const response = await axios.post(`${API_ENDPOINT}/products`, newProduct);
+      // const savedProduct = response.data;
+      
+      // Update local state
+      setProducts([...products, newProduct]);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'add',
+        details: `Added product: ${newProduct.name}`,
+        status: 'success',
+        products: [newProduct.id]
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Product "${newProduct.name}" added successfully!`,
+        timestamp: Date.now()
+      });
+      
+      return newProduct;
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'add',
+        details: `Failed to add product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: []
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: `Failed to add product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now()
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Update an existing product
+  const updateProduct = async (product: Product): Promise<Product> => {
+    setIsLoading(true);
+    
+    try {
+      // Validate product
+      const validationErrors = validateProduct(product);
+      if (validationErrors.length > 0) {
+        throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
+      }
+      
+      // Update timestamp
+      const updatedProduct: Product = {
+        ...product,
+        lastUpdated: new Date().toISOString().split('T')[0]
+      };
+      
+      // In a real implementation, this would be an API call
+      // const response = await axios.put(`${API_ENDPOINT}/products/${product.id}`, updatedProduct);
+      // const savedProduct = response.data;
+      
+      // Update local state
+      setProducts(prevProducts => 
+        prevProducts.map(p => p.id === updatedProduct.id ? updatedProduct : p)
+      );
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'update',
+        details: `Updated product: ${updatedProduct.name}`,
+        status: 'success',
+        products: [updatedProduct.id]
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Product "${updatedProduct.name}" updated successfully!`,
+        timestamp: Date.now()
+      });
+      
+      return updatedProduct;
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'update',
+        details: `Failed to update product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: [product.id]
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: `Failed to update product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now()
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Delete a product
+  const deleteProduct = async (id: number): Promise<boolean> => {
+    setIsLoading(true);
+    
+    try {
+      // Find product to delete
+      const productToDelete = products.find(p => p.id === id);
+      if (!productToDelete) {
+        throw new Error(`Product with ID ${id} not found`);
+      }
+      
+      // In a real implementation, this would be an API call
+      // await axios.delete(`${API_ENDPOINT}/products/${id}`);
+      
+      // Update local state
+      setProducts(prevProducts => prevProducts.filter(p => p.id !== id));
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'delete',
+        details: `Deleted product: ${productToDelete.name}`,
+        status: 'success',
+        products: [id]
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Product "${productToDelete.name}" deleted successfully!`,
+        timestamp: Date.now()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'delete',
+        details: `Failed to delete product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: [id]
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: `Failed to delete product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now()
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Bulk update products
+  const bulkUpdateProducts = async (ids: number[], updates: Partial<Product>): Promise<number> => {
+    setIsLoading(true);
+    
+    try {
+      // In a real implementation, this would be an API call
+      // await axios.patch(`${API_ENDPOINT}/products/bulk`, { ids, updates });
+      
+      // Update timestamp
+      const updatedTimestamp = new Date().toISOString().split('T')[0];
+      
+      // Update local state
+      setProducts(prevProducts => 
+        prevProducts.map(product => 
+          ids.includes(product.id) 
+            ? { ...product, ...updates, lastUpdated: updatedTimestamp } 
+            : product
+        )
+      );
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Bulk updated ${ids.length} products`,
+        status: 'success',
+        products: ids
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `${ids.length} products updated successfully!`,
+        timestamp: Date.now()
+      });
+      
+      return ids.length;
+    } catch (error) {
+      console.error('Failed to bulk update products:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Failed to bulk update products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: ids
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: `Failed to bulk update products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now()
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Bulk delete products
+  const bulkDeleteProducts = async (ids: number[]): Promise<number> => {
+    setIsLoading(true);
+    
+    try {
+      // In a real implementation, this would be an API call
+      // await axios.delete(`${API_ENDPOINT}/products/bulk`, { data: { ids } });
+      
+      // Update local state
+      setProducts(prevProducts => prevProducts.filter(p => !ids.includes(p.id)));
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Bulk deleted ${ids.length} products`,
+        status: 'success',
+        products: ids
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `${ids.length} products deleted successfully!`,
+        timestamp: Date.now()
+      });
+      
+      return ids.length;
+    } catch (error) {
+      console.error('Failed to bulk delete products:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Failed to bulk delete products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: ids
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: `Failed to bulk delete products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now()
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Import products
+  const importProducts = async (productsToImport: Omit<Product, 'id'>[]): Promise<number> => {
+    setIsLoading(true);
+    
+    try {
+      // Validate all products
+      const allValidationErrors: string[] = [];
+      productsToImport.forEach((product, index) => {
+        const errors = validateProduct(product);
+        if (errors.length > 0) {
+          allValidationErrors.push(`Product ${index + 1}: ${errors.join(', ')}`);
+        }
+      });
+      
+      if (allValidationErrors.length > 0) {
+        throw new Error(`Validation failed: ${allValidationErrors.join('; ')}`);
+      }
+      
+      // Generate new IDs and add timestamps
+      const highestId = Math.max(0, ...products.map(p => p.id));
+      const timestamp = new Date().toISOString().split('T')[0];
+      
+      const newProducts: Product[] = productsToImport.map((product, index) => ({
+        ...product,
+        id: highestId + index + 1,
+        dateAdded: timestamp,
+        lastUpdated: timestamp,
+        status: product.status || 'active'
+      }));
+      
+      // In a real implementation, this would be an API call
+      // const response = await axios.post(`${API_ENDPOINT}/products/import`, newProducts);
+      
+      // Update local state
+      setProducts([...products, ...newProducts]);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'import',
+        details: `Imported ${newProducts.length} products`,
+        status: 'success',
+        products: newProducts.map(p => p.id)
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `${newProducts.length} products imported successfully!`,
+        timestamp: Date.now()
+      });
+      
+      return newProducts.length;
+    } catch (error) {
+      console.error('Failed to import products:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'import',
+        details: `Failed to import products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: []
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: `Failed to import products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now()
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Export products
+  const exportProducts = async (ids?: number[]): Promise<Product[]> => {
+    setIsLoading(true);
+    
+    try {
+      // Filter products if IDs are provided
+      const productsToExport = ids 
+        ? products.filter(p => ids.includes(p.id))
+        : products;
+      
+      // In a real implementation, this might involve an API call
+      // const response = await axios.post(`${API_ENDPOINT}/products/export`, { ids });
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'export',
+        details: `Exported ${productsToExport.length} products`,
+        status: 'success',
+        products: productsToExport.map(p => p.id)
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `${productsToExport.length} products exported successfully!`,
+        timestamp: Date.now()
+      });
+      
+      return productsToExport;
+    } catch (error) {
+      console.error('Failed to export products:', error);
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'export',
+        details: `Failed to export products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 'error',
+        products: ids || []
+      });
+      
+      setSyncStatus({ 
+        type: 'error', 
+        message: `Failed to export products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now()
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+      
+      // Clear status message after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prevStatus => 
+          prevStatus?.timestamp === Date.now() ? null : prevStatus
+        );
+      }, 3000);
+    }
+  };
+
+  // Validate product data
+  const validateProduct = (product: Partial<Product>): string[] => {
+    const errors: string[] = [];
+    
+    // Required fields
+    if (!product.name || product.name.trim() === '') {
+      errors.push('Name is required');
+    }
+    
+    if (!product.category || product.category.trim() === '') {
+      errors.push('Category is required');
+    }
+    
+    if (product.price === undefined || product.price < 0) {
+      errors.push('Price must be a positive number');
+    }
+    
+    if (product.stock === undefined || product.stock < 0 || !Number.isInteger(product.stock)) {
+      errors.push('Stock must be a positive integer');
+    }
+    
+    // Optional fields with constraints
+    if (product.discount !== undefined && (product.discount < 0 || product.discount > 100)) {
+      errors.push('Discount must be between 0 and 100');
+    }
+    
+    if (product.originalPrice !== undefined && product.originalPrice < 0) {
+      errors.push('Original price must be a positive number');
+    }
+    
+    if (product.participants !== undefined && (product.participants < 0 || !Number.isInteger(product.participants))) {
+      errors.push('Participants must be a positive integer');
+    }
+    
+    return errors;
+  };
+
+  // Add entry to sync logs
+  const addSyncLog = (log: Omit<SyncLog, 'timestamp'>) => {
+    const newLog: SyncLog = {
+      ...log,
+      timestamp: Date.now()
+    };
+    
+    setSyncLogs(prevLogs => [newLog, ...prevLogs].slice(0, 100)); // Keep only the last 100 logs
+  };
+
+  // Clear sync status
+  const clearSyncStatus = () => {
+    setSyncStatus(null);
   };
 
   // Filter for active Jam3a deals
   const activeJam3aDeals = products.filter(product => 
     product.currentAmount !== undefined && 
     product.targetAmount !== undefined && 
-    product.currentAmount < product.targetAmount
+    product.currentAmount < product.targetAmount &&
+    product.status === 'active'
   );
 
   // Filter for featured products
-  const featuredProducts = products.filter(product => product.featured);
+  const featuredProducts = products.filter(product => 
+    product.featured && product.status === 'active'
+  );
 
   // Provide the context value
   const contextValue: ProductContextType = {
@@ -203,7 +906,17 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     featuredProducts,
     syncStatus,
     isLoading,
-    refreshJam3aDeals
+    refreshJam3aDeals,
+    syncLogs,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    bulkUpdateProducts,
+    bulkDeleteProducts,
+    importProducts,
+    exportProducts,
+    validateProduct,
+    clearSyncStatus
   };
 
   return (
