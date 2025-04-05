@@ -16,18 +16,13 @@ const StartJam3a: React.FC = () => {
     en: {
       title: "Start Your Own Jam3a",
       subtitle: "Group buying made simple and rewarding",
-      description: "Creating a Jam3a is quick and easy. Select a product you love, set your group size, and watch the prices drop as more friends join!",
+      description: "Creating a Jam3a is quick and easy. Select a product you love and watch the prices drop as more friends join!",
       whyStartTitle: "Why Start a Jam3a?",
       steps: [
         {
           title: "Pick Your Product",
           description: "Choose from our curated selection of premium tech gadgets and more.",
           icon: PlusCircle
-        },
-        {
-          title: "Set Your Group Size",
-          description: "Decide how many people you want in your group. The bigger the group, the bigger the savings!",
-          icon: Users
         },
         {
           title: "Invite Friends",

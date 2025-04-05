@@ -97,16 +97,6 @@ const Hero = () => {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <img
-                      src="https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&w=1600&q=80"
-                      alt="iPhone 16 Pro"
-                      className="product-image rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://placehold.co/600x400/purple/white?text=iPhone+16+Pro';
-                      }}
-                    />
-                  </div>
-                  <div className="mt-4">
                     <div className="flex items-end justify-between">
                       <div>
                         <p className="text-xs text-muted-foreground">{isRtl ? 'سعر المجموعة' : 'Group price'}</p>
