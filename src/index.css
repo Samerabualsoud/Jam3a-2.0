@@ -3,107 +3,108 @@
 @tailwind utilities;
 
 /* Font imports - must be before other statements */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap');
 
 @layer base {
   :root {
-    --background: 260 20% 99%;
-    --foreground: 260 10% 10%;
+    /* New modern color scheme - teal/turquoise based */
+    --background: 180 25% 98%;
+    --foreground: 200 50% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 260 10% 10%;
+    --card-foreground: 200 50% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 260 10% 10%;
+    --popover-foreground: 200 50% 15%;
 
-    --primary: 260 80% 50%;
+    --primary: 175 80% 35%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 260 30% 96%;
-    --secondary-foreground: 260 50% 40%;
+    --secondary: 180 60% 95%;
+    --secondary-foreground: 175 80% 30%;
 
-    --muted: 260 20% 96%;
-    --muted-foreground: 260 10% 40%;
+    --muted: 180 20% 96%;
+    --muted-foreground: 200 30% 40%;
 
-    --accent: 260 50% 96%;
-    --accent-foreground: 260 50% 40%;
+    --accent: 200 80% 45%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 260 20% 90%;
-    --input: 260 20% 90%;
-    --ring: 260 80% 50%;
+    --border: 180 20% 90%;
+    --input: 180 20% 90%;
+    --ring: 175 80% 35%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 260 20% 98%;
-    --sidebar-foreground: 260 10% 30%;
-    --sidebar-primary: 260 80% 50%;
+    --sidebar-background: 180 25% 98%;
+    --sidebar-foreground: 200 50% 15%;
+    --sidebar-primary: 175 80% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 260 30% 95%;
-    --sidebar-accent-foreground: 260 50% 40%;
-    --sidebar-border: 260 20% 90%;
-    --sidebar-ring: 260 80% 60%;
+    --sidebar-accent: 180 60% 95%;
+    --sidebar-accent-foreground: 175 80% 30%;
+    --sidebar-border: 180 20% 90%;
+    --sidebar-ring: 175 80% 35%;
 
     /* Jam3a specific colors */
-    --jam3a-purple: 260 80% 50%;
-    --jam3a-deep-purple: 260 80% 40%;
-    --jam3a-light-purple: 260 80% 90%;
-    --jam3a-accent: 280 80% 60%;
-    --jam3a-gradient-start: 260 80% 50%;
-    --jam3a-gradient-end: 280 80% 60%;
+    --jam3a-teal: 175 80% 35%;
+    --jam3a-deep-teal: 175 80% 25%;
+    --jam3a-light-teal: 175 80% 90%;
+    --jam3a-accent: 200 80% 45%;
+    --jam3a-gradient-start: 175 80% 35%;
+    --jam3a-gradient-end: 200 80% 45%;
     
-    /* Font variables */
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-heading: 'Poppins', system-ui, sans-serif;
+    /* Font variables - Arabic friendly fonts */
+    --font-sans: 'Cairo', system-ui, sans-serif;
+    --font-heading: 'Tajawal', system-ui, sans-serif;
   }
 
   .dark {
-    --background: 260 20% 5%;
-    --foreground: 260 10% 98%;
+    --background: 200 50% 5%;
+    --foreground: 180 25% 98%;
 
-    --card: 260 20% 8%;
-    --card-foreground: 260 10% 98%;
+    --card: 200 50% 8%;
+    --card-foreground: 180 25% 98%;
 
-    --popover: 260 20% 8%;
-    --popover-foreground: 260 10% 98%;
+    --popover: 200 50% 8%;
+    --popover-foreground: 180 25% 98%;
 
-    --primary: 260 80% 60%;
+    --primary: 175 80% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 260 30% 15%;
-    --secondary-foreground: 260 10% 98%;
+    --secondary: 180 30% 15%;
+    --secondary-foreground: 180 25% 98%;
 
-    --muted: 260 20% 15%;
-    --muted-foreground: 260 10% 70%;
+    --muted: 200 50% 15%;
+    --muted-foreground: 180 25% 70%;
 
-    --accent: 260 50% 15%;
-    --accent-foreground: 260 10% 98%;
+    --accent: 200 80% 35%;
+    --accent-foreground: 180 25% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 260 20% 20%;
-    --input: 260 20% 20%;
-    --ring: 260 80% 60%;
+    --border: 200 50% 20%;
+    --input: 200 50% 20%;
+    --ring: 175 80% 40%;
 
-    --sidebar-background: 260 20% 10%;
-    --sidebar-foreground: 260 10% 90%;
-    --sidebar-primary: 260 80% 60%;
+    --sidebar-background: 200 50% 10%;
+    --sidebar-foreground: 180 25% 90%;
+    --sidebar-primary: 175 80% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 260 30% 15%;
-    --sidebar-accent-foreground: 260 10% 90%;
-    --sidebar-border: 260 20% 20%;
-    --sidebar-ring: 260 80% 60%;
+    --sidebar-accent: 180 30% 15%;
+    --sidebar-accent-foreground: 180 25% 90%;
+    --sidebar-border: 200 50% 20%;
+    --sidebar-ring: 175 80% 40%;
 
     /* Jam3a specific colors - dark mode */
-    --jam3a-purple: 260 80% 60%;
-    --jam3a-deep-purple: 260 80% 50%;
-    --jam3a-light-purple: 260 30% 20%;
-    --jam3a-accent: 280 80% 70%;
-    --jam3a-gradient-start: 260 80% 60%;
-    --jam3a-gradient-end: 280 80% 70%;
+    --jam3a-teal: 175 80% 40%;
+    --jam3a-deep-teal: 175 80% 30%;
+    --jam3a-light-teal: 180 30% 20%;
+    --jam3a-accent: 200 80% 35%;
+    --jam3a-gradient-start: 175 80% 40%;
+    --jam3a-gradient-end: 200 80% 35%;
   }
 }
 
@@ -223,6 +224,60 @@
 
   .social-icon {
     @apply h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors;
+    @apply mx-2; /* Added spacing between social icons */
+  }
+
+  /* New components for the redesign */
+  .jam3a-button-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+
+  .jam3a-button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+
+  .jam3a-button-outline {
+    @apply border border-primary text-primary hover:bg-primary/10 px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+
+  .jam3a-card {
+    @apply bg-card text-card-foreground rounded-xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  .jam3a-input {
+    @apply bg-background border border-input rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .jam3a-label {
+    @apply text-sm font-medium text-muted-foreground mb-1;
+  }
+
+  .jam3a-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .jam3a-badge-primary {
+    @apply bg-primary/20 text-primary;
+  }
+
+  .jam3a-badge-secondary {
+    @apply bg-secondary text-secondary-foreground;
+  }
+
+  .jam3a-badge-accent {
+    @apply bg-accent/20 text-accent;
+  }
+
+  .payment-option {
+    @apply flex items-center p-4 border rounded-lg cursor-pointer transition-colors;
+  }
+
+  .payment-option-active {
+    @apply border-primary bg-primary/5;
+  }
+
+  .payment-option-icon {
+    @apply w-8 h-8 mr-3 text-primary;
   }
 }
 

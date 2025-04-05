@@ -61,7 +61,7 @@ const BilingualProductListing: React.FC = () => {
   const productData: Product[] = [
     {
       id: 1,
-      image: "https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&w=1600&q=80",
+      image: "https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       title: {
         en: "iPhone 16 Pro Max 256GB",
         ar: "آيفون 16 برو ماكس 256 جيجابايت"
@@ -185,6 +185,36 @@ const BilingualProductListing: React.FC = () => {
     navigate(`/join-jam3a?product=${encodeURIComponent(productName)}&price=${productPrice} SAR&discount=${discount}%&id=${product.id}`);
   };
 
+  // Function to get fallback image based on product title
+  const getFallbackImage = (productTitle: string) => {
+    // Map of keywords to relevant image URLs
+    const imageMap = {
+      'iphone': 'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'galaxy': 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'fold': 'https://images.pexels.com/photos/13939986/pexels-photo-13939986.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'flip': 'https://images.pexels.com/photos/14666017/pexels-photo-14666017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'samsung': 'https://images.pexels.com/photos/47261/pexels-photo-47261.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'phone': 'https://images.pexels.com/photos/699122/pexels-photo-699122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'mobile': 'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'tablet': 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'laptop': 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'watch': 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'headphone': 'https://images.pexels.com/photos/577769/pexels-photo-577769.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+      'speaker': 'https://images.pexels.com/photos/1706694/pexels-photo-1706694.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    };
+    
+    // Check if product title contains any of the keywords
+    const lowerTitle = productTitle.toLowerCase();
+    for (const [keyword, imageUrl] of Object.entries(imageMap)) {
+      if (lowerTitle.includes(keyword)) {
+        return imageUrl;
+      }
+    }
+    
+    // Default fallback image if no keywords match
+    return 'https://images.pexels.com/photos/1337753/pexels-photo-1337753.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
+  };
+
   return (
     <section className="py-16 md:py-24 bg-gradient-to-b from-background to-secondary/20 overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
@@ -222,7 +252,7 @@ const BilingualProductListing: React.FC = () => {
                           alt={product.title[language]}
                           className="product-image"
                           onError={(e) => {
-                            e.currentTarget.src = `https://placehold.co/600x400/purple/white?text=${encodeURIComponent(product.title.en)}`;
+                            e.currentTarget.src = getFallbackImage(product.title.en);
                           }}
                         />
                         <div className="absolute top-2 right-2 flex flex-col gap-2">
@@ -293,22 +323,21 @@ const BilingualProductListing: React.FC = () => {
                         </div>
                       </CardContent>
                       
-                      <CardFooter className="p-4 pt-0" dir={isRtl ? 'rtl' : 'ltr'}>
-                        <div className="w-full space-y-2">
-                          <Button 
-                            className="w-full gradient-bg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                            onClick={() => handleJoinJam3a(product)}
-                          >
-                            {isRtl ? 'انضم للجمعة' : 'Join Jam3a'}
-                            {isRtl ? null : <ArrowRight className="h-4 w-4" />}
-                          </Button>
-                          <div className="flex justify-center items-center gap-x-4 text-xs text-muted-foreground">
-                            <span className="flex items-center">
-                              <Clock className={`h-3 w-3 ${isRtl ? 'ml-1' : 'mr-1'}`} /> {isRtl ? 'وقت محدود' : 'Limited Time'}
-                            </span>
-                            <span className="flex items-center">
-                              <Shield className={`h-3 w-3 ${isRtl ? 'ml-1' : 'mr-1'}`} /> {isRtl ? 'ضمان استعادة الأموال' : 'Money-back Guarantee'}
-                            </span>
+                      <CardFooter className="p-4 pt-0 mt-auto">
+                        <Button 
+                          className="w-full jam3a-button-primary"
+                          onClick={() => handleJoinJam3a(product)}
+                        >
+                          {isRtl ? 'انضم للجمعة' : 'Join Jam3a'}
+                        </Button>
+                        <div className="flex justify-between w-full mt-3 text-xs text-muted-foreground">
+                          <div className="flex items-center">
+                            <Clock className="h-3.5 w-3.5 mr-1" />
+                            {isRtl ? 'وقت محدود' : 'Limited Time'}
+                          </div>
+                          <div className="flex items-center">
+                            <Shield className="h-3.5 w-3.5 mr-1" />
+                            {isRtl ? 'ضمان استرداد الأموال' : 'Money-back Guarantee'}
                           </div>
                         </div>
                       </CardFooter>
@@ -317,26 +346,27 @@ const BilingualProductListing: React.FC = () => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <div className="flex justify-center mt-8 gap-4">
-              <CarouselPrevious className="relative static -translate-y-0 left-0 h-10 w-10 rounded-full" />
-              <CarouselNext className="relative static -translate-y-0 right-0 h-10 w-10 rounded-full" />
+            <div className="hidden md:block">
+              <CarouselPrevious className="carousel-nav-button -left-12" />
+              <CarouselNext className="carousel-nav-button -right-12" />
             </div>
           </Carousel>
-        </div>
-
-        <div className="flex justify-center mt-12 animate-fade-in" style={{ animationDelay: '400ms' }}>
-          <Button 
-            variant="outline" 
-            size="lg"
-            onClick={() => navigate('/shop-all-deals')}
-            className="view-all-button"
-          >
-            {isRtl ? (
-              <>عرض جميع الجمعات <ChevronLeft className="h-4 w-4" /></>
-            ) : (
-              <>View All Jam3as <ChevronRight className="h-4 w-4" /></>
-            )}
-          </Button>
+          
+          <div className="mt-10 text-center">
+            <Link 
+              to="/shop-all-jam3as" 
+              className="inline-flex items-center text-primary hover:text-primary/80 transition-colors"
+            >
+              <span className="font-medium">
+                {isRtl ? 'عرض جميع الجمعات' : 'View All Jam3as'}
+              </span>
+              {isRtl ? (
+                <ChevronLeft className="ml-1 h-4 w-4" />
+              ) : (
+                <ChevronRight className="ml-1 h-4 w-4" />
+              )}
+            </Link>
+          </div>
         </div>
       </div>
     </section>

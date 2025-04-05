@@ -1,19 +1,18 @@
 // EmailService.ts
 // This service handles all email-related functionality
 
+import axios from 'axios';
+
 interface EmailTemplate {
   subject: string;
   body: string;
 }
 
 interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth: {
-    user: string;
-    pass: string;
-  };
+  apiKey: string;
+  domain: string;
+  region?: string;
+  service: 'mailgun' | 'sendgrid' | 'ses';
 }
 
 export interface EmailData {
@@ -29,26 +28,27 @@ class EmailService {
   private defaultFrom: string = 'noreply@jam3a.me';
   
   constructor(config?: EmailConfig) {
-    // Default configuration - would be replaced with actual SMTP settings
+    // Default configuration with Mailgun as the primary service
     this.config = config || {
-      host: process.env.SMTP_HOST || 'smtp.example.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER || 'user@example.com',
-        pass: process.env.SMTP_PASS || 'password'
-      }
+      service: 'mailgun',
+      apiKey: process.env.MAILGUN_API_KEY || 'key-your-mailgun-api-key',
+      domain: process.env.MAILGUN_DOMAIN || 'mail.jam3a.me'
     };
   }
 
-  // Templates for different email types
+  // Update email configuration
+  public updateConfig(config: EmailConfig): void {
+    this.config = config;
+  }
+
+  // Templates for different email types with updated styling to match new design
   private templates = {
     welcome: {
       en: {
         subject: 'Welcome to Jam3a Hub Collective!',
         body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
+          <div style="font-family: 'Poppins', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 20px; text-align: center;">
               <h1 style="color: white; margin: 0;">Welcome to Jam3a!</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
@@ -62,7 +62,7 @@ class EmailService {
               </ul>
               <p>Ready to start shopping? Check out our current deals:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="{{shopUrl}}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Shop Jam3a Deals</a>
+                <a href="{{shopUrl}}" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Shop Jam3a Deals</a>
               </div>
               <p>If you have any questions, feel free to contact our support team at support@jam3a.me.</p>
               <p>Happy shopping!</p>
@@ -78,8 +78,8 @@ class EmailService {
       ar: {
         subject: 'مرحبًا بك في جمعة هب كوليكتيف!',
         body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
+          <div style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right;">
+            <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 20px; text-align: center;">
               <h1 style="color: white; margin: 0;">مرحبًا بك في جمعة!</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
@@ -93,7 +93,7 @@ class EmailService {
               </ul>
               <p>هل أنت مستعد لبدء التسوق؟ تحقق من صفقاتنا الحالية:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="{{shopUrl}}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">تسوق صفقات جمعة</a>
+                <a href="{{shopUrl}}" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">تسوق صفقات جمعة</a>
               </div>
               <p>إذا كانت لديك أي أسئلة، فلا تتردد في الاتصال بفريق الدعم لدينا على support@jam3a.me.</p>
               <p>تسوق سعيد!</p>
@@ -111,8 +111,8 @@ class EmailService {
       en: {
         subject: 'You\'re on the Jam3a Waiting List!',
         body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
+          <div style="font-family: 'Poppins', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 20px; text-align: center;">
               <h1 style="color: white; margin: 0;">You're on the List!</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
@@ -140,8 +140,8 @@ class EmailService {
       ar: {
         subject: 'أنت على قائمة انتظار جمعة!',
         body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
+          <div style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right;">
+            <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 20px; text-align: center;">
               <h1 style="color: white; margin: 0;">أنت على القائمة!</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
@@ -171,8 +171,8 @@ class EmailService {
       en: {
         subject: 'Your Jam3a Order Confirmation - #{{orderNumber}}',
         body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
+          <div style="font-family: 'Poppins', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 20px; text-align: center;">
               <h1 style="color: white; margin: 0;">Order Confirmation</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
@@ -185,7 +185,7 @@ class EmailService {
               <p><strong>Estimated Delivery:</strong> {{estimatedDelivery}}</p>
               <p>You can track your order status at any time by visiting your account or using the link below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="{{trackingUrl}}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Track Your Order</a>
+                <a href="{{trackingUrl}}" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Track Your Order</a>
               </div>
               <p>If you have any questions about your order, please contact our customer support team at support@jam3a.me.</p>
               <p>Thank you for shopping with Jam3a!</p>
@@ -201,8 +201,8 @@ class EmailService {
       ar: {
         subject: 'تأكيد طلب جمعة الخاص بك - #{{orderNumber}}',
         body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
+          <div style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right;">
+            <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 20px; text-align: center;">
               <h1 style="color: white; margin: 0;">تأكيد الطلب</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
@@ -215,7 +215,7 @@ class EmailService {
               <p><strong>التسليم المتوقع:</strong> {{estimatedDelivery}}</p>
               <p>يمكنك تتبع حالة طلبك في أي وقت من خلال زيارة حسابك أو استخدام الرابط أدناه:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="{{trackingUrl}}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">تتبع طلبك</a>
+                <a href="{{trackingUrl}}" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">تتبع طلبك</a>
               </div>
               <p>إذا كانت لديك أي أسئلة حول طلبك، يرجى الاتصال بفريق دعم العملاء لدينا على support@jam3a.me.</p>
               <p>شكرًا للتسوق مع جمعة!</p>
@@ -228,99 +228,114 @@ class EmailService {
           </div>
         `
       }
-    },
-    jam3aInvitation: {
-      en: {
-        subject: 'You\'ve Been Invited to Join a Jam3a!',
-        body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">You're Invited!</h1>
-            </div>
-            <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
-              <p>Hello,</p>
-              <p><strong>{{inviterName}}</strong> has invited you to join their Jam3a group purchase for <strong>{{productName}}</strong>!</p>
-              <p>By joining this Jam3a, you'll get:</p>
-              <ul>
-                <li>A special group discount price of <strong>{{price}} SAR</strong> (regular price: {{regularPrice}} SAR)</li>
-                <li>Convenient delivery options</li>
-                <li>The satisfaction of shopping smarter together</li>
-              </ul>
-              <p><strong>Current participants:</strong> {{currentParticipants}}/{{requiredParticipants}}</p>
-              <p><strong>Time remaining:</strong> {{timeRemaining}}</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{joinUrl}}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Join This Jam3a</a>
-              </div>
-              <p>Don't miss out on this opportunity to save!</p>
-              <p>The Jam3a Team</p>
-            </div>
-            <div style="background-color: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;">
-              <p>© 2025 Jam3a Hub Collective. All rights reserved.</p>
-              <p>King Fahd Road, Riyadh, Saudi Arabia</p>
-            </div>
-          </div>
-        `
-      },
-      ar: {
-        subject: 'تمت دعوتك للانضمام إلى جمعة!',
-        body: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right;">
-            <div style="background-color: #6d28d9; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">تمت دعوتك!</h1>
-            </div>
-            <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
-              <p>مرحبًا،</p>
-              <p>قام <strong>{{inviterName}}</strong> بدعوتك للانضمام إلى مجموعة الشراء الخاصة بهم في جمعة لـ <strong>{{productName}}</strong>!</p>
-              <p>من خلال الانضمام إلى هذه الجمعة، ستحصل على:</p>
-              <ul>
-                <li>سعر خصم خاص للمجموعة <strong>{{price}} ريال سعودي</strong> (السعر العادي: {{regularPrice}} ريال سعودي)</li>
-                <li>خيارات توصيل مريحة</li>
-                <li>الرضا عن التسوق بشكل أذكى معًا</li>
-              </ul>
-              <p><strong>المشاركون الحاليون:</strong> {{currentParticipants}}/{{requiredParticipants}}</p>
-              <p><strong>الوقت المتبقي:</strong> {{timeRemaining}}</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{joinUrl}}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">انضم إلى هذه الجمعة</a>
-              </div>
-              <p>لا تفوت هذه الفرصة للتوفير!</p>
-              <p>فريق جمعة</p>
-            </div>
-            <div style="background-color: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;">
-              <p>© 2025 جمعة هب كوليكتيف. جميع الحقوق محفوظة.</p>
-              <p>طريق الملك فهد، الرياض، المملكة العربية السعودية</p>
-            </div>
-          </div>
-        `
-      }
     }
   };
 
-  // Get template and replace placeholders
-  private getTemplate(type: string, language: 'en' | 'ar', data: Record<string, string>): EmailTemplate {
-    const template = this.templates[type][language];
-    
-    let body = template.body;
-    let subject = template.subject;
-    
-    // Replace placeholders in subject and body
-    Object.keys(data).forEach(key => {
+  // Replace template variables with actual values
+  private replaceTemplateVariables(template: string, variables: Record<string, string>): string {
+    let result = template;
+    for (const [key, value] of Object.entries(variables)) {
       const regex = new RegExp(`{{${key}}}`, 'g');
-      body = body.replace(regex, data[key]);
-      subject = subject.replace(regex, data[key]);
-    });
-    
-    return { subject, body };
+      result = result.replace(regex, value);
+    }
+    return result;
   }
 
-  // Send email method
-  async sendEmail(emailData: EmailData): Promise<boolean> {
+  // Get email template based on type and language
+  private getTemplate(type: keyof typeof this.templates, language: 'en' | 'ar', variables: Record<string, string>): EmailTemplate {
+    const template = this.templates[type][language];
+    return {
+      subject: this.replaceTemplateVariables(template.subject, variables),
+      body: this.replaceTemplateVariables(template.body, variables)
+    };
+  }
+
+  // Send email using Mailgun API
+  private async sendWithMailgun(emailData: EmailData): Promise<boolean> {
     try {
-      // In a real implementation, this would use a library like nodemailer
-      // to send the actual email
-      console.log('Sending email:', emailData);
+      const url = `https://api.mailgun.net/v3/${this.config.domain}/messages`;
+      const auth = {
+        username: 'api',
+        password: this.config.apiKey
+      };
       
-      // Simulate successful email sending
-      return true;
+      const formData = new FormData();
+      formData.append('from', emailData.from || this.defaultFrom);
+      formData.append('to', emailData.to);
+      formData.append('subject', emailData.subject);
+      formData.append('html', emailData.html);
+      
+      if (emailData.text) {
+        formData.append('text', emailData.text);
+      }
+      
+      const response = await axios.post(url, formData, { 
+        auth,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error sending email with Mailgun:', error);
+      return false;
+    }
+  }
+
+  // Send email using SendGrid API
+  private async sendWithSendGrid(emailData: EmailData): Promise<boolean> {
+    try {
+      const url = 'https://api.sendgrid.com/v3/mail/send';
+      const data = {
+        personalizations: [
+          {
+            to: [{ email: emailData.to }]
+          }
+        ],
+        from: { email: emailData.from || this.defaultFrom },
+        subject: emailData.subject,
+        content: [
+          {
+            type: 'text/html',
+            value: emailData.html
+          }
+        ]
+      };
+      
+      if (emailData.text) {
+        data.content.push({
+          type: 'text/plain',
+          value: emailData.text
+        });
+      }
+      
+      const response = await axios.post(url, data, {
+        headers: {
+          'Authorization': `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      return response.status === 202;
+    } catch (error) {
+      console.error('Error sending email with SendGrid:', error);
+      return false;
+    }
+  }
+
+  // Send email using the configured service
+  public async sendEmail(emailData: EmailData): Promise<boolean> {
+    try {
+      switch (this.config.service) {
+        case 'mailgun':
+          return await this.sendWithMailgun(emailData);
+        case 'sendgrid':
+          return await this.sendWithSendGrid(emailData);
+        default:
+          console.error('Unsupported email service');
+          return false;
+      }
     } catch (error) {
       console.error('Error sending email:', error);
       return false;
@@ -328,42 +343,30 @@ class EmailService {
   }
 
   // Send welcome email
-  async sendWelcomeEmail(to: string, name: string, language: 'en' | 'ar' = 'en'): Promise<boolean> {
-    const baseUrl = process.env.BASE_URL || 'https://jam3a.me';
-    const data = {
-      name,
-      shopUrl: `${baseUrl}/shop-jam3a`
-    };
+  public async sendWelcomeEmail(to: string, name: string, language: 'en' | 'ar' = 'en'): Promise<boolean> {
+    const shopUrl = 'https://jam3a.me/shop-jam3a';
+    const template = this.getTemplate('welcome', language, { name, shopUrl });
     
-    const template = this.getTemplate('welcome', language, data);
-    
-    return this.sendEmail({
+    return await this.sendEmail({
       to,
-      from: this.defaultFrom,
       subject: template.subject,
       html: template.body
     });
   }
 
   // Send waiting list confirmation email
-  async sendWaitingListEmail(to: string, name: string, position: number, language: 'en' | 'ar' = 'en'): Promise<boolean> {
-    const data = {
-      name,
-      position: position.toString()
-    };
+  public async sendWaitingListEmail(to: string, name: string, position: number, language: 'en' | 'ar' = 'en'): Promise<boolean> {
+    const template = this.getTemplate('waitingList', language, { name, position: position.toString() });
     
-    const template = this.getTemplate('waitingList', language, data);
-    
-    return this.sendEmail({
+    return await this.sendEmail({
       to,
-      from: this.defaultFrom,
       subject: template.subject,
       html: template.body
     });
   }
 
   // Send order confirmation email
-  async sendOrderConfirmationEmail(
+  public async sendOrderConfirmationEmail(
     to: string, 
     name: string, 
     orderNumber: string, 
@@ -371,63 +374,47 @@ class EmailService {
     productName: string,
     price: string,
     estimatedDelivery: string,
+    trackingUrl: string,
     language: 'en' | 'ar' = 'en'
   ): Promise<boolean> {
-    const baseUrl = process.env.BASE_URL || 'https://jam3a.me';
-    const data = {
-      name,
-      orderNumber,
-      orderDate,
-      productName,
-      price,
-      estimatedDelivery,
-      trackingUrl: `${baseUrl}/track-order?order=${orderNumber}`
-    };
+    const template = this.getTemplate('orderConfirmation', language, { 
+      name, 
+      orderNumber, 
+      orderDate, 
+      productName, 
+      price, 
+      estimatedDelivery, 
+      trackingUrl 
+    });
     
-    const template = this.getTemplate('orderConfirmation', language, data);
-    
-    return this.sendEmail({
+    return await this.sendEmail({
       to,
-      from: this.defaultFrom,
       subject: template.subject,
       html: template.body
     });
   }
 
-  // Send Jam3a invitation email
-  async sendJam3aInvitationEmail(
-    to: string,
-    inviterName: string,
-    productName: string,
-    price: string,
-    regularPrice: string,
-    currentParticipants: number,
-    requiredParticipants: number,
-    timeRemaining: string,
-    jam3aId: string,
-    language: 'en' | 'ar' = 'en'
-  ): Promise<boolean> {
-    const baseUrl = process.env.BASE_URL || 'https://jam3a.me';
-    const data = {
-      inviterName,
-      productName,
-      price,
-      regularPrice,
-      currentParticipants: currentParticipants.toString(),
-      requiredParticipants: requiredParticipants.toString(),
-      timeRemaining,
-      joinUrl: `${baseUrl}/join-jam3a/${jam3aId}`
-    };
-    
-    const template = this.getTemplate('jam3aInvitation', language, data);
-    
-    return this.sendEmail({
+  // Send test email to verify configuration
+  public async sendTestEmail(to: string): Promise<boolean> {
+    return await this.sendEmail({
       to,
-      from: this.defaultFrom,
-      subject: template.subject,
-      html: template.body
+      subject: 'Jam3a Email Service Test',
+      html: `
+        <div style="font-family: 'Poppins', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Email Service Test</h1>
+          </div>
+          <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
+            <p>This is a test email from Jam3a Hub Collective.</p>
+            <p>If you're receiving this, the email service is configured correctly!</p>
+            <p>Time sent: ${new Date().toISOString()}</p>
+          </div>
+        </div>
+      `
     });
   }
 }
 
-export default new EmailService();
+// Export a singleton instance
+const emailService = new EmailService();
+export default emailService;

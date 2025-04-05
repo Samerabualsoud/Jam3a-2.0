@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, ImagePlus, Save, Trash2, Edit, Eye, Upload, X } from 'lucide-react';
+import { PlusCircle, ImagePlus, Save, Trash2, Edit, Eye, Upload, X, Camera, FileImage } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -62,7 +62,7 @@ const mockProducts = [
   },
 ];
 
-// Image upload component
+// Enhanced Image upload component with better UI and functionality
 const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -70,6 +70,7 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(currentImage || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     setPreview(currentImage || "");
@@ -105,12 +106,22 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
     // Check if file is an image
     if (!file.type.match('image.*')) {
       setError("Please select an image file (JPEG, PNG, GIF, etc.)");
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (JPEG, PNG, GIF, etc.)",
+        variant: "destructive"
+      });
       return;
     }
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError("File is too large. Maximum size is 5MB.");
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 5MB",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -133,6 +144,10 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
           const result = e.target?.result as string;
           setPreview(result);
           onImageUpload(result, file.name);
+          toast({
+            title: "Image uploaded successfully",
+            description: `${file.name} has been uploaded`,
+          });
         };
         reader.readAsDataURL(file);
       }
@@ -145,6 +160,27 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    toast({
+      title: "Image removed",
+      description: "The image has been removed",
+    });
+  };
+
+  const captureImage = () => {
+    // Create a temporary input element to trigger device camera
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleFiles(file);
+      }
+    };
+    
+    input.click();
   };
 
   return (
@@ -174,626 +210,825 @@ const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) 
             alt="Preview" 
             className="w-full h-64 object-contain bg-gray-50"
           />
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            className="absolute top-2 right-2 h-8 w-8 rounded-full"
-            onClick={clearImage}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="absolute top-2 right-2 flex space-x-2">
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="h-8 w-8 rounded-full"
+              onClick={clearImage}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       ) : (
-        <div 
-          className={`border-2 border-dashed rounded-md p-8 text-center cursor-pointer transition-colors ${
-            isDragging ? 'border-purple-500 bg-purple-50' : 'border-gray-300 hover:border-purple-400'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <Upload className="h-10 w-10 text-gray-400" />
-            <div className="text-sm text-gray-600">
-              <span className="font-medium text-purple-600">Click to upload</span> or drag and drop
+        <div className="space-y-4">
+          <div 
+            className={`border-2 border-dashed rounded-md p-8 text-center cursor-pointer transition-colors ${
+              isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <FileImage className="h-10 w-10 text-primary" />
+              <div className="text-sm text-gray-600">
+                <span className="font-medium text-primary">Click to upload</span> or drag and drop
+              </div>
+              <p className="text-xs text-gray-500">
+                PNG, JPG, GIF up to 5MB
+              </p>
             </div>
-            <p className="text-xs text-gray-500">
-              PNG, JPG, GIF up to 5MB
-            </p>
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+            />
           </div>
-          <input 
-            type="file" 
-            className="hidden" 
-            accept="image/*"
-            onChange={handleFileChange}
-            ref={fileInputRef}
-          />
+          
+          <div className="flex justify-center">
+            <Button 
+              variant="outline" 
+              className="flex items-center space-x-2"
+              onClick={captureImage}
+            >
+              <Camera className="h-4 w-4" />
+              <span>Take Photo</span>
+            </Button>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
+// Product form component with enhanced image upload
+const ProductForm = ({ product = null, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    id: product?.id || Date.now(),
+    name: product?.name || '',
+    category: product?.category || 'Electronics',
+    price: product?.price || '',
+    stock: product?.stock || '',
+    description: product?.description || '',
+    image: product?.image || '',
+    imageName: ''
+  });
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleImageUpload = (imageData, imageName) => {
+    setFormData(prev => ({ ...prev, image: imageData, imageName }));
+  };
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="name">Product Name</Label>
+            <Input 
+              id="name" 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange} 
+              required 
+              className="jam3a-input"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="category">Category</Label>
+            <Select 
+              value={formData.category} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Electronics">Electronics</SelectItem>
+                <SelectItem value="Home">Home & Kitchen</SelectItem>
+                <SelectItem value="Fashion">Fashion</SelectItem>
+                <SelectItem value="Beauty">Beauty</SelectItem>
+                <SelectItem value="Sports">Sports & Outdoors</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="price">Price (SAR)</Label>
+              <Input 
+                id="price" 
+                name="price" 
+                type="number" 
+                value={formData.price} 
+                onChange={handleChange} 
+                required 
+                className="jam3a-input"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="stock">Stock</Label>
+              <Input 
+                id="stock" 
+                name="stock" 
+                type="number" 
+                value={formData.stock} 
+                onChange={handleChange} 
+                required 
+                className="jam3a-input"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea 
+              id="description" 
+              name="description" 
+              value={formData.description} 
+              onChange={handleChange} 
+              rows={4} 
+              className="jam3a-input"
+            />
+          </div>
+        </div>
+        
+        <div>
+          <ImageUploader 
+            onImageUpload={handleImageUpload} 
+            currentImage={formData.image} 
+            label="Product Image"
+          />
+        </div>
+      </div>
+      
+      <div className="flex justify-end space-x-2">
+        <Button variant="outline" type="button" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" className="jam3a-button-primary">
+          {product ? 'Update Product' : 'Add Product'}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
 const ContentManager = () => {
-  const [activeTab, setActiveTab] = useState("banners");
+  const [activeTab, setActiveTab] = useState("products");
   const [selectedBanner, setSelectedBanner] = useState<any>(null);
   const [selectedPage, setSelectedPage] = useState<any>(null);
   const [selectedFAQ, setSelectedFAQ] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const { toast } = useToast();
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [banners, setBanners] = useState(mockBanners);
+  const [pages, setPages] = useState(mockPages);
+  const [faqs, setFAQs] = useState(mockFAQs);
   const [products, setProducts] = useState(mockProducts);
-
-  // Form states
+  const { toast } = useToast();
+  
+  // Banner form state
   const [bannerForm, setBannerForm] = useState({
+    id: 0,
     title: '',
     image: '',
-    active: false,
-    link: '',
+    active: false
   });
-
+  
+  // Page form state
   const [pageForm, setPageForm] = useState({
+    id: 0,
     title: '',
     slug: '',
     content: '',
+    lastUpdated: ''
   });
-
+  
+  // FAQ form state
   const [faqForm, setFaqForm] = useState({
+    id: 0,
     question: '',
-    answer: '',
+    answer: ''
   });
-
-  const [productForm, setProductForm] = useState({
-    name: '',
-    category: '',
-    price: '',
-    stock: '',
-    description: '',
-    image: '',
-  });
-
-  const handleBannerSelect = (banner: any) => {
+  
+  // Handle banner selection
+  const handleSelectBanner = (banner) => {
     setSelectedBanner(banner);
     setBannerForm({
+      id: banner.id,
       title: banner.title,
       image: banner.image,
-      active: banner.active,
-      link: banner.link || '',
+      active: banner.active
     });
-    setPreviewImage(banner.image);
     setIsEditing(true);
+    setIsAdding(false);
   };
-
-  const handlePageSelect = (page: any) => {
+  
+  // Handle page selection
+  const handleSelectPage = (page) => {
     setSelectedPage(page);
     setPageForm({
+      id: page.id,
       title: page.title,
       slug: page.slug,
-      content: 'This is the content for ' + page.title + '. In a real implementation, this would be loaded from a database or CMS.',
+      content: 'This is the content for ' + page.title,
+      lastUpdated: page.lastUpdated
     });
     setIsEditing(true);
+    setIsAdding(false);
   };
-
-  const handleFAQSelect = (faq: any) => {
+  
+  // Handle FAQ selection
+  const handleSelectFAQ = (faq) => {
     setSelectedFAQ(faq);
     setFaqForm({
+      id: faq.id,
       question: faq.question,
-      answer: faq.answer,
+      answer: faq.answer
     });
     setIsEditing(true);
+    setIsAdding(false);
   };
-
-  const handleProductSelect = (product: any) => {
+  
+  // Handle product selection
+  const handleSelectProduct = (product) => {
     setSelectedProduct(product);
-    setProductForm({
-      name: product.name,
-      category: product.category,
-      price: product.price.toString(),
-      stock: product.stock.toString(),
-      description: product.description || '',
-      image: product.image || '',
-    });
     setIsEditing(true);
+    setIsAdding(false);
   };
-
-  const handleNewItem = () => {
-    setIsEditing(true);
-    if (activeTab === 'banners') {
-      setSelectedBanner(null);
-      setBannerForm({
-        title: '',
-        image: '',
-        active: false,
-        link: '',
-      });
-      setPreviewImage(null);
-    } else if (activeTab === 'pages') {
-      setSelectedPage(null);
-      setPageForm({
-        title: '',
-        slug: '',
-        content: '',
-      });
-    } else if (activeTab === 'faqs') {
-      setSelectedFAQ(null);
-      setFaqForm({
-        question: '',
-        answer: '',
-      });
-    } else if (activeTab === 'products') {
-      setSelectedProduct(null);
-      setProductForm({
-        name: '',
-        category: '',
-        price: '',
-        stock: '',
-        description: '',
-        image: '',
-      });
-    }
-  };
-
-  const handleSave = () => {
-    // In a real implementation, this would save to a database or API
-    if (activeTab === 'products') {
-      if (selectedProduct) {
-        // Update existing product
-        const updatedProducts = products.map(p => 
-          p.id === selectedProduct.id 
-            ? { 
-                ...p, 
-                name: productForm.name,
-                category: productForm.category,
-                price: parseFloat(productForm.price),
-                stock: parseInt(productForm.stock),
-                description: productForm.description,
-                image: productForm.image
-              } 
-            : p
-        );
-        setProducts(updatedProducts);
-      } else {
-        // Add new product
-        const newProduct = {
-          id: products.length + 1,
-          name: productForm.name,
-          category: productForm.category,
-          price: parseFloat(productForm.price),
-          stock: parseInt(productForm.stock),
-          description: productForm.description,
-          image: productForm.image
-        };
-        setProducts([...products, newProduct]);
-      }
-    }
-
-    toast({
-      title: "Content saved",
-      description: "Your changes have been saved successfully.",
-    });
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
+  
+  // Handle adding new item
+  const handleAddNew = () => {
+    setIsAdding(true);
     setIsEditing(false);
     setSelectedBanner(null);
     setSelectedPage(null);
     setSelectedFAQ(null);
     setSelectedProduct(null);
-    setPreviewImage(null);
-  };
-
-  const handleImageUpload = (imageUrl: string, fileName: string) => {
-    if (activeTab === 'banners') {
-      setBannerForm({...bannerForm, image: imageUrl});
-    } else if (activeTab === 'products') {
-      setProductForm({...productForm, image: imageUrl});
-    }
     
-    if (imageUrl) {
-      toast({
-        title: "Image uploaded",
-        description: `File "${fileName || 'image'}" has been uploaded successfully.`,
+    if (activeTab === "banners") {
+      setBannerForm({
+        id: Date.now(),
+        title: '',
+        image: '',
+        active: false
+      });
+    } else if (activeTab === "pages") {
+      setPageForm({
+        id: Date.now(),
+        title: '',
+        slug: '',
+        content: '',
+        lastUpdated: new Date().toISOString().split('T')[0]
+      });
+    } else if (activeTab === "faqs") {
+      setFaqForm({
+        id: Date.now(),
+        question: '',
+        answer: ''
       });
     }
   };
-
+  
+  // Handle banner form change
+  const handleBannerFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setBannerForm({
+      ...bannerForm,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+  
+  // Handle page form change
+  const handlePageFormChange = (e) => {
+    const { name, value } = e.target;
+    setPageForm({
+      ...pageForm,
+      [name]: value
+    });
+  };
+  
+  // Handle FAQ form change
+  const handleFaqFormChange = (e) => {
+    const { name, value } = e.target;
+    setFaqForm({
+      ...faqForm,
+      [name]: value
+    });
+  };
+  
+  // Handle banner image upload
+  const handleBannerImageUpload = (imageData, imageName) => {
+    setBannerForm({
+      ...bannerForm,
+      image: imageData
+    });
+  };
+  
+  // Handle save banner
+  const handleSaveBanner = () => {
+    if (isAdding) {
+      setBanners([...banners, bannerForm]);
+      toast({
+        title: "Banner added",
+        description: `${bannerForm.title} has been added successfully.`
+      });
+    } else {
+      setBanners(banners.map(b => b.id === bannerForm.id ? bannerForm : b));
+      toast({
+        title: "Banner updated",
+        description: `${bannerForm.title} has been updated successfully.`
+      });
+    }
+    setIsEditing(false);
+    setIsAdding(false);
+    setSelectedBanner(null);
+  };
+  
+  // Handle save page
+  const handleSavePage = () => {
+    if (isAdding) {
+      setPages([...pages, pageForm]);
+      toast({
+        title: "Page added",
+        description: `${pageForm.title} has been added successfully.`
+      });
+    } else {
+      setPages(pages.map(p => p.id === pageForm.id ? pageForm : p));
+      toast({
+        title: "Page updated",
+        description: `${pageForm.title} has been updated successfully.`
+      });
+    }
+    setIsEditing(false);
+    setIsAdding(false);
+    setSelectedPage(null);
+  };
+  
+  // Handle save FAQ
+  const handleSaveFAQ = () => {
+    if (isAdding) {
+      setFAQs([...faqs, faqForm]);
+      toast({
+        title: "FAQ added",
+        description: `New FAQ has been added successfully.`
+      });
+    } else {
+      setFAQs(faqs.map(f => f.id === faqForm.id ? faqForm : f));
+      toast({
+        title: "FAQ updated",
+        description: `FAQ has been updated successfully.`
+      });
+    }
+    setIsEditing(false);
+    setIsAdding(false);
+    setSelectedFAQ(null);
+  };
+  
+  // Handle save product
+  const handleSaveProduct = (productData) => {
+    if (isAdding) {
+      setProducts([...products, productData]);
+      toast({
+        title: "Product added",
+        description: `${productData.name} has been added successfully.`
+      });
+    } else {
+      setProducts(products.map(p => p.id === productData.id ? productData : p));
+      toast({
+        title: "Product updated",
+        description: `${productData.name} has been updated successfully.`
+      });
+    }
+    setIsEditing(false);
+    setIsAdding(false);
+    setSelectedProduct(null);
+  };
+  
+  // Handle delete banner
+  const handleDeleteBanner = (id) => {
+    setBanners(banners.filter(b => b.id !== id));
+    setIsEditing(false);
+    setSelectedBanner(null);
+    toast({
+      title: "Banner deleted",
+      description: "The banner has been deleted successfully."
+    });
+  };
+  
+  // Handle delete page
+  const handleDeletePage = (id) => {
+    setPages(pages.filter(p => p.id !== id));
+    setIsEditing(false);
+    setSelectedPage(null);
+    toast({
+      title: "Page deleted",
+      description: "The page has been deleted successfully."
+    });
+  };
+  
+  // Handle delete FAQ
+  const handleDeleteFAQ = (id) => {
+    setFAQs(faqs.filter(f => f.id !== id));
+    setIsEditing(false);
+    setSelectedFAQ(null);
+    toast({
+      title: "FAQ deleted",
+      description: "The FAQ has been deleted successfully."
+    });
+  };
+  
+  // Handle delete product
+  const handleDeleteProduct = (id) => {
+    setProducts(products.filter(p => p.id !== id));
+    setIsEditing(false);
+    setSelectedProduct(null);
+    toast({
+      title: "Product deleted",
+      description: "The product has been deleted successfully."
+    });
+  };
+  
+  // Handle cancel edit/add
+  const handleCancel = () => {
+    setIsEditing(false);
+    setIsAdding(false);
+    setSelectedBanner(null);
+    setSelectedPage(null);
+    setSelectedFAQ(null);
+    setSelectedProduct(null);
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Content Management</h2>
-        {!isEditing && (
-          <Button onClick={handleNewItem}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New
+        <h2 className="text-2xl font-bold">Content Management</h2>
+        {!isEditing && !isAdding && (
+          <Button onClick={handleAddNew} className="jam3a-button-primary">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New
           </Button>
         )}
       </div>
-
-      <Tabs defaultValue="banners" value={activeTab} onValueChange={(value) => {
-        setActiveTab(value);
-        setIsEditing(false);
-        setSelectedBanner(null);
-        setSelectedPage(null);
-        setSelectedFAQ(null);
-        setSelectedProduct(null);
-        setPreviewImage(null);
-      }} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-4 mb-4">
+          <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="banners">Banners</TabsTrigger>
           <TabsTrigger value="pages">Pages</TabsTrigger>
           <TabsTrigger value="faqs">FAQs</TabsTrigger>
-          <TabsTrigger value="products">Products</TabsTrigger>
         </TabsList>
-
-        {/* Banners Tab */}
-        <TabsContent value="banners">
-          {!isEditing ? (
+        
+        {/* Products Tab */}
+        <TabsContent value="products" className="space-y-4">
+          {isEditing || isAdding ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{isAdding ? 'Add New Product' : 'Edit Product'}</CardTitle>
+                <CardDescription>
+                  {isAdding ? 'Create a new product listing' : 'Update product information'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProductForm 
+                  product={selectedProduct} 
+                  onSave={handleSaveProduct} 
+                  onCancel={handleCancel} 
+                />
+              </CardContent>
+            </Card>
+          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mockBanners.map((banner) => (
-                <Card key={banner.id} className="overflow-hidden">
-                  <div className="relative h-40">
+              {products.map(product => (
+                <Card key={product.id} className="overflow-hidden">
+                  <div className="aspect-video relative">
+                    <img 
+                      src={product.image || 'https://placehold.co/400x300/teal/white?text=Product+Image'} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/400x300/teal/white?text=Product+Image';
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 flex space-x-1">
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-white"
+                        onClick={() => handleSelectProduct(product)}
+                      >
+                        <Edit className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-destructive"
+                        onClick={() => handleDeleteProduct(product.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-bold text-lg mb-1">{product.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-primary">{product.price} SAR</span>
+                      <span className="text-sm text-muted-foreground">Stock: {product.stock}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        {/* Banners Tab */}
+        <TabsContent value="banners" className="space-y-4">
+          {isEditing || isAdding ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{isAdding ? 'Add New Banner' : 'Edit Banner'}</CardTitle>
+                <CardDescription>
+                  {isAdding ? 'Create a new banner for your website' : 'Update banner information'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">Banner Title</Label>
+                    <Input 
+                      id="title" 
+                      name="title" 
+                      value={bannerForm.title} 
+                      onChange={handleBannerFormChange} 
+                      className="jam3a-input"
+                    />
+                  </div>
+                  
+                  <ImageUploader 
+                    onImageUpload={handleBannerImageUpload} 
+                    currentImage={bannerForm.image} 
+                    label="Banner Image"
+                  />
+                  
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="active" 
+                      name="active" 
+                      checked={bannerForm.active} 
+                      onChange={handleBannerFormChange} 
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="active">Active</Label>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <div className="space-x-2">
+                  {!isAdding && (
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleDeleteBanner(bannerForm.id)}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                  <Button onClick={handleSaveBanner} className="jam3a-button-primary">
+                    {isAdding ? 'Add Banner' : 'Save Changes'}
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {banners.map(banner => (
+                <Card 
+                  key={banner.id} 
+                  className={`overflow-hidden cursor-pointer transition-all ${
+                    banner.active ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => handleSelectBanner(banner)}
+                >
+                  <div className="aspect-video relative">
                     <img 
                       src={banner.image} 
-                      alt={banner.title} 
+                      alt={banner.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/400x200/teal/white?text=Banner+Image';
+                      }}
                     />
                     {banner.active && (
-                      <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs">
+                      <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded-full">
                         Active
                       </div>
                     )}
                   </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle>{banner.title}</CardTitle>
-                  </CardHeader>
-                  <CardFooter>
-                    <Button variant="outline" size="sm" className="mr-2" onClick={() => handleBannerSelect(banner)}>
-                      <Edit className="h-4 w-4 mr-1" /> Edit
-                    </Button>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedBanner ? 'Edit Banner' : 'Add New Banner'}</CardTitle>
-                <CardDescription>Manage homepage and promotional banners</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="banner-title">Banner Title</Label>
-                  <Input 
-                    id="banner-title" 
-                    value={bannerForm.title} 
-                    onChange={(e) => setBannerForm({...bannerForm, title: e.target.value})}
-                    placeholder="Enter banner title"
-                  />
-                </div>
-                
-                <ImageUploader 
-                  onImageUpload={handleImageUpload}
-                  currentImage={bannerForm.image}
-                  label="Banner Image"
-                />
-                
-                <div className="space-y-2">
-                  <Label htmlFor="banner-link">Link URL (optional)</Label>
-                  <Input 
-                    id="banner-link" 
-                    value={bannerForm.link} 
-                    onChange={(e) => setBannerForm({...bannerForm, link: e.target.value})}
-                    placeholder="Enter URL for banner link"
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="banner-active"
-                    checked={bannerForm.active}
-                    onChange={(e) => setBannerForm({...bannerForm, active: e.target.checked})}
-                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <Label htmlFor="banner-active" className="text-sm font-medium text-gray-700">
-                    Set as active banner
-                  </Label>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" /> Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Pages Tab */}
-        <TabsContent value="pages">
-          {!isEditing ? (
-            <div className="overflow-hidden rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="px-4 py-3 text-left font-medium">Title</th>
-                    <th className="px-4 py-3 text-left font-medium">Slug</th>
-                    <th className="px-4 py-3 text-left font-medium">Last Updated</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockPages.map((page) => (
-                    <tr key={page.id} className="border-t">
-                      <td className="px-4 py-3">{page.title}</td>
-                      <td className="px-4 py-3 text-gray-600">/{page.slug}</td>
-                      <td className="px-4 py-3 text-gray-600">{page.lastUpdated}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm" className="mr-1" onClick={() => handlePageSelect(page)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedPage ? `Edit Page: ${selectedPage.title}` : 'Add New Page'}</CardTitle>
-                <CardDescription>Manage website pages and content</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="page-title">Page Title</Label>
-                  <Input 
-                    id="page-title" 
-                    value={pageForm.title} 
-                    onChange={(e) => setPageForm({...pageForm, title: e.target.value})}
-                    placeholder="Enter page title"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="page-slug">URL Slug</Label>
-                  <div className="flex items-center">
-                    <span className="text-gray-500 mr-1">/</span>
-                    <Input 
-                      id="page-slug" 
-                      value={pageForm.slug} 
-                      onChange={(e) => setPageForm({...pageForm, slug: e.target.value})}
-                      placeholder="page-url-slug"
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="page-content">Page Content</Label>
-                  <Textarea 
-                    id="page-content" 
-                    value={pageForm.content} 
-                    onChange={(e) => setPageForm({...pageForm, content: e.target.value})}
-                    placeholder="Enter page content"
-                    className="min-h-[200px]"
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" /> Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* FAQs Tab */}
-        <TabsContent value="faqs">
-          {!isEditing ? (
-            <div className="space-y-4">
-              {mockFAQs.map((faq) => (
-                <Card key={faq.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{faq.question}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600">{faq.answer}</p>
+                  <CardContent className="p-4">
+                    <h3 className="font-bold">{banner.title}</h3>
                   </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" size="sm" onClick={() => handleFAQSelect(faq)}>
-                      <Edit className="h-4 w-4 mr-1" /> Edit
-                    </Button>
-                  </CardFooter>
                 </Card>
               ))}
             </div>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedFAQ ? 'Edit FAQ' : 'Add New FAQ'}</CardTitle>
-                <CardDescription>Manage frequently asked questions</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="faq-question">Question</Label>
-                  <Input 
-                    id="faq-question" 
-                    value={faqForm.question} 
-                    onChange={(e) => setFaqForm({...faqForm, question: e.target.value})}
-                    placeholder="Enter question"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="faq-answer">Answer</Label>
-                  <Textarea 
-                    id="faq-answer" 
-                    value={faqForm.answer} 
-                    onChange={(e) => setFaqForm({...faqForm, answer: e.target.value})}
-                    placeholder="Enter answer"
-                    className="min-h-[150px]"
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" /> Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
           )}
         </TabsContent>
-
-        {/* Products Tab */}
-        <TabsContent value="products">
-          {!isEditing ? (
-            <div className="overflow-hidden rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="px-4 py-3 text-left font-medium">Product</th>
-                    <th className="px-4 py-3 text-left font-medium">Category</th>
-                    <th className="px-4 py-3 text-left font-medium">Price (SAR)</th>
-                    <th className="px-4 py-3 text-left font-medium">Stock</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((product) => (
-                    <tr key={product.id} className="border-t">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
-                            {product.image ? (
-                              <img 
-                                src={product.image} 
-                                alt={product.name} 
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                                <ImagePlus className="h-5 w-5 text-gray-400" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="ml-3">
-                            <p className="font-medium">{product.name}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{product.category}</td>
-                      <td className="px-4 py-3 text-gray-600">{product.price}</td>
-                      <td className="px-4 py-3 text-gray-600">{product.stock}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm" className="mr-1" onClick={() => handleProductSelect(product)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
+        
+        {/* Pages Tab */}
+        <TabsContent value="pages" className="space-y-4">
+          {isEditing || isAdding ? (
             <Card>
               <CardHeader>
-                <CardTitle>{selectedProduct ? `Edit Product: ${selectedProduct.name}` : 'Add New Product'}</CardTitle>
-                <CardDescription>Manage product information and inventory</CardDescription>
+                <CardTitle>{isAdding ? 'Add New Page' : 'Edit Page'}</CardTitle>
+                <CardDescription>
+                  {isAdding ? 'Create a new page for your website' : 'Update page content'}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="product-name">Product Name</Label>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">Page Title</Label>
                     <Input 
-                      id="product-name" 
-                      value={productForm.name} 
-                      onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-                      placeholder="Enter product name"
+                      id="title" 
+                      name="title" 
+                      value={pageForm.title} 
+                      onChange={handlePageFormChange} 
+                      className="jam3a-input"
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="product-category">Category</Label>
-                    <Select 
-                      value={productForm.category} 
-                      onValueChange={(value) => setProductForm({...productForm, category: value})}
-                    >
-                      <SelectTrigger id="product-category">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Electronics">Electronics</SelectItem>
-                        <SelectItem value="Home & Kitchen">Home & Kitchen</SelectItem>
-                        <SelectItem value="Fashion">Fashion</SelectItem>
-                        <SelectItem value="Beauty">Beauty</SelectItem>
-                        <SelectItem value="Sports">Sports</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div>
+                    <Label htmlFor="slug">URL Slug</Label>
+                    <div className="flex items-center">
+                      <span className="text-muted-foreground mr-2">/</span>
+                      <Input 
+                        id="slug" 
+                        name="slug" 
+                        value={pageForm.slug} 
+                        onChange={handlePageFormChange} 
+                        className="jam3a-input"
+                      />
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="product-price">Price (SAR)</Label>
-                    <Input 
-                      id="product-price" 
-                      type="number"
-                      value={productForm.price} 
-                      onChange={(e) => setProductForm({...productForm, price: e.target.value})}
-                      placeholder="Enter price"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="product-stock">Stock</Label>
-                    <Input 
-                      id="product-stock" 
-                      type="number"
-                      value={productForm.stock} 
-                      onChange={(e) => setProductForm({...productForm, stock: e.target.value})}
-                      placeholder="Enter stock quantity"
+                  <div>
+                    <Label htmlFor="content">Page Content</Label>
+                    <Textarea 
+                      id="content" 
+                      name="content" 
+                      value={pageForm.content} 
+                      onChange={handlePageFormChange} 
+                      rows={10} 
+                      className="jam3a-input"
                     />
                   </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="product-description">Description</Label>
-                  <Textarea 
-                    id="product-description" 
-                    value={productForm.description} 
-                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-                    placeholder="Enter product description"
-                    className="min-h-[100px]"
-                  />
-                </div>
-                
-                <ImageUploader 
-                  onImageUpload={handleImageUpload}
-                  currentImage={productForm.image}
-                  label="Product Image"
-                />
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" /> Save Product
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancel
                 </Button>
+                <div className="space-x-2">
+                  {!isAdding && (
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleDeletePage(pageForm.id)}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                  <Button onClick={handleSavePage} className="jam3a-button-primary">
+                    {isAdding ? 'Add Page' : 'Save Changes'}
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
+          ) : (
+            <div className="space-y-2">
+              {pages.map(page => (
+                <Card 
+                  key={page.id} 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleSelectPage(page)}
+                >
+                  <CardContent className="p-4 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold">{page.title}</h3>
+                      <p className="text-sm text-muted-foreground">/{page.slug}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-muted-foreground">
+                        Last updated: {page.lastUpdated}
+                      </span>
+                      <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        {/* FAQs Tab */}
+        <TabsContent value="faqs" className="space-y-4">
+          {isEditing || isAdding ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{isAdding ? 'Add New FAQ' : 'Edit FAQ'}</CardTitle>
+                <CardDescription>
+                  {isAdding ? 'Create a new frequently asked question' : 'Update FAQ information'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="question">Question</Label>
+                    <Input 
+                      id="question" 
+                      name="question" 
+                      value={faqForm.question} 
+                      onChange={handleFaqFormChange} 
+                      className="jam3a-input"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="answer">Answer</Label>
+                    <Textarea 
+                      id="answer" 
+                      name="answer" 
+                      value={faqForm.answer} 
+                      onChange={handleFaqFormChange} 
+                      rows={5} 
+                      className="jam3a-input"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <div className="space-x-2">
+                  {!isAdding && (
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleDeleteFAQ(faqForm.id)}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                  <Button onClick={handleSaveFAQ} className="jam3a-button-primary">
+                    {isAdding ? 'Add FAQ' : 'Save Changes'}
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {faqs.map(faq => (
+                <Card 
+                  key={faq.id} 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleSelectFAQ(faq)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold">{faq.question}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{faq.answer}</p>
+                      </div>
+                      <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
       </Tabs>

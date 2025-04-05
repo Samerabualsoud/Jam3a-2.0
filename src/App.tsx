@@ -37,6 +37,7 @@ import MyJam3a from "./pages/MyJam3a";
 import Cart from "./pages/Cart";
 import UserProfile from "./pages/UserProfile";
 import ScrollToTop from "./components/ScrollToTop";
+import GoogleAnalytics from "./components/GoogleAnalytics";
 
 // Define route types for better organization
 type RouteConfig = {
@@ -51,7 +52,10 @@ const App = () => {
   // Create a client
   const [queryClient] = useState(() => new QueryClient());
 
-    // Define routes configuration
+  // Google Analytics measurement ID
+  const GA_MEASUREMENT_ID = "G-XXXXXXXXXX"; // Replace with your actual GA measurement ID
+
+  // Define routes configuration
   const routesConfig: RouteConfig[] = [
     // Public routes
     { path: "/", element: <Index /> },
@@ -122,6 +126,9 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              {/* Add Google Analytics tracking */}
+              <GoogleAnalytics measurementId={GA_MEASUREMENT_ID} />
+              
               {/* Add ScrollToTop component to handle automatic scrolling on route changes */}
               <ScrollToTop />
               <Routes>
