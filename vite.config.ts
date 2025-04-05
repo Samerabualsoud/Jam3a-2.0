@@ -11,9 +11,6 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
-      external: ['nodemailer', 'express', 'cors']
-    },
     outDir: 'dist',
     emptyOutDir: true,
   },
@@ -26,7 +23,6 @@ export default defineConfig({
       "@radix-ui/react-toast",
       "lucide-react",
       "axios"
-    ],
-    exclude: ['nodemailer', 'express', 'cors']
+    ]
   }
 })
