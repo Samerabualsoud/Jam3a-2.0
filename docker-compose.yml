@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongo:27017/jam3a
+      - JWT_SECRET=${JWT_SECRET}
+      - MOYASSER_API_KEY=${MOYASSER_API_KEY}
+      - MOYASSER_SECRET_KEY=${MOYASSER_SECRET_KEY}
+      - MOYASSER_API_URL=${MOYASSER_API_URL}
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:4.4
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
