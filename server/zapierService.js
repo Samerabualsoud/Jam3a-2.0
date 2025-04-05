@@ -8,14 +8,14 @@ const ZAPIER_CONFIG = {
   
   // Zapier webhook URLs for different actions
   webhooks: {
-    waitlist: 'https://hooks.zapier.com/hooks/catch/jam3a/waitlist/', 
-    registration: 'https://hooks.zapier.com/hooks/catch/jam3a/registration/', 
-    newsletter: 'https://hooks.zapier.com/hooks/catch/jam3a/newsletter/', 
-    orderConfirmation: 'https://hooks.zapier.com/hooks/catch/jam3a/order/', 
-    groupComplete: 'https://hooks.zapier.com/hooks/catch/jam3a/group/' 
+    waitlist: 'https://hooks.zapier.com/hooks/catch/123456/abcdef/', 
+    registration: 'https://hooks.zapier.com/hooks/catch/123456/ghijkl/', 
+    newsletter: 'https://hooks.zapier.com/hooks/catch/123456/mnopqr/', 
+    orderConfirmation: 'https://hooks.zapier.com/hooks/catch/123456/stuvwx/', 
+    groupComplete: 'https://hooks.zapier.com/hooks/catch/123456/yz1234/' 
   },
   // Default webhook for general purpose use
-  defaultWebhook: 'https://hooks.zapier.com/hooks/catch/jam3a/default/'
+  defaultWebhook: 'https://hooks.zapier.com/hooks/catch/123456/default/'
 };
 
 /**
