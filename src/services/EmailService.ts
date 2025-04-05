@@ -34,6 +34,10 @@ const EmailService = {
   // Send email through API endpoint
   sendEmail: async ({ to, subject, template, data }) => {
     try {
+      if (!to || typeof to !== 'string' || !to.includes('@')) {
+        throw new Error('Invalid email address');
+      }
+      
       // Call the server API endpoint that handles the actual email sending with Microsoft Outlook
       console.log('Email request:', {
         from: EMAIL_CONFIG.sender,
@@ -59,15 +63,15 @@ const EmailService = {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send email');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Failed to send email: ${response.status}`);
       }
       
-      const result = await response.json();
+      const result = await response.json().catch(() => ({ success: true }));
       return result;
     } catch (error) {
       console.error('Error sending email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   },
   
@@ -79,7 +83,7 @@ const EmailService = {
         to,
         subject: template.subject,
         template: template.template,
-        data: { name }
+        data: { name: name || 'Valued Customer' }
       });
       
       if (result.success) {
@@ -99,7 +103,7 @@ const EmailService = {
       return result;
     } catch (error) {
       console.error('Error sending welcome email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   },
   
@@ -111,7 +115,7 @@ const EmailService = {
         to,
         subject: template.subject,
         template: template.template,
-        data: { name, orderDetails }
+        data: { name: name || 'Valued Customer', orderDetails }
       });
       
       if (result.success) {
@@ -131,7 +135,7 @@ const EmailService = {
       return result;
     } catch (error) {
       console.error('Error sending order confirmation email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   },
   
@@ -143,7 +147,7 @@ const EmailService = {
         to,
         subject: template.subject,
         template: template.template,
-        data: { name, groupDetails }
+        data: { name: name || 'Valued Customer', groupDetails }
       });
       
       if (result.success) {
@@ -163,7 +167,7 @@ const EmailService = {
       return result;
     } catch (error) {
       console.error('Error sending group complete email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   },
   
@@ -176,7 +180,7 @@ const EmailService = {
         subject: template.subject,
         template: template.template,
         data: { 
-          name,
+          name: name || 'Valued Customer',
           joinDate: new Date().toLocaleDateString(),
           position: Math.floor(Math.random() * 100) + 1, // Simulated waitlist position
         }
@@ -199,7 +203,7 @@ const EmailService = {
       return result;
     } catch (error) {
       console.error('Error sending waitlist email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   },
   
@@ -212,7 +216,7 @@ const EmailService = {
         subject: template.subject,
         template: template.template,
         data: { 
-          name,
+          name: name || 'Valued Customer',
           accountDetails,
           registrationDate: new Date().toLocaleDateString()
         }
@@ -235,7 +239,7 @@ const EmailService = {
       return result;
     } catch (error) {
       console.error('Error sending registration email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   },
   
@@ -244,7 +248,7 @@ const EmailService = {
     try {
       const result = await EmailService.sendEmail({
         to,
-        subject,
+        subject: subject || 'Message from Jam3a',
         template: 'custom',
         data: { htmlContent }
       });
@@ -266,19 +270,23 @@ const EmailService = {
       return result;
     } catch (error) {
       console.error('Error sending custom email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   },
   
   // Subscribe to newsletter
   subscribeToNewsletter: async (email, name = '') => {
     try {
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        throw new Error('Invalid email address');
+      }
+      
       // Send confirmation email
       await EmailService.sendEmail({
         to: email,
         subject: 'Newsletter Subscription Confirmation',
         template: 'newsletter',
-        data: { name, email }
+        data: { name: name || 'Valued Subscriber', email }
       });
       
       toast({
@@ -293,11 +301,11 @@ const EmailService = {
       
       toast({
         title: 'Subscription failed',
-        description: error.message,
+        description: error.message || 'Unknown error occurred',
         variant: 'destructive',
       });
       
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error occurred' };
     }
   }
 };

@@ -14,6 +14,7 @@ import { CreditCard, Smartphone, Apple, Clock, Calendar, CreditCardIcon, Wallet,
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ScrollToTop from '@/components/ScrollToTop';
+import { Textarea } from '@/components/ui/textarea';
 
 // Payment method icons
 const TabbyIcon = () => (

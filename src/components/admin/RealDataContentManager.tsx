@@ -292,7 +292,12 @@ const RealDataContentManager = () => {
         const fetchBanners = async () => {
           try {
             const response = await axios.get('/api/banners');
-            setBanners(response.data);
+            if (response.data && Array.isArray(response.data)) {
+              setBanners(response.data);
+            } else {
+              console.warn("Banners data is not an array, using fallback");
+              setBanners([]);
+            }
             return true;
           } catch (error) {
             console.error("Error fetching banners:", error);
@@ -303,7 +308,12 @@ const RealDataContentManager = () => {
         const fetchPages = async () => {
           try {
             const response = await axios.get('/api/pages');
-            setPages(response.data);
+            if (response.data && Array.isArray(response.data)) {
+              setPages(response.data);
+            } else {
+              console.warn("Pages data is not an array, using fallback");
+              setPages([]);
+            }
             return true;
           } catch (error) {
             console.error("Error fetching pages:", error);
@@ -314,7 +324,12 @@ const RealDataContentManager = () => {
         const fetchFAQs = async () => {
           try {
             const response = await axios.get('/api/faqs');
-            setFaqs(response.data);
+            if (response.data && Array.isArray(response.data)) {
+              setFaqs(response.data);
+            } else {
+              console.warn("FAQs data is not an array, using fallback");
+              setFaqs([]);
+            }
             return true;
           } catch (error) {
             console.error("Error fetching FAQs:", error);
@@ -325,7 +340,12 @@ const RealDataContentManager = () => {
         const fetchProducts = async () => {
           try {
             const response = await axios.get('/api/products');
-            setProducts(response.data);
+            if (response.data && Array.isArray(response.data)) {
+              setProducts(response.data);
+            } else {
+              console.warn("Products data is not an array, using fallback");
+              setProducts([]);
+            }
             return true;
           } catch (error) {
             console.error("Error fetching products:", error);
