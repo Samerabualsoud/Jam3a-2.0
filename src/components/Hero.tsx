@@ -32,13 +32,13 @@ const Hero = () => {
   return (
     <div className="hero-section">
       <div className="container relative z-10 mx-auto px-4 md:px-6">
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 items-center">
-          <div className="flex flex-col justify-center space-y-6 animate-slide-up">
-            <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary max-w-max">
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-2 lg:gap-12 items-center">
+          <div className="flex flex-col justify-center space-y-4 sm:space-y-6 animate-slide-up">
+            <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 sm:px-4 py-1.5 text-sm font-medium text-primary max-w-max">
               <TrendingUp className={`${isRtl ? 'ml-2' : 'mr-2'} h-4 w-4`} />
               {isRtl ? 'أول منصة للشراء الجماعي بالمملكة 🇸🇦' : "Saudi Arabia's first group-buying platform"}
             </div>
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl" dir={isRtl ? 'rtl' : 'ltr'}>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl" dir={isRtl ? 'rtl' : 'ltr'}>
               {isRtl ? (
                 <>
                   نشتري مع بعض،<br />
@@ -51,16 +51,27 @@ const Hero = () => {
                 </>
               )}
             </h1>
-            <p className="max-w-[600px] text-muted-foreground md:text-xl" dir={isRtl ? 'rtl' : 'ltr'}>
+            <p className="max-w-[600px] text-base sm:text-lg text-muted-foreground md:text-xl" dir={isRtl ? 'rtl' : 'ltr'}>
               {isRtl 
                 ? 'انضم مع الربع والعيال وخذ خصومات حصرية على أفضل المنتجات التقنية والأجهزة الذكية بأسعار ما تلقاها بأي مكان!'
                 : 'Join forces with friends and family to unlock exclusive discounts on premium tech products and more.'}
             </p>
             <div className={`flex flex-col space-y-3 sm:flex-row ${isRtl ? 'sm:space-x-reverse sm:space-x-4' : 'sm:space-x-4'} sm:space-y-0`}>
-              <Button size="lg" className="gradient-bg hover:opacity-90 transition-opacity text-white" onClick={handleShopDeals}>
+              <Button 
+                size="lg" 
+                className="gradient-bg hover:opacity-90 transition-opacity text-white" 
+                onClick={handleShopDeals}
+                aria-label={isRtl ? 'شوف العروض الحالية' : 'Shop Deals'}
+              >
                 {isRtl ? 'شوف العروض الحالية' : 'Shop Deals'}
               </Button>
-              <Button size="lg" variant="outline" className="border-primary hover:bg-primary/10 transition-colors" onClick={handleStartJam3a}>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-primary hover:bg-primary/10 transition-colors" 
+                onClick={handleStartJam3a}
+                aria-label={isRtl ? 'سوّي جمعتك الخاصة' : 'Start Your Own Jam3a'}
+              >
                 {isRtl ? 'سوّي جمعتك الخاصة' : 'Start Your Own Jam3a'}
               </Button>
             </div>
@@ -127,7 +138,14 @@ const Hero = () => {
                       <span>{isRtl ? '4 من 5 انضموا' : '4 of 5 joined'}</span>
                       <span className="text-primary font-medium">{isRtl ? 'اكتمل 80%' : '80% complete'}</span>
                     </div>
-                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/20">
+                    <div 
+                      className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/20"
+                      role="progressbar"
+                      aria-valuenow={80}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={isRtl ? 'نسبة اكتمال المجموعة' : 'Group completion percentage'}
+                    >
                       <div className="h-full bg-primary transition-all duration-500 ease-in-out" style={{ width: '80%' }}></div>
                     </div>
                   </div>
@@ -135,9 +153,10 @@ const Hero = () => {
                     <Button 
                       className="w-full gradient-bg hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 font-medium shadow-md" 
                       onClick={handleJoinJam3a}
+                      aria-label={isRtl ? 'انضم للجمعة هذي' : 'Join This Jam3a'}
                     >
                       {isRtl ? 'انضم للجمعة هذي' : 'Join This Jam3a'}
-                      {isRtl ? null : <ArrowRight className="h-4 w-4 animate-pulse" />}
+                      {isRtl ? null : <ArrowRight className="h-4 w-4 animate-pulse" aria-hidden="true" />}
                     </Button>
                   </div>
                 </div>

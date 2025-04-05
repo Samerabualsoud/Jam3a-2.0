@@ -111,15 +111,22 @@ const FeaturedDeals = () => {
           <p className="text-xl text-muted-foreground">{currentContent.subtitle}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
           {products.map((product) => (
             <div key={product.id} className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md transition-all hover:shadow-lg">
-              <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden bg-gray-200">
+              <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden bg-gray-200 relative">
+                {/* Loading skeleton that shows before image loads */}
+                <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
                 <img
                   src={product.image}
                   alt={product.name[language]}
                   className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
+                  onLoad={(e) => {
+                    // Hide skeleton when image loads
+                    const target = e.target as HTMLImageElement;
+                    target.parentElement?.querySelector('.animate-pulse')?.classList.add('hidden');
+                  }}
                 />
                 <div className="absolute top-2 right-2 bg-jam3a-purple text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-md">
                   {product.discount}
@@ -148,7 +155,14 @@ const FeaturedDeals = () => {
                       <p>{product.timeLeft}</p>
                     </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={(product.participants.current / product.participants.total) * 100}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={language === 'ar' ? 'نسبة اكتمال المجموعة' : 'Group completion percentage'}
+                  >
                     <div 
                       className="bg-jam3a-purple h-2.5 rounded-full transition-all duration-500 ease-in-out" 
                       style={{ width: `${(product.participants.current / product.participants.total) * 100}%` }}
@@ -171,6 +185,7 @@ const FeaturedDeals = () => {
                       // Navigate to join page
                       window.location.href = `/join-jam3a?product=${encodeURIComponent(product.name[language])}&price=${product.jam3aPrice}&discount=${product.discount}&id=${product.id}`;
                     }}
+                    aria-label={`${currentContent.join}: ${product.name[language]}`}
                   >
                     {currentContent.join}
                   </button>

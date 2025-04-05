@@ -1,10 +1,28 @@
 import { toast } from '@/hooks/use-toast';
 
-// Microsoft Outlook Email Service Configuration
+// Error handling utility
+const handleServiceError = (error: any, defaultMessage: string) => {
+  const errorMessage = error?.message || defaultMessage;
+  console.error(defaultMessage, error);
+  return { 
+    success: false, 
+    error: errorMessage,
+    statusCode: error?.statusCode || 500
+  };
+};
+
+// Microsoft Outlook Email Service Configuration with Zapier Integration
 const EMAIL_CONFIG = {
   sender: 'Samer@jam3a.me',
   service: 'Microsoft Outlook',
-  apiEndpoint: '/api/email', // Server endpoint that handles actual email sending
+  apiEndpoint: '/api/email/send', // Updated endpoint for combined email + Zapier
+  zapierEndpoints: {
+    waitlist: '/api/email/zapier/waitlist',
+    registration: '/api/email/zapier/registration',
+    newsletter: '/api/email/zapier/newsletter',
+    orderConfirmation: '/api/email/zapier/order',
+    groupComplete: '/api/email/zapier/group'
+  },
   templates: {
     welcome: {
       subject: 'Welcome to Jam3a!',
@@ -38,7 +56,7 @@ const EmailService = {
         throw new Error('Invalid email address');
       }
       
-      // Call the server API endpoint that handles the actual email sending with Microsoft Outlook
+      // Call the server API endpoint that handles the actual email sending with Microsoft Outlook + Zapier
       console.log('Email request:', {
         from: EMAIL_CONFIG.sender,
         to,
@@ -47,7 +65,7 @@ const EmailService = {
         data
       });
       
-      // Real API call to server endpoint
+      // Real API call to server endpoint (now with Zapier integration)
       const response = await fetch(EMAIL_CONFIG.apiEndpoint, {
         method: 'POST',
         headers: {
@@ -68,10 +86,15 @@ const EmailService = {
       }
       
       const result = await response.json().catch(() => ({ success: true }));
+      
+      // Log Zapier integration result if available
+      if (result.zapier) {
+        console.log('Zapier integration result:', result.zapier);
+      }
+      
       return result;
     } catch (error) {
-      console.error('Error sending email:', error);
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return handleServiceError(error, 'Error sending email:');
     }
   },
   
@@ -102,8 +125,7 @@ const EmailService = {
       
       return result;
     } catch (error) {
-      console.error('Error sending welcome email:', error);
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return handleServiceError(error, 'Error sending welcome email:');
     }
   },
   
@@ -134,8 +156,7 @@ const EmailService = {
       
       return result;
     } catch (error) {
-      console.error('Error sending order confirmation email:', error);
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return handleServiceError(error, 'Error sending order confirmation email:');
     }
   },
   
@@ -166,8 +187,7 @@ const EmailService = {
       
       return result;
     } catch (error) {
-      console.error('Error sending group complete email:', error);
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return handleServiceError(error, 'Error sending group complete email:');
     }
   },
   
@@ -202,8 +222,7 @@ const EmailService = {
       
       return result;
     } catch (error) {
-      console.error('Error sending waitlist email:', error);
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return handleServiceError(error, 'Error sending waitlist email:');
     }
   },
   
@@ -238,8 +257,7 @@ const EmailService = {
       
       return result;
     } catch (error) {
-      console.error('Error sending registration email:', error);
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return handleServiceError(error, 'Error sending registration email:');
     }
   },
   
@@ -269,8 +287,7 @@ const EmailService = {
       
       return result;
     } catch (error) {
-      console.error('Error sending custom email:', error);
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return handleServiceError(error, 'Error sending custom email:');
     }
   },
   
@@ -297,15 +314,15 @@ const EmailService = {
       
       return { success: true };
     } catch (error) {
-      console.error('Error subscribing to newsletter:', error);
+      const result = handleServiceError(error, 'Error subscribing to newsletter:');
       
       toast({
         title: 'Subscription failed',
-        description: error.message || 'Unknown error occurred',
+        description: result.error,
         variant: 'destructive',
       });
       
-      return { success: false, error: error.message || 'Unknown error occurred' };
+      return result;
     }
   }
 };

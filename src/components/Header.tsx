@@ -174,45 +174,55 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
-      <div className="container mx-auto px-4 flex h-16 items-center justify-between" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full gradient-bg transition-transform group-hover:scale-110">
-              <Users className="h-5 w-5 text-white" />
+      <div className="container mx-auto px-3 sm:px-4 flex h-14 sm:h-16 items-center justify-between" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Link to="/" className="flex items-center gap-1 sm:gap-2 group">
+            <div className="flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 rounded-full gradient-bg transition-transform group-hover:scale-110">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
-            <span className="text-xl font-bold gradient-text">Jam3a</span>
+            <span className="text-lg sm:text-xl font-bold gradient-text">Jam3a</span>
           </Link>
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-4 lg:gap-6">
           <Link 
             to="/" 
-            className={`nav-link ${isActive('/') ? 'active' : ''}`}
+            className={`nav-link text-sm lg:text-base ${isActive('/') ? 'active' : ''}`}
+            aria-label={language === 'en' ? 'Home' : 'الرئيسية'}
+            aria-current={isActive('/') ? 'page' : undefined}
           >
             {language === 'en' ? 'Home' : 'الرئيسية'}
           </Link>
           <Link 
             to="/about" 
-            className={`nav-link ${isActive('/about') ? 'active' : ''}`}
+            className={`nav-link text-sm lg:text-base ${isActive('/about') ? 'active' : ''}`}
+            aria-label={language === 'en' ? 'About Us' : 'من نحن'}
+            aria-current={isActive('/about') ? 'page' : undefined}
           >
             {language === 'en' ? 'About Us' : 'من نحن'}
           </Link>
           <Link 
             to="/how-it-works" 
-            className={`nav-link ${isActive('/how-it-works') ? 'active' : ''}`}
+            className={`nav-link text-sm lg:text-base ${isActive('/how-it-works') ? 'active' : ''}`}
+            aria-label={language === 'en' ? 'How It Works' : 'كيف تعمل'}
+            aria-current={isActive('/how-it-works') ? 'page' : undefined}
           >
             {language === 'en' ? 'How It Works' : 'كيف تعمل'}
           </Link>
           <Link 
             to="/sellers" 
-            className={`nav-link ${isActive('/sellers') ? 'active' : ''}`}
+            className={`nav-link text-sm lg:text-base ${isActive('/sellers') ? 'active' : ''}`}
+            aria-label={language === 'en' ? 'For Sellers' : 'للبائعين'}
+            aria-current={isActive('/sellers') ? 'page' : undefined}
           >
             {language === 'en' ? 'For Sellers' : 'للبائعين'}
           </Link>
           <Link 
             to="/faq" 
-            className={`nav-link ${isActive('/faq') ? 'active' : ''}`}
+            className={`nav-link text-sm lg:text-base ${isActive('/faq') ? 'active' : ''}`}
+            aria-label={language === 'en' ? 'FAQ' : 'الأسئلة الشائعة'}
+            aria-current={isActive('/faq') ? 'page' : undefined}
           >
             {language === 'en' ? 'FAQ' : 'الأسئلة الشائعة'}
           </Link>
@@ -239,8 +249,9 @@ const Header = () => {
               size="icon" 
               className={`text-foreground hover:text-primary transition-colors ${isActive('/shop-jam3a') ? 'text-primary' : ''}`}
               title={language === 'en' ? 'Shop Jam3a' : 'تسوق جمعة'}
+              aria-label={language === 'en' ? 'Shop Jam3a' : 'تسوق جمعة'}
             >
-              <ShoppingBag className="h-5 w-5" />
+              <ShoppingBag className="h-5 w-5" aria-hidden="true" />
             </Button>
           </Link>
           
@@ -250,8 +261,9 @@ const Header = () => {
               size="icon" 
               className={`text-foreground hover:text-primary transition-colors relative ${isActive('/cart') ? 'text-primary' : ''}`}
               title={language === 'en' ? 'Shopping Cart' : 'عربة التسوق'}
+              aria-label={language === 'en' ? `Shopping Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}` : `عربة التسوق${cartCount > 0 ? ` (${cartCount} عناصر)` : ''}`}
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-5 w-5" aria-hidden="true" />
               {cartCount > 0 && (
                 <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
                   {cartCount}
@@ -267,9 +279,10 @@ const Header = () => {
                 size="icon" 
                 className={`text-foreground hover:text-primary transition-colors relative ${isActive('/admin') ? 'text-primary' : ''}`}
                 title={language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
+                aria-label={language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
               >
-                <ShieldCheck className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full"></span>
+                <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+                <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full" aria-hidden="true"></span>
               </Button>
             </Link>
           )}

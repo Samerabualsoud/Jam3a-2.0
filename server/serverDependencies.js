@@ -6,6 +6,7 @@ module.exports = {
     'handlebars',
     'cors',
     'body-parser',
-    'dotenv'
+    'dotenv',
+    'axios'
   ]
 };
