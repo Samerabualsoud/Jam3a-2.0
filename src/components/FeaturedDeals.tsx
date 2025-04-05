@@ -1,10 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/Header';
 
 const FeaturedDeals = () => {
   const { language } = useLanguage();
   const isRtl = language === 'ar';
+  const navigate = useNavigate();
 
   const content = {
     en: {
@@ -182,8 +183,8 @@ const FeaturedDeals = () => {
                           }]
                         });
                       }
-                      // Navigate to join page
-                      window.location.href = `/join-jam3a?product=${encodeURIComponent(product.name[language])}&price=${product.jam3aPrice}&discount=${product.discount}&id=${product.id}`;
+                      // Navigate to join page using React Router instead of window.location
+                      navigate(`/join-jam3a?product=${encodeURIComponent(product.name[language])}&price=${product.jam3aPrice}&discount=${product.discount}&id=${product.id}`);
                     }}
                     aria-label={`${currentContent.join}: ${product.name[language]}`}
                   >

@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ScrollToTop from '@/components/ScrollToTop';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 
 // Payment method icons
 const TabbyIcon = () => (
@@ -186,12 +187,51 @@ const JoinJam3a = () => {
     setFormData(prev => ({ ...prev, installmentOption: option }));
   };
 
+  // Validate phone number with international format support
+  const validatePhoneNumber = (phone) => {
+    // Support Saudi format (05xxxxxxxx or 5xxxxxxxx) and international format (+966xxxxxxxx)
+    const saudiRegex = /^(05|\+9665|5)[0-9]{8}$/;
+    return saudiRegex.test(phone.replace(/\s+/g, ''));
+  };
+
+  // Validate credit card number using Luhn algorithm
+  const validateCreditCard = (number) => {
+    // Remove spaces and non-digits
+    const cardNumber = number.replace(/\D/g, '');
+    
+    // Check length
+    if (cardNumber.length < 13 || cardNumber.length > 19) {
+      return false;
+    }
+    
+    // Luhn algorithm
+    let sum = 0;
+    let shouldDouble = false;
+    
+    // Loop from right to left
+    for (let i = cardNumber.length - 1; i >= 0; i--) {
+      let digit = parseInt(cardNumber.charAt(i));
+      
+      if (shouldDouble) {
+        digit *= 2;
+        if (digit > 9) {
+          digit -= 9;
+        }
+      }
+      
+      sum += digit;
+      shouldDouble = !shouldDouble;
+    }
+    
+    return sum % 10 === 0;
+  };
+
   // Validate form before proceeding to next tab
   const validateForm = () => {
     const errors = {
       name: !formData.name,
       email: !formData.email || !/\S+@\S+\.\S+/.test(formData.email),
-      phone: !formData.phone || formData.phone.length < 9,
+      phone: !formData.phone || !validatePhoneNumber(formData.phone),
       address: !formData.address,
       termsAccepted: false,
       cardNumber: false,
@@ -199,46 +239,38 @@ const JoinJam3a = () => {
       cardCvv: false
     };
     
-    setFormErrors(errors);
-    return !Object.values(errors).some(error => error);
-  };
-
-  // Validate payment form before submission
-  const validatePaymentForm = () => {
-    const errors = {
-      name: false,
-      email: false,
-      phone: false,
-      address: false,
-      termsAccepted: !formData.termsAccepted,
-      cardNumber: formData.paymentMethod === 'credit-card' && (!formData.cardNumber || formData.cardNumber.replace(/\s/g, '').length !== 16),
-      cardExpiry: formData.paymentMethod === 'credit-card' && (!formData.cardExpiry || formData.cardExpiry.length !== 5),
-      cardCvv: formData.paymentMethod === 'credit-card' && (!formData.cardCvv || formData.cardCvv.length !== 3)
-    };
+    // Validate payment details if on payment tab
+    if (activeTab === 'payment') {
+      errors.termsAccepted = !formData.termsAccepted;
+      
+      if (formData.paymentMethod === 'credit-card') {
+        errors.cardNumber = !formData.cardNumber || !validateCreditCard(formData.cardNumber);
+        errors.cardExpiry = !formData.cardExpiry || !/^\d{2}\/\d{2}$/.test(formData.cardExpiry);
+        errors.cardCvv = !formData.cardCvv || !/^\d{3,4}$/.test(formData.cardCvv);
+      }
+    }
     
     setFormErrors(errors);
+    
+    // Check if there are any errors
     return !Object.values(errors).some(error => error);
   };
   
-  // Handle tab change with validation
+  // Handle tab change
   const handleTabChange = (value) => {
-    // Only allow moving forward if current tab is valid
-    if (value === 'details') {
+    // Validate current tab before allowing change
+    if (value === 'info' && activeTab === 'details') {
       setActiveTab(value);
-    } else if (activeTab === 'details' && value === 'info') {
-      setActiveTab(value);
-    } else if (activeTab === 'info' && value === 'payment') {
+    } else if (value === 'payment' && activeTab === 'info') {
       if (validateForm()) {
         setActiveTab(value);
       } else {
         toast({
-          title: language === 'en' ? 'Please fill all required fields' : 'يرجى ملء جميع الحقول المطلوبة',
+          title: language === 'en' ? 'Please complete all required fields' : 'يرجى إكمال جميع الحقول المطلوبة',
           variant: 'destructive'
         });
       }
-    } else if (activeTab === 'info' && value === 'details') {
-      setActiveTab(value);
-    } else if (activeTab === 'payment' && value === 'info') {
+    } else if (value === 'details') {
       setActiveTab(value);
     }
   };
@@ -246,137 +278,84 @@ const JoinJam3a = () => {
   // Handle next button click
   const handleNext = () => {
     if (activeTab === 'details') {
-      handleTabChange('info');
+      setActiveTab('info');
     } else if (activeTab === 'info') {
-      handleTabChange('payment');
+      if (validateForm()) {
+        setActiveTab('payment');
+      } else {
+        toast({
+          title: language === 'en' ? 'Please complete all required fields' : 'يرجى إكمال جميع الحقول المطلوبة',
+          variant: 'destructive'
+        });
+      }
     }
   };
   
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!validatePaymentForm()) {
-      const errorMessage = language === 'en' 
-        ? formErrors.termsAccepted 
-          ? 'Please accept terms and conditions' 
-          : 'Please complete all payment details'
-        : formErrors.termsAccepted 
-          ? 'يرجى قبول الشروط والأحكام' 
-          : 'يرجى إكمال جميع تفاصيل الدفع';
-      
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!validateForm()) {
       toast({
-        title: errorMessage,
+        title: language === 'en' ? 'Please complete all required fields' : 'يرجى إكمال جميع الحقول المطلوبة',
         variant: 'destructive'
       });
       return;
     }
-
-    // Simulate payment processing
+    
     setIsProcessing(true);
     
-    // Different processing behavior based on payment method
-    const processingTime = 
-      formData.paymentMethod === 'credit-card' ? 2000 : 
-      formData.paymentMethod === 'apple-pay' ? 1500 : 
-      formData.paymentMethod === 'tabby' ? 3000 : 
-      formData.paymentMethod === 'tamara' ? 2500 : 2000;
-    
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Show success state
       setPaymentSuccess(true);
+      setIsProcessing(false);
       
-      // Send confirmation email
-      sendConfirmationEmail();
-      
-      // Show success toast
-      toast({
-        title: language === 'en' ? 'Payment Successful!' : 'تمت عملية الدفع بنجاح!',
-        description: language === 'en' 
-          ? `You have successfully joined the ${productName} Jam3a!` 
-          : `لقد انضممت بنجاح إلى جمعة ${productName}!`,
-        variant: 'default'
-      });
-      
-      // Track conversion with Google Analytics
+      // Track conversion
       if (window.gtag) {
         window.gtag('event', 'purchase', {
-          transaction_id: 'JAM-' + Date.now().toString().slice(-8),
+          transaction_id: `JAM-${Date.now().toString().slice(-8)}`,
           value: parseInt(productPrice),
           currency: 'SAR',
           items: [{
-            id: productId,
-            name: productName,
-            price: parseInt(productPrice)
+            item_id: productId,
+            item_name: productName,
+            price: productPrice
           }]
         });
       }
-    }, processingTime);
-  };
-
-  // Send confirmation email
-  const sendConfirmationEmail = () => {
-    // Import email service
-    import('@/services/EmailService').then(({ default: EmailService }) => {
-      // Send confirmation email using Microsoft Outlook
-      EmailService.sendEmail({
-        to: formData.email,
-        subject: language === 'en' ? `Your Jam3a ${productName} Purchase Confirmation` : `تأكيد شراء جمعة ${productName}`,
-        template: 'purchase-confirmation',
-        data: {
-          name: formData.name,
-          product: productName,
-          price: productPrice,
-          orderNumber: 'JAM-' + Date.now().toString().slice(-8),
-          paymentMethod: formData.paymentMethod,
-          language: language
-        }
+    } catch (error) {
+      console.error('Payment error:', error);
+      setIsProcessing(false);
+      toast({
+        title: language === 'en' ? 'Payment failed' : 'فشلت عملية الدفع',
+        description: language === 'en' ? 'Please try again or use a different payment method' : 'يرجى المحاولة مرة أخرى أو استخدام طريقة دفع مختلفة',
+        variant: 'destructive'
       });
-    }).catch(error => {
-      console.error('Failed to send confirmation email:', error);
-    });
+    }
   };
+  
+  // Get product image based on product name
   const getProductImage = () => {
-    const productNameLower = productName.toLowerCase();
+    const name = productName.toUpperCase();
     
-    // Try to match with our image mapping system
-    if (productNameLower.includes('iphone')) {
-      if (productNameLower.includes('16 pro max')) return PRODUCT_IMAGES.IPHONE['16 PRO MAX'];
-      if (productNameLower.includes('16 pro')) return PRODUCT_IMAGES.IPHONE['16 PRO'];
-      if (productNameLower.includes('15 pro')) return PRODUCT_IMAGES.IPHONE['15 PRO'];
-      if (productNameLower.includes('15')) return PRODUCT_IMAGES.IPHONE['15'];
-      return PRODUCT_IMAGES.IPHONE.DEFAULT;
+    if (name.includes('IPHONE')) {
+      const model = Object.keys(PRODUCT_IMAGES.IPHONE).find(key => name.includes(key));
+      return model ? PRODUCT_IMAGES.IPHONE[model] : PRODUCT_IMAGES.IPHONE.DEFAULT;
+    } else if (name.includes('GALAXY')) {
+      const model = Object.keys(PRODUCT_IMAGES.GALAXY).find(key => name.includes(key));
+      return model ? PRODUCT_IMAGES.GALAXY[model] : PRODUCT_IMAGES.GALAXY.DEFAULT;
+    } else if (name.includes('FOLD')) {
+      const model = Object.keys(PRODUCT_IMAGES.FOLD).find(key => name.includes(key));
+      return model ? PRODUCT_IMAGES.FOLD[model] : PRODUCT_IMAGES.FOLD.DEFAULT;
+    } else if (name.includes('FLIP')) {
+      const model = Object.keys(PRODUCT_IMAGES.FLIP).find(key => name.includes(key));
+      return model ? PRODUCT_IMAGES.FLIP[model] : PRODUCT_IMAGES.FLIP.DEFAULT;
     }
     
-    if (productNameLower.includes('galaxy s')) {
-      if (productNameLower.includes('s25 ultra')) return PRODUCT_IMAGES.GALAXY['S25 ULTRA'];
-      if (productNameLower.includes('s25')) return PRODUCT_IMAGES.GALAXY['S25'];
-      return PRODUCT_IMAGES.GALAXY.DEFAULT;
-    }
-    
-    if (productNameLower.includes('fold')) {
-      if (productNameLower.includes('fold 6') || productNameLower.includes('z fold 6')) 
-        return PRODUCT_IMAGES.FOLD['6'];
-      return PRODUCT_IMAGES.FOLD.DEFAULT;
-    }
-    
-    if (productNameLower.includes('flip')) {
-      if (productNameLower.includes('flip 6') || productNameLower.includes('z flip 6')) 
-        return PRODUCT_IMAGES.FLIP['6'];
-      return PRODUCT_IMAGES.FLIP.DEFAULT;
-    }
-    
-    // Fallback to ID-based images if no match found
-    const images = {
-      '1': PRODUCT_IMAGES.IPHONE.DEFAULT,
-      '2': PRODUCT_IMAGES.GALAXY.DEFAULT,
-      '3': PRODUCT_IMAGES.FOLD.DEFAULT,
-      '4': PRODUCT_IMAGES.FLIP.DEFAULT,
-      '5': PRODUCT_IMAGES.FALLBACK
-    };
-    
-    return images[productId] || PRODUCT_IMAGES.FALLBACK;
+    return PRODUCT_IMAGES.FALLBACK;
   };
-
+  
   // Render Tabby payment option details
   const renderTabbyDetails = () => (
     <div className="space-y-4 mt-4 p-4 border rounded-lg bg-secondary/50">
@@ -406,8 +385,8 @@ const JoinJam3a = () => {
               </div>
               <div className="text-sm text-muted-foreground">
                 {language === 'en' 
-                  ? `${Math.round(parseInt(productPrice) / 4)} SAR every 2 weeks` 
-                  : `${Math.round(parseInt(productPrice) / 4)} ريال كل أسبوعين`}
+                  ? `${Math.round(parseInt(productPrice) / 4)} SAR today & 3 monthly payments` 
+                  : `${Math.round(parseInt(productPrice) / 4)} ريال اليوم و 3 دفعات شهرية`}
               </div>
             </Label>
           </div>
@@ -420,8 +399,8 @@ const JoinJam3a = () => {
               </div>
               <div className="text-sm text-muted-foreground">
                 {language === 'en' 
-                  ? `Pay ${productPrice} on ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString()}` 
-                  : `ادفع ${productPrice} في ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString()}`}
+                  ? `Pay ${productPrice} after 30 days` 
+                  : `ادفع ${productPrice} بعد 30 يوم`}
               </div>
             </Label>
           </div>
@@ -431,73 +410,10 @@ const JoinJam3a = () => {
           <AlertCircle className="h-4 w-4 text-primary" />
           <AlertDescription className="text-xs">
             {language === 'en' 
-              ? 'Approval takes just a few seconds. No credit card needed.' 
-              : 'تستغرق الموافقة بضع ثوانٍ فقط. لا حاجة لبطاقة ائتمان.'}
+              ? 'Instant approval with Saudi phone number and bank card.' 
+              : 'موافقة فورية برقم هاتف سعودي وبطاقة بنكية.'}
           </AlertDescription>
         </Alert>
-        
-        {/* Tabby verification requirements */}
-        <div className="mt-4 space-y-2">
-          <h5 className="text-sm font-medium">
-            {language === 'en' ? 'Verification Requirements' : 'متطلبات التحقق'}
-          </h5>
-          <div className="grid grid-cols-1 gap-2">
-            <div className="flex items-center gap-2 text-xs">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>{language === 'en' ? 'Saudi mobile number' : 'رقم جوال سعودي'}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>{language === 'en' ? 'Valid ID or Iqama' : 'هوية سارية المفعول أو إقامة'}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>{language === 'en' ? 'Debit card for verification' : 'بطاقة مدى للتحقق'}</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Tabby payment steps */}
-        <div className="mt-4 space-y-2">
-          <h5 className="text-sm font-medium">
-            {language === 'en' ? 'How it works' : 'كيف تعمل'}
-          </h5>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="flex items-start gap-2 text-xs">
-              <div className="bg-primary/10 text-primary rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
-              <div>
-                <span className="font-medium">{language === 'en' ? 'Select Tabby at checkout' : 'اختر تابي عند الدفع'}</span>
-                <p className="text-muted-foreground mt-0.5">
-                  {language === 'en' 
-                    ? 'Choose your preferred payment option' 
-                    : 'اختر خيار الدفع المفضل لديك'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 text-xs">
-              <div className="bg-primary/10 text-primary rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
-              <div>
-                <span className="font-medium">{language === 'en' ? 'Quick verification' : 'تحقق سريع'}</span>
-                <p className="text-muted-foreground mt-0.5">
-                  {language === 'en' 
-                    ? 'Enter your phone number and ID for instant approval' 
-                    : 'أدخل رقم هاتفك وهويتك للحصول على موافقة فورية'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 text-xs">
-              <div className="bg-primary/10 text-primary rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 mt-0.5">3</div>
-              <div>
-                <span className="font-medium">{language === 'en' ? 'Pay over time' : 'ادفع على مراحل'}</span>
-                <p className="text-muted-foreground mt-0.5">
-                  {language === 'en' 
-                    ? 'Manage your payments through the Tabby app' 
-                    : 'أدر مدفوعاتك من خلال تطبيق تابي'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -1011,7 +927,7 @@ const JoinJam3a = () => {
                             />
                             {formErrors.phone && (
                               <p className="text-destructive text-sm">
-                                {language === 'en' ? 'Phone number is required' : 'رقم الهاتف مطلوب'}
+                                {language === 'en' ? 'Valid Saudi phone number is required (05xxxxxxxx)' : 'رقم هاتف سعودي صحيح مطلوب (05xxxxxxxx)'}
                               </p>
                             )}
                           </div>
