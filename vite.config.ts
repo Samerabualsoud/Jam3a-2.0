@@ -5,9 +5,29 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: "/", // Explicitly set base path for production
   server: {
     host: "::",
     port: 8080,
+  },
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+    sourcemap: mode === "development",
+    minify: mode !== "development",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: [
+            'react', 
+            'react-dom', 
+            'react-router-dom',
+            '@radix-ui/react-toast',
+            'lucide-react'
+          ],
+        },
+      },
+    },
   },
   plugins: [
     react(),
