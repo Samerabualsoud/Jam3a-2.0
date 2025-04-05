@@ -2,7 +2,6 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import compression from 'compression';
-import helmet from 'helmet';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -14,13 +13,18 @@ const app = express();
 // Enable gzip compression for all responses
 app.use(compression());
 
-// Add security headers
-app.use(
-  helmet({
-    contentSecurityPolicy: false, // Disable CSP for now as it might block some resources
-    crossOriginEmbedderPolicy: false, // Allow embedding from different origins
-  })
-);
+// Add security headers without requiring helmet
+app.use((req, res, next) => {
+  // Basic security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  
+  // Disable CSP for now as it might block some resources
+  // Allow embedding from different origins
+  next();
+});
 
 // Log environment information
 console.log('NODE_ENV:', process.env.NODE_ENV);
