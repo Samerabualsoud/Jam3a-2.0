@@ -32,6 +32,8 @@ interface ProductContextType {
   activeJam3aDeals: Product[];
   featuredProducts: Product[];
   syncStatus: SyncStatus | null;
+  isLoading?: boolean;
+  refreshJam3aDeals?: () => Promise<void>;
 }
 
 // Initial products data
@@ -153,20 +155,33 @@ const ProductContext = createContext<ProductContextType | undefined>(undefined);
 export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Simulate API refresh
   const refreshProducts = async (): Promise<void> => {
     setSyncStatus({ type: 'warning', message: 'Syncing products with database...' });
+    setIsLoading(true);
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     setSyncStatus({ type: 'success', message: 'Products synced successfully with website!' });
+    setIsLoading(false);
     
     // Clear status message after 3 seconds
     setTimeout(() => {
       setSyncStatus(null);
     }, 3000);
+  };
+
+  // Simulate refreshing Jam3a deals
+  const refreshJam3aDeals = async (): Promise<void> => {
+    setIsLoading(true);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setIsLoading(false);
   };
 
   // Filter for active Jam3a deals
@@ -186,7 +201,9 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     refreshProducts,
     activeJam3aDeals,
     featuredProducts,
-    syncStatus
+    syncStatus,
+    isLoading,
+    refreshJam3aDeals
   };
 
   return (
@@ -204,3 +221,6 @@ export const useProductContext = (): ProductContextType => {
   }
   return context;
 };
+
+// Export an alias for useProductContext as useProducts to fix the import issue
+export const useProducts = useProductContext;
