@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Jam3a - Saudi Arabia's first and most advanced group-buying platform. Join forces with others to unlock better prices on premium products." />
     <meta name="theme-color" content="#4f46e5" />
@@ -12,14 +12,14 @@
     <meta property="og:url" content="https://jam3a.sa/" />
     <meta property="og:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
     <meta property="og:description" content="Join forces with others to unlock better prices on premium products." />
-    <meta property="og:image" content="./og-image.jpg" />
+    <meta property="og:image" content="/og-image.jpg" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://jam3a.sa/" />
     <meta property="twitter:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
     <meta property="twitter:description" content="Join forces with others to unlock better prices on premium products." />
-    <meta property="twitter:image" content="./og-image.jpg" />
+    <meta property="twitter:image" content="/og-image.jpg" />
     
     <!-- Preload critical assets -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -175,13 +175,13 @@
         <div class="app-loading-text">Loading Jam3a...</div>
       </div>
       
-      <!-- Fallback content for static routes -->
+      <!-- Fallback content for server-side routes -->
       <div class="fallback-content" id="fallback-home">
         <div class="fallback-heading">Welcome to Jam3a</div>
         <div class="fallback-text">
           Saudi Arabia's first and most advanced group-buying platform. Join forces with others to unlock better prices on premium products.
         </div>
-        <a href="#/" class="fallback-button">Explore Jam3a</a>
+        <a href="/" class="fallback-button">Explore Jam3a</a>
       </div>
       
       <div class="fallback-content" id="fallback-shop">
@@ -189,7 +189,7 @@
         <div class="fallback-text">
           Browse our collection of group deals and save on your favorite products.
         </div>
-        <a href="#/shop-jam3a" class="fallback-button">View Deals</a>
+        <a href="/shop-jam3a" class="fallback-button">View Deals</a>
       </div>
       
       <div class="fallback-content" id="fallback-join">
@@ -197,7 +197,7 @@
         <div class="fallback-text">
           Join an existing group purchase and save money together.
         </div>
-        <a href="#/join-jam3a" class="fallback-button">Join Now</a>
+        <a href="/join-jam3a" class="fallback-button">Join Now</a>
       </div>
       
       <div class="fallback-content" id="fallback-start">
@@ -205,7 +205,7 @@
         <div class="fallback-text">
           Create your own group purchase and invite others to join.
         </div>
-        <a href="#/start-jam3a" class="fallback-button">Get Started</a>
+        <a href="/start-jam3a" class="fallback-button">Get Started</a>
       </div>
       
       <div class="fallback-content" id="fallback-about">
@@ -213,7 +213,7 @@
         <div class="fallback-text">
           Learn more about our mission to revolutionize group buying in Saudi Arabia.
         </div>
-        <a href="#/about" class="fallback-button">Learn More</a>
+        <a href="/about" class="fallback-button">Learn More</a>
       </div>
       
       <!-- Error container for displaying errors -->
@@ -224,18 +224,18 @@
         </div>
         <div class="error-actions">
           <button class="error-button" onclick="window.location.reload()">Refresh Page</button>
-          <button class="error-button" onclick="window.location.href='#/'">Go to Home</button>
+          <button class="error-button" onclick="window.location.href='/'">Go to Home</button>
         </div>
       </div>
     </div>
     
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
     
     <!-- Fallback script for handling loading errors and showing appropriate content -->
     <script>
       // Function to show fallback content based on URL
       function showFallbackContent() {
-        const path = window.location.hash.substring(1) || '/';
+        const path = window.location.pathname || '/';
         const appLoading = document.getElementById('app-loading');
         
         if (appLoading) {
@@ -308,8 +308,8 @@
         }, 5000);
       });
       
-      // Listen for hash changes to update fallback content
-      window.addEventListener('hashchange', () => {
+      // Listen for navigation events to update fallback content
+      window.addEventListener('popstate', () => {
         if (!appLoaded) {
           showFallbackContent();
         }

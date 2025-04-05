@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -73,7 +73,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
             {this.state.error?.message || "An unexpected error occurred"}
           </p>
           <button
-            onClick={() => window.location.href = "#/"}
+            onClick={() => window.location.href = "/"}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
             Go to Home Page
@@ -188,8 +188,8 @@ const App = () => {
             <LanguageProvider>
               <Toaster />
               <Sonner />
-              {/* Use HashRouter instead of BrowserRouter for better static site compatibility */}
-              <HashRouter>
+              {/* Use BrowserRouter for server-based approach */}
+              <BrowserRouter>
                 {/* Add Google Analytics tracking */}
                 <GoogleAnalytics measurementId={GA_MEASUREMENT_ID} />
                 
@@ -201,7 +201,7 @@ const App = () => {
                 <Routes>
                   {renderRoutes(routesConfig)}
                 </Routes>
-              </HashRouter>
+              </BrowserRouter>
             </LanguageProvider>
           </TooltipProvider>
         </AuthProvider>
