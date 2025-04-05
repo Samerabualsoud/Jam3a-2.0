@@ -95,10 +95,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Check token on initial load
   useEffect(() => {
     const verifyToken = async () => {
-      const token = localStorage.getItem('jam3a_token');
+      const token = localStorage.getItem('jam3a_token') || localStorage.getItem('auth_token');
       if (token && !user) {
         try {
           setIsLoading(true);
+          // Set token in auth service
+          authService.setToken(token);
+          
           // Verify token and get user data
           const userData = await authService.verifyToken();
           
@@ -115,8 +118,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(mappedUser);
         } catch (err) {
           // Token is invalid, clear it
-          localStorage.removeItem('jam3a_token');
-          localStorage.removeItem('jam3a_user');
+          authService.clearToken();
           setUser(null);
         } finally {
           setIsLoading(false);

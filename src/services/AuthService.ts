@@ -34,14 +34,33 @@ export interface AuthResponse {
 // Authentication service for handling auth-related API calls
 class AuthService {
   private baseUrl = '/auth';
+  private token: string | null = null;
+  
+  // Set token for API calls
+  setToken(token: string): void {
+    this.token = token;
+  }
+  
+  // Clear token
+  clearToken(): void {
+    this.token = null;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('jam3a_token');
+  }
+  
+  // Verify token validity
+  async verifyToken(): Promise<User> {
+    return apiService.get<User>(`${this.baseUrl}/verify-token`);
+  }
   
   // Login user
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await apiService.post<AuthResponse>(`${this.baseUrl}/login`, credentials);
     
-    // Store token in localStorage
+    // Store token in localStorage and set in service
     if (response.token) {
       localStorage.setItem('auth_token', response.token);
+      this.setToken(response.token);
     }
     
     return response;
@@ -51,9 +70,10 @@ class AuthService {
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await apiService.post<AuthResponse>(`${this.baseUrl}/register`, data);
     
-    // Store token in localStorage
+    // Store token in localStorage and set in service
     if (response.token) {
       localStorage.setItem('auth_token', response.token);
+      this.setToken(response.token);
     }
     
     return response;
@@ -64,13 +84,13 @@ class AuthService {
     try {
       const response = await apiService.post<{ success: boolean }>(`${this.baseUrl}/logout`);
       
-      // Remove token from localStorage
-      localStorage.removeItem('auth_token');
+      // Clear token
+      this.clearToken();
       
       return response;
     } catch (error) {
-      // Even if the API call fails, remove the token
-      localStorage.removeItem('auth_token');
+      // Even if the API call fails, clear the token
+      this.clearToken();
       throw error;
     }
   }
