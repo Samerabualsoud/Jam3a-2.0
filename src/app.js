@@ -32,8 +32,21 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS configuration
-app.use(cors(config.cors));
+// CORS configuration - Use explicit configuration instead of config object
+app.use(cors({
+  origin: ['https://shark-app-b8fxh.ondigitalocean.app', 'https://jam3a.me'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: true
+}));
+
+// Add CORS preflight handler for all routes
+app.options('*', cors({
+  origin: ['https://shark-app-b8fxh.ondigitalocean.app', 'https://jam3a.me'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: true
+}));
 
 // Body parser
 app.use(express.json({ limit: '10mb' }));
