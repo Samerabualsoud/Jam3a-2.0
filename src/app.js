@@ -50,6 +50,11 @@ if (config.server.env === 'production') {
   app.set('trust proxy', 1);
 }
 
+// Health check endpoint for Digital Ocean
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Define routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
