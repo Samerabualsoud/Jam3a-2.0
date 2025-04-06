@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 /**
  * Product Schema
- * Represents products available for purchase on the Jam3a platform
+ * Represents products in the Jam3a platform
  */
 const ProductSchema = new Schema({
   name: {
@@ -15,100 +15,122 @@ const ProductSchema = new Schema({
     type: String,
     trim: true
   },
-  category: {
+  description: {
     type: String,
-    required: [true, 'Product category is required'],
-    trim: true
+    required: [true, 'Product description is required']
+  },
+  descriptionAr: {
+    type: String
   },
   price: {
     type: Number,
     required: [true, 'Product price is required'],
     min: [0, 'Price cannot be negative']
   },
-  originalPrice: {
-    type: Number,
-    min: [0, 'Original price cannot be negative']
+  category: {
+    type: Schema.Types.ObjectId,
+    ref: 'Category',
+    required: [true, 'Product category is required']
+  },
+  images: [{
+    type: String
+  }],
+  specifications: {
+    type: Object,
+    default: {}
   },
   stock: {
     type: Number,
-    required: true,
     default: 0,
     min: [0, 'Stock cannot be negative']
-  },
-  description: {
-    type: String
-  },
-  descriptionAr: {
-    type: String
-  },
-  image: {
-    type: String
-  },
-  images: {
-    type: [String],
-    default: []
-  },
-  currentAmount: {
-    type: Number,
-    default: 0,
-    min: [0, 'Current amount cannot be negative']
-  },
-  targetAmount: {
-    type: Number,
-    min: [0, 'Target amount cannot be negative']
-  },
-  participants: {
-    type: Number,
-    default: 0,
-    min: [0, 'Participants cannot be negative']
   },
   featured: {
     type: Boolean,
     default: false
   },
-  discount: {
-    type: Number,
-    min: [0, 'Discount cannot be negative'],
-    max: [100, 'Discount cannot exceed 100%']
-  },
-  averageJoinRate: {
-    type: Number,
-    min: [0, 'Average join rate cannot be negative']
-  },
-  supplier: {
-    type: String
+  active: {
+    type: Boolean,
+    default: true
   },
   sku: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  slug: {
+    type: String,
+    lowercase: true,
+    trim: true
+  },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  ratings: [{
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5
+    },
+    review: String,
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  averageRating: {
+    type: Number,
+    default: 0
+  },
+  tags: [{
+    type: String
+  }],
+  brand: {
     type: String
   },
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'draft'],
-    default: 'draft'
+  weight: {
+    type: Number
   },
-  tags: {
-    type: [String],
-    default: []
+  dimensions: {
+    length: Number,
+    width: Number,
+    height: Number
   }
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  timestamps: true
 });
 
-// Create indexes for frequently queried fields
-ProductSchema.index({ category: 1 });
-ProductSchema.index({ featured: 1 });
-ProductSchema.index({ status: 1 });
-ProductSchema.index({ tags: 1 });
+// Index for faster queries
 ProductSchema.index({ name: 'text', description: 'text' });
+ProductSchema.index({ category: 1 });
+ProductSchema.index({ price: 1 });
+ProductSchema.index({ featured: 1 });
+ProductSchema.index({ active: 1 });
+ProductSchema.index({ createdBy: 1 });
+ProductSchema.index({ slug: 1 });
+ProductSchema.index({ sku: 1 });
 
-// Virtual for discounted price
-ProductSchema.virtual('discountedPrice').get(function() {
-  if (this.discount && this.originalPrice) {
-    return this.originalPrice * (1 - this.discount / 100);
+// Pre-save hook to generate slug if not provided
+ProductSchema.pre('save', function(next) {
+  if (!this.slug && this.name) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
   }
-  return this.price;
+  
+  // Calculate average rating
+  if (this.ratings && this.ratings.length > 0) {
+    const totalRating = this.ratings.reduce((sum, item) => sum + item.rating, 0);
+    this.averageRating = totalRating / this.ratings.length;
+  }
+  
+  next();
 });
 
 // Method to check if product is in stock
@@ -116,22 +138,32 @@ ProductSchema.methods.isInStock = function() {
   return this.stock > 0;
 };
 
-// Method to check if group buying is active
-ProductSchema.methods.isGroupBuyingActive = function() {
-  return this.targetAmount > 0 && this.currentAmount < this.targetAmount;
+// Method to add a rating
+ProductSchema.methods.addRating = function(userId, rating, review) {
+  // Check if user already rated
+  const existingRatingIndex = this.ratings.findIndex(
+    r => r.user.toString() === userId.toString()
+  );
+  
+  if (existingRatingIndex >= 0) {
+    // Update existing rating
+    this.ratings[existingRatingIndex].rating = rating;
+    this.ratings[existingRatingIndex].review = review;
+    this.ratings[existingRatingIndex].date = Date.now();
+  } else {
+    // Add new rating
+    this.ratings.push({
+      user: userId,
+      rating,
+      review,
+      date: Date.now()
+    });
+  }
+  
+  // Recalculate average
+  const totalRating = this.ratings.reduce((sum, item) => sum + item.rating, 0);
+  this.averageRating = totalRating / this.ratings.length;
 };
-
-// Method to calculate progress percentage for group buying
-ProductSchema.methods.getGroupProgress = function() {
-  if (!this.targetAmount) return 0;
-  return Math.min(100, Math.round((this.currentAmount / this.targetAmount) * 100));
-};
-
-// Pre-save hook to update lastUpdated timestamp
-ProductSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
 
 // Create and export the Product model
 const Product = mongoose.model('Product', ProductSchema);

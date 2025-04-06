@@ -45,13 +45,37 @@ const UserSchema = new Schema({
     country: String,
     avatar: String
   },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: String,
+  emailVerificationExpires: Date,
   resetPasswordToken: String,
-  resetPasswordExpires: Date
+  resetPasswordExpires: Date,
+  lastLogin: Date,
+  active: {
+    type: Boolean,
+    default: true
+  },
+  refreshTokens: [{
+    token: String,
+    expires: Date,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true,
   toJSON: {
     transform: function(doc, ret) {
       delete ret.password;
+      delete ret.resetPasswordToken;
+      delete ret.resetPasswordExpires;
+      delete ret.emailVerificationToken;
+      delete ret.emailVerificationExpires;
+      delete ret.refreshTokens;
       return ret;
     }
   }
@@ -92,6 +116,34 @@ UserSchema.methods.hasRole = function(role) {
 // Method to compare password
 UserSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to add refresh token
+UserSchema.methods.addRefreshToken = function(token, expiresIn) {
+  // Remove expired tokens
+  this.refreshTokens = this.refreshTokens.filter(t => t.expires > Date.now());
+  
+  // Add new token
+  this.refreshTokens.push({
+    token,
+    expires: new Date(Date.now() + expiresIn * 1000)
+  });
+  
+  // Limit to 5 tokens per user
+  if (this.refreshTokens.length > 5) {
+    this.refreshTokens = this.refreshTokens.slice(-5);
+  }
+};
+
+// Method to verify refresh token
+UserSchema.methods.verifyRefreshToken = function(token) {
+  const tokenDoc = this.refreshTokens.find(t => t.token === token && t.expires > Date.now());
+  return !!tokenDoc;
+};
+
+// Method to remove refresh token
+UserSchema.methods.removeRefreshToken = function(token) {
+  this.refreshTokens = this.refreshTokens.filter(t => t.token !== token);
 };
 
 // Create and export the User model

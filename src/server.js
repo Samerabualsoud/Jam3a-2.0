@@ -1,57 +1,55 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const dotenv = require('dotenv');
-
-// Load environment variables
-dotenv.config();
-
-// Initialize Express app
-const app = express();
+const app = require('./app');
+const connectDB = require('./config/database');
+const config = require('./config/config');
 
 // Connect to MongoDB
-require('./config/database');
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cors());
-app.use(helmet());
-app.use(morgan('dev'));
-
-// Define routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/products', require('./routes/products'));
-app.use('/api/groups', require('./routes/groups'));
-app.use('/api/orders', require('./routes/orders'));
-app.use('/api/payments', require('./routes/payments'));
-app.use('/api/content', require('./routes/content'));
-app.use('/api/moyasser', require('./routes/moyasser'));
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Welcome to Jam3a API',
-    version: '1.0.0',
-    status: 'online'
-  });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'production' ? {} : err
-  });
-});
+connectDB();
 
 // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const PORT = config.server.port;
+const server = app.listen(PORT, () => {
+  console.log(`Server running in ${config.server.env} mode on port ${PORT}`);
+  console.log(`API Documentation available at ${config.server.apiUrl}/docs`);
 });
 
-module.exports = app;
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.error(`Error: ${err.message}`);
+  
+  // Log detailed error information in development
+  if (config.server.env !== 'production') {
+    console.error(err);
+  }
+  
+  // Close server & exit process in production
+  if (config.server.env === 'production') {
+    // Close server
+    server.close(() => {
+      console.log('Server closed due to unhandled promise rejection');
+      process.exit(1);
+    });
+    
+    // If server doesn't close in 5 seconds, force exit
+    setTimeout(() => {
+      console.error('Server shutdown timed out, forcing exit');
+      process.exit(1);
+    }, 5000);
+  }
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error(`Uncaught Exception: ${err.message}`);
+  
+  // Log detailed error information in development
+  if (config.server.env !== 'production') {
+    console.error(err);
+  }
+  
+  // Exit process in production
+  if (config.server.env === 'production') {
+    process.exit(1);
+  }
+});
+
+module.exports = server;

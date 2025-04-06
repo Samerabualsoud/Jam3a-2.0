@@ -3,20 +3,16 @@ const Schema = mongoose.Schema;
 
 /**
  * Order Schema
- * Represents purchase orders created by users, either individually or as part of group buying
+ * Represents customer orders in the Jam3a platform
  */
 const OrderSchema = new Schema({
-  userId: {
+  user: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'User reference is required']
+    required: true
   },
-  groupId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Group'
-  },
-  products: [{
-    productId: {
+  items: [{
+    product: {
       type: Schema.Types.ObjectId,
       ref: 'Product',
       required: true
@@ -28,115 +24,142 @@ const OrderSchema = new Schema({
     },
     price: {
       type: Number,
-      required: true,
-      min: [0, 'Price cannot be negative']
+      required: true
     },
-    name: {
-      type: String,
+    total: {
+      type: Number,
       required: true
     }
   }],
-  totalAmount: {
+  total: {
     type: Number,
-    required: true,
-    min: [0, 'Total amount cannot be negative']
+    required: true
+  },
+  shippingAddress: {
+    name: String,
+    address: String,
+    city: String,
+    postalCode: String,
+    country: String,
+    phone: String
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['credit_card', 'bank_transfer', 'cash', 'moyasser'],
+    default: 'cash'
+  },
+  paymentDetails: {
+    transactionId: String,
+    status: String,
+    provider: String,
+    amount: Number,
+    currency: String,
+    paymentDate: Date,
+    cardLast4: String
   },
   status: {
     type: String,
-    enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'],
+    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'],
     default: 'pending'
   },
-  paymentId: {
+  statusHistory: [{
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    },
+    updatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    notes: String
+  }],
+  dealId: {
     type: Schema.Types.ObjectId,
-    ref: 'Payment'
+    ref: 'JamDeal',
+    default: null
   },
-  paymentMethod: {
-    type: String
+  shippingCost: {
+    type: Number,
+    default: 0
   },
-  shippingAddress: {
-    name: {
-      type: String,
-      required: true
-    },
-    address: {
-      type: String,
-      required: true
-    },
-    city: {
-      type: String,
-      required: true
-    },
-    country: {
-      type: String,
-      required: true
-    },
-    postalCode: {
-      type: String
-    },
-    phone: {
-      type: String,
-      required: true
-    }
+  tax: {
+    type: Number,
+    default: 0
   },
-  notes: {
-    type: String
-  }
+  discount: {
+    type: Number,
+    default: 0
+  },
+  notes: String,
+  trackingNumber: String,
+  estimatedDelivery: Date,
+  invoiceNumber: String
 }, {
   timestamps: true
 });
 
-// Create indexes for frequently queried fields
-OrderSchema.index({ userId: 1 });
-OrderSchema.index({ groupId: 1 });
+// Index for faster queries
+OrderSchema.index({ user: 1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ createdAt: 1 });
+OrderSchema.index({ 'paymentDetails.transactionId': 1 });
+OrderSchema.index({ dealId: 1 });
 
-// Method to calculate total order amount
-OrderSchema.methods.calculateTotal = function() {
-  return this.products.reduce((total, item) => {
-    return total + (item.price * item.quantity);
-  }, 0);
-};
-
-// Method to update order status
-OrderSchema.methods.updateStatus = function(status) {
-  const validStatuses = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'];
-  if (!validStatuses.includes(status)) {
-    throw new Error(`Invalid status: ${status}`);
+// Pre-save hook to generate invoice number
+OrderSchema.pre('save', function(next) {
+  if (!this.invoiceNumber && this.isNew) {
+    const prefix = 'JAM';
+    const timestamp = Date.now().toString().substring(7, 13);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    this.invoiceNumber = `${prefix}-${timestamp}-${random}`;
   }
   
-  this.status = status;
-  return this.save();
-};
-
-// Method to generate invoice data
-OrderSchema.methods.generateInvoice = function() {
-  return {
-    orderId: this._id,
-    customerName: this.shippingAddress.name,
-    customerAddress: this.shippingAddress.address,
-    customerCity: this.shippingAddress.city,
-    customerCountry: this.shippingAddress.country,
-    customerPhone: this.shippingAddress.phone,
-    orderDate: this.createdAt,
-    items: this.products.map(item => ({
-      name: item.name,
-      quantity: item.quantity,
-      price: item.price,
-      total: item.price * item.quantity
-    })),
-    subtotal: this.calculateTotal(),
-    total: this.totalAmount
-  };
-};
-
-// Pre-save hook to calculate total amount if not provided
-OrderSchema.pre('save', function(next) {
-  if (!this.totalAmount) {
-    this.totalAmount = this.calculateTotal();
+  // Initialize status history if new order
+  if (this.isNew && !this.statusHistory.length) {
+    this.statusHistory.push({
+      status: this.status,
+      date: Date.now(),
+      updatedBy: this.user
+    });
   }
+  
   next();
 });
+
+// Virtual for subtotal (before tax, shipping, discount)
+OrderSchema.virtual('subtotal').get(function() {
+  return this.items.reduce((sum, item) => sum + item.total, 0);
+});
+
+// Virtual for grand total (after tax, shipping, discount)
+OrderSchema.virtual('grandTotal').get(function() {
+  return this.total + this.shippingCost + this.tax - this.discount;
+});
+
+// Method to check if order can be cancelled
+OrderSchema.methods.canBeCancelled = function() {
+  return ['pending', 'processing'].includes(this.status);
+};
+
+// Method to check if order is complete
+OrderSchema.methods.isComplete = function() {
+  return this.status === 'delivered';
+};
+
+// Method to add status history
+OrderSchema.methods.addStatusHistory = function(status, userId, notes) {
+  this.status = status;
+  this.statusHistory.push({
+    status,
+    date: Date.now(),
+    updatedBy: userId,
+    notes: notes || ''
+  });
+};
 
 // Create and export the Order model
 const Order = mongoose.model('Order', OrderSchema);

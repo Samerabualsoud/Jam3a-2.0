@@ -7,9 +7,45 @@ const Payment = require('../models/Payment');
 const Order = require('../models/Order');
 const User = require('../models/User');
 
-// Import middleware (to be implemented)
-// const auth = require('../middleware/auth');
-// const admin = require('../middleware/admin');
+// Import services
+const MoyasserService = require('../services/MoyasserService');
+
+// Import middleware
+const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
+
+/**
+ * @route   GET /api/payments/:id
+ * @desc    Get payment details
+ * @access  Private
+ */
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id)
+      .populate('orderId')
+      .populate('userId', 'name email');
+    
+    if (!payment) {
+      return res.status(404).json({ msg: 'Payment not found' });
+    }
+    
+    // Ensure user can only access their own payments unless admin
+    const userId = req.user.id;
+    if (payment.userId.toString() !== userId && !req.user.isAdmin) {
+      return res.status(401).json({ msg: 'Not authorized' });
+    }
+    
+    res.json(payment);
+  } catch (err) {
+    console.error('Payment retrieval error:', err.message);
+    
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Payment not found' });
+    }
+    
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+});
 
 /**
  * @route   POST /api/payments/moyasser/create
@@ -17,13 +53,14 @@ const User = require('../models/User');
  * @access  Private
  */
 router.post('/moyasser/create', [
-  // auth,
+  auth,
   [
     check('orderId', 'Order ID is required').not().isEmpty(),
     check('amount', 'Amount is required and must be a number').isNumeric(),
     check('method', 'Payment method is required').isIn([
       'credit_card', 'debit_card', 'bank_transfer', 'apple_pay', 'mada'
-    ])
+    ]),
+    check('description', 'Description is required').optional()
   ]
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -32,10 +69,10 @@ router.post('/moyasser/create', [
   }
 
   try {
-    const { orderId, amount, currency = 'SAR', method } = req.body;
+    const { orderId, amount, currency = 'SAR', method, description } = req.body;
     
-    // In production, userId would come from auth middleware
-    const userId = req.body.userId;
+    // Get userId from auth middleware
+    const userId = req.user.id;
     
     // Check if order exists
     const order = await Order.findById(orderId);
@@ -44,9 +81,9 @@ router.post('/moyasser/create', [
     }
     
     // Ensure user owns the order or is admin
-    // if (order.userId.toString() !== userId && !req.user.isAdmin) {
-    //   return res.status(401).json({ msg: 'Not authorized' });
-    // }
+    if (order.userId.toString() !== userId && !req.user.isAdmin) {
+      return res.status(401).json({ msg: 'Not authorized' });
+    }
     
     // Check if payment already exists for this order
     const existingPayment = await Payment.findOne({ orderId });
@@ -57,40 +94,30 @@ router.post('/moyasser/create', [
       });
     }
     
-    // Create new payment
+    // Generate callback URL
+    const callbackUrl = `${req.protocol}://${req.get('host')}/api/payments/moyasser/callback`;
+    
+    // Create payment with Moyasser
+    const moyasserResponse = await MoyasserService.createPayment({
+      amount,
+      currency,
+      description: description || `Payment for order ${orderId}`,
+      callbackUrl,
+      source: method
+    });
+    
+    // Create new payment record
     const payment = new Payment({
       orderId,
       userId,
       amount,
       currency,
       method,
-      status: 'pending'
+      status: 'pending',
+      moyasserPaymentId: moyasserResponse.id,
+      moyasserResponse,
+      transactionFee: moyasserResponse.fee
     });
-    
-    await payment.save();
-    
-    // In a real implementation, this would integrate with Moyasser API
-    // For now, we'll simulate the integration
-    
-    // Simulate Moyasser payment ID
-    const moyasserPaymentId = 'moy_' + Math.random().toString(36).substring(2, 15);
-    
-    // Simulate Moyasser response
-    const moyasserResponse = {
-      id: moyasserPaymentId,
-      status: 'initiated',
-      amount: amount,
-      currency: currency,
-      fee: amount * 0.025, // 2.5% fee
-      description: `Payment for order ${orderId}`,
-      url: `https://moyasser.com/payments/${moyasserPaymentId}`,
-      created_at: new Date().toISOString()
-    };
-    
-    // Update payment with Moyasser details
-    payment.moyasserPaymentId = moyasserPaymentId;
-    payment.moyasserResponse = moyasserResponse;
-    payment.transactionFee = moyasserResponse.fee;
     
     await payment.save();
     
@@ -100,8 +127,8 @@ router.post('/moyasser/create', [
       moyasserPaymentUrl: moyasserResponse.url
     });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+    console.error('Moyasser payment creation error:', err.message);
+    res.status(500).json({ msg: 'Failed to create payment', error: err.message });
   }
 });
 
@@ -112,74 +139,50 @@ router.post('/moyasser/create', [
  */
 router.post('/moyasser/callback', async (req, res) => {
   try {
-    // In a real implementation, this would verify the callback with Moyasser
-    // and update the payment status accordingly
+    // Verify webhook signature
+    const signature = req.headers['moyasser-signature'];
+    const payload = JSON.stringify(req.body);
     
-    const { moyasserPaymentId, status } = req.body;
+    const isValid = MoyasserService.verifyWebhookSignature(signature, payload);
+    if (!isValid) {
+      return res.status(400).json({ msg: 'Invalid signature' });
+    }
+    
+    const { id, status, amount, fee } = req.body;
     
     // Find payment by Moyasser payment ID
-    const payment = await Payment.findOne({ moyasserPaymentId });
+    const payment = await Payment.findOne({ moyasserPaymentId: id });
     if (!payment) {
       return res.status(404).json({ msg: 'Payment not found' });
     }
     
-    // Update payment status
-    if (status === 'completed') {
+    // Update payment status based on Moyasser status
+    if (status === 'paid') {
       payment.status = 'completed';
       payment.completedAt = new Date();
+      payment.transactionFee = fee;
       
       // Update order status
       const order = await Order.findById(payment.orderId);
       if (order) {
         order.status = 'paid';
         order.paymentId = payment._id;
+        order.paymentMethod = payment.method;
         await order.save();
       }
     } else if (status === 'failed') {
       payment.status = 'failed';
     }
     
+    // Update Moyasser response
+    payment.moyasserResponse = req.body;
+    
     await payment.save();
     
     res.json({ success: true });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-/**
- * @route   GET /api/payments/:id
- * @desc    Get payment details
- * @access  Private
- */
-router.get('/:id', [
-  // auth
-], async (req, res) => {
-  try {
-    const payment = await Payment.findById(req.params.id)
-      .populate('orderId')
-      .populate('userId', 'name email');
-    
-    if (!payment) {
-      return res.status(404).json({ msg: 'Payment not found' });
-    }
-    
-    // In production, ensure user can only access their own payments unless admin
-    // const userId = req.user.id;
-    // if (payment.userId.toString() !== userId && !req.user.isAdmin) {
-    //   return res.status(401).json({ msg: 'Not authorized' });
-    // }
-    
-    res.json(payment);
-  } catch (err) {
-    console.error(err.message);
-    
-    if (err.kind === 'ObjectId') {
-      return res.status(404).json({ msg: 'Payment not found' });
-    }
-    
-    res.status(500).send('Server Error');
+    console.error('Moyasser callback error:', err.message);
+    res.status(500).json({ msg: 'Failed to process callback', error: err.message });
   }
 });
 
@@ -188,9 +191,7 @@ router.get('/:id', [
  * @desc    Verify payment status with Moyasser
  * @access  Private
  */
-router.post('/:id/verify', [
-  // auth
-], async (req, res) => {
+router.post('/:id/verify', auth, async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.id);
     
@@ -198,44 +199,50 @@ router.post('/:id/verify', [
       return res.status(404).json({ msg: 'Payment not found' });
     }
     
-    // In production, ensure user can only access their own payments unless admin
-    // const userId = req.user.id;
-    // if (payment.userId.toString() !== userId && !req.user.isAdmin) {
-    //   return res.status(401).json({ msg: 'Not authorized' });
-    // }
+    // Ensure user can only access their own payments unless admin
+    const userId = req.user.id;
+    if (payment.userId.toString() !== userId && !req.user.isAdmin) {
+      return res.status(401).json({ msg: 'Not authorized' });
+    }
     
-    // In a real implementation, this would verify the payment status with Moyasser API
-    // For now, we'll simulate the verification
+    // Verify payment with Moyasser
+    const moyasserResponse = await MoyasserService.verifyPayment(payment.moyasserPaymentId);
     
-    // Simulate verification result (80% chance of success)
-    const isSuccessful = Math.random() < 0.8;
-    
-    if (isSuccessful) {
+    // Update payment status based on Moyasser status
+    if (moyasserResponse.status === 'paid') {
       payment.status = 'completed';
       payment.completedAt = new Date();
+      payment.transactionFee = moyasserResponse.fee;
       
       // Update order status
       const order = await Order.findById(payment.orderId);
       if (order) {
         order.status = 'paid';
         order.paymentId = payment._id;
+        order.paymentMethod = payment.method;
         await order.save();
       }
-    } else {
+    } else if (moyasserResponse.status === 'failed') {
       payment.status = 'failed';
     }
     
+    // Update Moyasser response
+    payment.moyasserResponse = moyasserResponse;
+    
     await payment.save();
     
-    res.json(payment);
+    res.json({
+      payment,
+      moyasserResponse
+    });
   } catch (err) {
-    console.error(err.message);
+    console.error('Payment verification error:', err.message);
     
     if (err.kind === 'ObjectId') {
       return res.status(404).json({ msg: 'Payment not found' });
     }
     
-    res.status(500).send('Server Error');
+    res.status(500).json({ msg: 'Failed to verify payment', error: err.message });
   }
 });
 
@@ -245,9 +252,10 @@ router.post('/:id/verify', [
  * @access  Private/Admin
  */
 router.post('/:id/refund', [
-  // auth, admin,
+  auth, admin,
   [
-    check('amount', 'Amount is required and must be a number').isNumeric()
+    check('amount', 'Amount is required and must be a number').isNumeric(),
+    check('reason', 'Reason is required').not().isEmpty()
   ]
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -256,7 +264,7 @@ router.post('/:id/refund', [
   }
 
   try {
-    const { amount } = req.body;
+    const { amount, reason } = req.body;
     
     const payment = await Payment.findById(req.params.id);
     if (!payment) {
@@ -273,15 +281,19 @@ router.post('/:id/refund', [
       return res.status(400).json({ msg: 'Invalid refund amount' });
     }
     
-    // In a real implementation, this would process the refund through Moyasser API
-    // For now, we'll simulate the refund
-    
-    // Simulate refund ID
-    const refundId = 'ref_' + Math.random().toString(36).substring(2, 15);
+    // Process refund with Moyasser
+    const refundResponse = await MoyasserService.processRefund(payment.moyasserPaymentId, {
+      amount,
+      reason
+    });
     
     // Update payment
     payment.status = 'refunded';
-    payment.refundId = refundId;
+    payment.refundId = refundResponse.id;
+    payment.moyasserResponse = {
+      ...payment.moyasserResponse,
+      refund: refundResponse
+    };
     
     await payment.save();
     
@@ -292,15 +304,51 @@ router.post('/:id/refund', [
       await order.save();
     }
     
-    res.json(payment);
+    res.json({
+      payment,
+      refundResponse
+    });
   } catch (err) {
-    console.error(err.message);
+    console.error('Payment refund error:', err.message);
     
     if (err.kind === 'ObjectId') {
       return res.status(404).json({ msg: 'Payment not found' });
     }
     
-    res.status(500).send('Server Error');
+    res.status(500).json({ msg: 'Failed to process refund', error: err.message });
+  }
+});
+
+/**
+ * @route   GET /api/payments/client-form/:orderId
+ * @desc    Generate payment form data for client-side integration
+ * @access  Private
+ */
+router.get('/client-form/:orderId', auth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) {
+      return res.status(404).json({ msg: 'Order not found' });
+    }
+    
+    // Ensure user can only access their own orders unless admin
+    const userId = req.user.id;
+    if (order.userId.toString() !== userId && !req.user.isAdmin) {
+      return res.status(401).json({ msg: 'Not authorized' });
+    }
+    
+    // Generate payment form data
+    const formData = MoyasserService.generatePaymentForm({
+      amount: order.totalAmount,
+      currency: 'SAR',
+      description: `Payment for order #${order._id}`,
+      orderId: order._id
+    });
+    
+    res.json(formData);
+  } catch (err) {
+    console.error('Payment form generation error:', err.message);
+    res.status(500).json({ msg: 'Failed to generate payment form', error: err.message });
   }
 });
 
