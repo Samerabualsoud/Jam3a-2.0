@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,8 +44,10 @@ const JoinJam3a = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Get deal ID from URL params
-  const dealId = searchParams.get('dealId') || '';
+  // Get deal ID from URL params (either from path or query parameter)
+  const { dealId: pathDealId } = useParams();
+  const queryDealId = searchParams.get('dealId') || '';
+  const dealId = pathDealId || queryDealId || '';
   
   // Deal and products state
   const [deal, setDeal] = useState(null);

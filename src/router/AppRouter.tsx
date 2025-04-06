@@ -8,6 +8,8 @@ import Admin from '@/pages/Admin';
 import Checkout from '@/pages/Checkout';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 import PaymentVerificationHandler from '@/components/payment/PaymentVerificationHandler';
+import DealDetails from '@/pages/DealDetails';
+import JoinJam3a from '@/pages/JoinJam3a';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from '@/components/auth/ProtectedRoutes';
 
 const AppRouter: React.FC = () => {
@@ -16,6 +18,9 @@ const AppRouter: React.FC = () => {
       <Route path="/" element={<Layout />}>
         {/* Public Routes */}
         <Route index element={<Index />} />
+        <Route path="jam3a/:dealId" element={<DealDetails />} />
+        <Route path="join-jam3a" element={<JoinJam3a />} />
+        <Route path="join-jam3a/:dealId" element={<JoinJam3a />} />
         
         {/* Public Only Routes (redirect if already logged in) */}
         <Route element={<PublicOnlyRoute />}>
