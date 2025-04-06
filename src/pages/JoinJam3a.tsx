@@ -204,7 +204,11 @@ const JoinJam3a = () => {
             title: productParam,
             discount: parseFloat(discountParam) || 10,
             price: parseFloat(priceParam.replace(/[^0-9.]/g, '')) || 0,
-            category: { name: 'Custom Deal' }
+            category: { name: 'Custom Deal' },
+            progress: 0,
+            currentParticipants: 0,
+            maxParticipants: 5,
+            timeRemaining: '3 days'
           };
           
           setDeal(tempDeal);
@@ -224,6 +228,10 @@ const JoinJam3a = () => {
         if (!dealData) {
           throw new Error('Deal not found. It may have been removed or expired.');
         }
+        
+        // Calculate progress for the progress bar
+        dealData.progress = (dealData.currentParticipants / dealData.maxParticipants) * 100;
+        
         setDeal(dealData);
         
         // Fetch products in this deal's category
@@ -232,6 +240,11 @@ const JoinJam3a = () => {
           throw new Error('No products available for this deal category.');
         }
         setCategoryProducts(productsData.data);
+        
+        // If there's only one product, select it automatically
+        if (productsData.data.length === 1) {
+          setSelectedProduct(productsData.data[0]);
+        }
         
         setIsLoading(false);
       } catch (err) {
@@ -486,15 +499,35 @@ const JoinJam3a = () => {
     setIsProcessing(true);
     
     try {
-      // Join the deal with selected product
-      const response = await joinDeal(dealId, {
+      // Prepare the data for joining the deal
+      const joinData = {
         productId: selectedProduct._id,
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
-        paymentMethod: formData.paymentMethod
-      });
+        paymentMethod: formData.paymentMethod,
+        productName: selectedProduct.name,
+        productPrice: selectedProduct.price,
+        discountedPrice: selectedProduct.price * (1 - (deal.discount / 100)),
+        dealDiscount: deal.discount
+      };
+      
+      // Join the deal with selected product
+      const response = await joinDeal(dealId, joinData);
+      
+      // Store order information in localStorage for confirmation page
+      localStorage.setItem('jam3a_last_order', JSON.stringify({
+        dealId: dealId,
+        dealTitle: deal.title,
+        productName: selectedProduct.name,
+        productPrice: selectedProduct.price,
+        discountedPrice: selectedProduct.price * (1 - (deal.discount / 100)),
+        discount: deal.discount,
+        orderDate: new Date().toISOString(),
+        paymentMethod: formData.paymentMethod,
+        orderNumber: response?.orderNumber || `JAM3A-${Date.now().toString().slice(-6)}`
+      }));
       
       // Simulate payment processing
       setTimeout(() => {
