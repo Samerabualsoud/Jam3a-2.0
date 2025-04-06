@@ -191,7 +191,7 @@ const JoinJam3a = () => {
   useEffect(() => {
     const loadDealData = async () => {
       if (!dealId) {
-        setError('No deal ID provided');
+        setError('No deal ID provided. Please select a deal from the homepage.');
         setIsLoading(false);
         return;
       }
@@ -201,16 +201,22 @@ const JoinJam3a = () => {
         
         // Fetch deal details
         const dealData = await fetchDealById(dealId);
+        if (!dealData) {
+          throw new Error('Deal not found. It may have been removed or expired.');
+        }
         setDeal(dealData);
         
         // Fetch products in this deal's category
         const productsData = await fetchDealProducts(dealId);
+        if (!productsData || !productsData.data || productsData.data.length === 0) {
+          throw new Error('No products available for this deal category.');
+        }
         setCategoryProducts(productsData.data);
         
         setIsLoading(false);
       } catch (err) {
         console.error('Error loading deal data:', err);
-        setError(err.message || 'Failed to load deal data');
+        setError(err.message || 'Failed to load deal data. Please try again later or contact support if the issue persists.');
         setIsLoading(false);
       }
     };

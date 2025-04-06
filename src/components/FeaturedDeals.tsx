@@ -60,7 +60,7 @@ const FeaturedDeals = () => {
   }, []);
 
   const handleViewDeal = (dealId) => {
-    navigate(`/join-jam3a?dealId=${dealId}`);
+    navigate(`/jam3a/${dealId}`);
   };
 
   if (isLoading) {
