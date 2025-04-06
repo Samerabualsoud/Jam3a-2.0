@@ -21,6 +21,8 @@ const AppRouter: React.FC = () => {
         <Route path="jam3a/:dealId" element={<DealDetails />} />
         <Route path="join-jam3a" element={<JoinJam3a />} />
         <Route path="join-jam3a/:dealId" element={<JoinJam3a />} />
+        {/* Legacy route support */}
+        <Route path="j/:dealId" element={<DealDetails />} />
         
         {/* Public Only Routes (redirect if already logged in) */}
         <Route element={<PublicOnlyRoute />}>

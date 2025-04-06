@@ -71,7 +71,7 @@ const DealDetails = () => {
   useEffect(() => {
     const loadDealData = async () => {
       if (!dealId) {
-        setError('No deal ID provided');
+        setError('No deal ID provided. Please select a deal from the homepage.');
         setIsLoading(false);
         return;
       }

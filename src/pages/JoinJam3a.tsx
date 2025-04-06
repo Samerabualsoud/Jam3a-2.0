@@ -46,7 +46,7 @@ const JoinJam3a = () => {
   
   // Get deal ID from URL params (either from path or query parameter)
   const { dealId: pathDealId } = useParams();
-  const queryDealId = searchParams.get('dealId') || '';
+  const queryDealId = searchParams.get('dealId') || searchParams.get('id') || '';
   const dealId = pathDealId || queryDealId || '';
   
   // Deal and products state
