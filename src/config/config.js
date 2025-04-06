@@ -46,7 +46,7 @@ module.exports = {
   
   // CORS configuration
   cors: {
-    origin: process.env.FRONTEND_URL || 'https://jam3a.me',
+    origin: ['https://shark-app-b8fxh.ondigitalocean.app', process.env.FRONTEND_URL || 'https://jam3a.me'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
     credentials: true
