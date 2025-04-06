@@ -46,12 +46,20 @@ const FeaturedDeals = () => {
     const loadFeaturedDeals = async () => {
       try {
         setIsLoading(true);
-        const dealsData = await fetchFeaturedDeals();
-        setDeals(dealsData);
+        const dealsData = await fetchFeaturedDeals().catch(err => {
+          console.error('Error fetching featured deals:', err);
+          return [];
+        });
+        
+        if (!dealsData || !Array.isArray(dealsData) || dealsData.length === 0) {
+          console.warn('No featured deals returned from API');
+        }
+        
+        setDeals(Array.isArray(dealsData) ? dealsData : []);
         setIsLoading(false);
       } catch (err) {
         console.error('Error loading featured deals:', err);
-        setError(err.message || 'Failed to load featured deals');
+        setError(err.message || 'Failed to load featured deals. Please try again later.');
         setIsLoading(false);
       }
     };

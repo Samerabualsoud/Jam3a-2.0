@@ -47,6 +47,9 @@ const JoinJam3a = () => {
   // Get deal ID from URL params (either from path or query parameter)
   const { dealId: pathDealId } = useParams();
   const queryDealId = searchParams.get('dealId') || searchParams.get('id') || '';
+  const productParam = searchParams.get('product') || '';
+  const priceParam = searchParams.get('price') || '';
+  const discountParam = searchParams.get('discount') || '';
   const dealId = pathDealId || queryDealId || '';
   
   // Deal and products state
@@ -190,14 +193,31 @@ const JoinJam3a = () => {
   // Fetch deal and products data
   useEffect(() => {
     const loadDealData = async () => {
-      if (!dealId) {
-        setError('No deal ID provided. Please select a deal from the homepage.');
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
+        
+        // Handle direct product URLs without a deal ID
+        if (!dealId && productParam) {
+          // Create a temporary deal object from URL parameters
+          const tempDeal = {
+            _id: 'temp-' + Date.now(),
+            title: productParam,
+            discount: parseFloat(discountParam) || 10,
+            price: parseFloat(priceParam.replace(/[^0-9.]/g, '')) || 0,
+            category: { name: 'Custom Deal' }
+          };
+          
+          setDeal(tempDeal);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Handle missing deal ID
+        if (!dealId) {
+          setError('No deal ID provided. Please select a deal from the homepage.');
+          setIsLoading(false);
+          return;
+        }
         
         // Fetch deal details
         const dealData = await fetchDealById(dealId);
@@ -222,7 +242,7 @@ const JoinJam3a = () => {
     };
 
     loadDealData();
-  }, [dealId]);
+  }, [dealId, productParam, priceParam, discountParam]);
 
   // Handle product selection
   const handleProductSelect = (product) => {

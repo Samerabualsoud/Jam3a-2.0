@@ -1,9 +1,41 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Define the base API URL - this should be updated based on your deployment environment
-export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.jam3a.me/api' // Production URL - updated to match actual domain
-  : 'http://localhost:5000/api'; // Development URL
+export const API_BASE_URL = (() => {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // Production domains
+    if (hostname === 'jam3a.me' || hostname.endsWith('.jam3a.me')) {
+      return 'https://api.jam3a.me/api';
+    }
+    
+    // Staging domains
+    if (hostname === 'staging.jam3a.me' || hostname.endsWith('.staging.jam3a.me')) {
+      return 'https://api.staging.jam3a.me/api';
+    }
+    
+    // Development domains
+    if (hostname === 'dev.jam3a.me' || hostname.endsWith('.dev.jam3a.me')) {
+      return 'https://api.dev.jam3a.me/api';
+    }
+    
+    // Local development
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    
+    // Fallback to production API if hostname doesn't match any known environments
+    console.warn(`Unknown hostname: ${hostname}, defaulting to production API`);
+    return 'https://api.jam3a.me/api';
+  }
+  
+  // Server-side rendering or non-browser environment
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://api.jam3a.me/api' 
+    : 'http://localhost:5000/api';
+})();
 
 // Interface for API error responses
 export interface ApiErrorResponse {

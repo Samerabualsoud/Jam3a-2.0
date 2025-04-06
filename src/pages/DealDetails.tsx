@@ -78,7 +78,15 @@ const DealDetails = () => {
 
       try {
         setIsLoading(true);
-        const dealData = await fetchDealById(dealId);
+        const dealData = await fetchDealById(dealId).catch(err => {
+          console.error('Error fetching deal:', err);
+          return null;
+        });
+        
+        if (!dealData) {
+          throw new Error('Deal not found or could not be loaded. It may have been removed or expired.');
+        }
+        
         setDeal(dealData);
         setIsLoading(false);
       } catch (err) {
