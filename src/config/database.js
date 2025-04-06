@@ -7,10 +7,18 @@ const connectDB = async () => {
     // Configure MongoDB connection options
     const options = config.database.options;
     
+    // Log the connection URI (without password) for debugging
+    const uriForLogging = config.database.uri.replace(
+      /mongodb(\+srv)?:\/\/[^:]+:([^@]+)@/,
+      'mongodb$1://[username]:[hidden]@'
+    );
+    console.log(`Attempting to connect to MongoDB: ${uriForLogging}`);
+    
     // Connect to MongoDB
     const conn = await mongoose.connect(config.database.uri, options);
     
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`Connected to database: ${conn.connection.name}`);
     
     // Handle connection errors after initial connection
     mongoose.connection.on('error', (err) => {
@@ -37,9 +45,13 @@ const connectDB = async () => {
     return conn;
   } catch (err) {
     console.error(`Error connecting to MongoDB: ${err.message}`);
+    console.error(`Full error: ${err.stack}`);
     // Exit process with failure in production
     if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
+      // Don't exit immediately in production, allow the application to continue
+      // This prevents the app from crashing if there's a temporary DB connection issue
+      console.error('MongoDB connection failed, but application will continue running');
+      return null;
     }
     // In development, throw the error for better debugging
     throw err;

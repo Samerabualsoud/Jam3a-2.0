@@ -22,19 +22,23 @@ router.post('/register', [
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors during registration:', errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
 
   const { name, email, password, phone, address } = req.body;
+  console.log(`Registration attempt for email: ${email}`);
 
   try {
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
+      console.log(`Registration failed: User with email ${email} already exists`);
       return res.status(400).json({ msg: 'User already exists' });
     }
 
     // Create new user
+    console.log(`Creating new user with email: ${email}`);
     user = new User({
       name,
       email,
@@ -49,9 +53,12 @@ router.post('/register', [
     });
 
     // Save user (password will be hashed by pre-save hook)
+    console.log('Saving new user to database...');
     await user.save();
+    console.log(`User saved successfully with ID: ${user.id}`);
 
     // Generate tokens
+    console.log('Generating authentication tokens...');
     const accessToken = AuthService.generateAccessToken(user);
     const refreshToken = AuthService.generateRefreshToken(user);
 
@@ -59,6 +66,7 @@ router.post('/register', [
     // For now, just log the verification token
     console.log(`Verification token for ${email}: ${user.emailVerificationToken}`);
 
+    console.log('Registration successful, returning user data and tokens');
     res.status(201).json({
       msg: 'User registered successfully',
       accessToken,
@@ -73,6 +81,7 @@ router.post('/register', [
     });
   } catch (err) {
     console.error('Registration error:', err.message);
+    console.error('Full error stack:', err.stack);
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
 });
@@ -88,29 +97,37 @@ router.post('/login', [
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors during login:', errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
 
   const { email, password } = req.body;
+  console.log(`Login attempt for email: ${email}`);
 
   try {
     // Check if user exists
+    console.log(`Looking up user with email: ${email}`);
     const user = await User.findOne({ email });
     if (!user) {
+      console.log(`Login failed: No user found with email ${email}`);
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
     // Check password
+    console.log('Verifying password...');
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log(`Login failed: Invalid password for user ${email}`);
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
     // Generate tokens
+    console.log('Password verified, generating authentication tokens...');
     const accessToken = AuthService.generateAccessToken(user);
     const refreshToken = AuthService.generateRefreshToken(user);
 
     // Return user data and tokens
+    console.log('Login successful, returning user data and tokens');
     res.json({
       accessToken,
       refreshToken,
@@ -125,6 +142,7 @@ router.post('/login', [
     });
   } catch (err) {
     console.error('Login error:', err.message);
+    console.error('Full error stack:', err.stack);
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
 });
