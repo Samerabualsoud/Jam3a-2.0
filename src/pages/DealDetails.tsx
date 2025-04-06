@@ -8,9 +8,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, CheckCircle2, ArrowRight, ShoppingBag, Users, Clock } from 'lucide-react';
+import { 
+  Loader2, 
+  AlertCircle, 
+  ArrowRight, 
+  Users, 
+  Clock, 
+  Share2,
+  ShoppingBag,
+  CheckCircle,
+  Info
+} from 'lucide-react';
 import { fetchDealById } from '@/services/DealService';
 import ScrollToTop from '@/components/ScrollToTop';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { LoadingFallback, ErrorFallback } from '@/components/FallbackComponents';
 
 const DealDetails = () => {
   const { dealId } = useParams();
@@ -21,6 +34,7 @@ const DealDetails = () => {
   const [deal, setDeal] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('active');
   
   // Content based on language
   const content = {
@@ -42,7 +56,25 @@ const DealDetails = () => {
       specifications: "Specifications",
       features: "Features",
       currency: "SAR",
-      required: "required"
+      required: "required",
+      activeJam3a: "Active Jam3a",
+      jam3aHistory: "Jam3a History",
+      days: "days",
+      day: "day",
+      viewDetails: "View Details",
+      shareNow: "Share Now",
+      productDetails: "Product Details",
+      dealStatus: "Deal Status",
+      dealProgress: "Deal Progress",
+      dealParticipants: "Deal Participants",
+      dealTimeRemaining: "Time Remaining",
+      dealExpires: "Deal Expires",
+      howItWorks: "How It Works",
+      step1: "Join the deal",
+      step2: "Share with friends",
+      step3: "Get group discount",
+      step4: "Product is shipped",
+      noHistory: "No history available for this deal"
     },
     ar: {
       title: "تفاصيل الصفقة",
@@ -62,7 +94,25 @@ const DealDetails = () => {
       specifications: "المواصفات",
       features: "الميزات",
       currency: "ريال",
-      required: "مطلوب"
+      required: "مطلوب",
+      activeJam3a: "جمعة نشطة",
+      jam3aHistory: "سجل الجمعة",
+      days: "أيام",
+      day: "يوم",
+      viewDetails: "عرض التفاصيل",
+      shareNow: "شارك الآن",
+      productDetails: "تفاصيل المنتج",
+      dealStatus: "حالة الصفقة",
+      dealProgress: "تقدم الصفقة",
+      dealParticipants: "المشاركون في الصفقة",
+      dealTimeRemaining: "الوقت المتبقي",
+      dealExpires: "تنتهي الصفقة",
+      howItWorks: "كيف تعمل",
+      step1: "انضم إلى الصفقة",
+      step2: "شارك مع الأصدقاء",
+      step3: "احصل على خصم المجموعة",
+      step4: "يتم شحن المنتج",
+      noHistory: "لا يوجد سجل متاح لهذه الصفقة"
     }
   };
 
@@ -119,12 +169,7 @@ const DealDetails = () => {
       <>
         <Header />
         <div className="container mx-auto px-4 py-12">
-          <div className="flex justify-center items-center py-12">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-jam3a-purple mx-auto mb-4" />
-              <p>{currentContent.loading}</p>
-            </div>
-          </div>
+          <LoadingFallback />
         </div>
         <Footer />
       </>
@@ -136,16 +181,7 @@ const DealDetails = () => {
       <>
         <Header />
         <div className="container mx-auto px-4 py-12">
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{currentContent.errorTitle}</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-          <div className="text-center">
-            <Button onClick={handleBackToDeals}>
-              {currentContent.backToDeals}
-            </Button>
-          </div>
+          <ErrorFallback message={error} retry={handleBackToDeals} />
         </div>
         <Footer />
       </>
@@ -157,16 +193,7 @@ const DealDetails = () => {
       <>
         <Header />
         <div className="container mx-auto px-4 py-12">
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{currentContent.errorTitle}</AlertTitle>
-            <AlertDescription>{currentContent.errorGeneric}</AlertDescription>
-          </Alert>
-          <div className="text-center">
-            <Button onClick={handleBackToDeals}>
-              {currentContent.backToDeals}
-            </Button>
-          </div>
+          <ErrorFallback message={currentContent.errorGeneric} retry={handleBackToDeals} />
         </div>
         <Footer />
       </>
@@ -175,117 +202,208 @@ const DealDetails = () => {
 
   // Calculate progress percentage
   const progress = (deal.currentParticipants / deal.maxParticipants) * 100;
+  
+  // Format time remaining
+  const timeRemaining = deal.timeRemaining || '2 days';
+  const daysText = timeRemaining.includes('1 ') ? currentContent.day : currentContent.days;
 
   return (
     <>
       <Header />
       <ScrollToTop />
       
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Image */}
-          <div className="bg-white rounded-lg overflow-hidden shadow-md">
-            <img 
-              src={deal.image || deal.category?.image || 'https://via.placeholder.com/600x400?text=Jam3a+Deal'} 
-              alt={language === 'ar' && deal.titleAr ? deal.titleAr : deal.title} 
-              className="w-full h-auto object-cover"
-            />
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        {/* Tabs for Active Jam3a and Jam3a History */}
+        <Tabs defaultValue="active" className="w-full mb-8" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="active">{currentContent.activeJam3a}</TabsTrigger>
+            <TabsTrigger value="history">{currentContent.jam3aHistory}</TabsTrigger>
+          </TabsList>
           
-          {/* Product Details */}
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-4">
-              {language === 'ar' && deal.titleAr ? deal.titleAr : deal.title}
-            </h1>
-            
-            <div className="mb-6">
-              <div className="text-sm text-muted-foreground mb-1">{currentContent.category}</div>
-              <div className="text-lg font-medium">
-                {language === 'ar' && deal.category?.nameAr ? deal.category.nameAr : deal.category?.name}
-              </div>
+          <TabsContent value="active" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Product Image Card */}
+              <Card className="overflow-hidden">
+                <CardContent className="p-0">
+                  <img 
+                    src={deal.image || deal.category?.image || 'https://via.placeholder.com/600x400?text=Jam3a+Deal'} 
+                    alt={language === 'ar' && deal.titleAr ? deal.titleAr : deal.title} 
+                    className="w-full h-auto object-cover aspect-video"
+                  />
+                </CardContent>
+              </Card>
+              
+              {/* Product Details Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">
+                    {language === 'ar' && deal.titleAr ? deal.titleAr : deal.title}
+                  </CardTitle>
+                  <div className="text-sm text-muted-foreground">
+                    {currentContent.category}: {language === 'ar' && deal.category?.nameAr ? deal.category.nameAr : deal.category?.name}
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-6">
+                  {/* Price Information */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">{currentContent.regularPrice}</div>
+                      <div className="text-lg line-through">{deal.regularPrice} {currentContent.currency}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">{currentContent.jam3aPrice}</div>
+                      <div className="text-2xl font-bold text-jam3a-purple">{deal.jam3aPrice} {currentContent.currency}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Participants and Time Left */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">{currentContent.participants}</div>
+                      <div className="text-lg flex items-center">
+                        <Users className="h-4 w-4 mr-2" />
+                        {deal.currentParticipants}/{deal.maxParticipants} {currentContent.required}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">{currentContent.timeLeft}</div>
+                      <div className="text-lg flex items-center">
+                        <Clock className="h-4 w-4 mr-2" />
+                        {timeRemaining}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-sm">{currentContent.dealProgress}</div>
+                      <div className="text-jam3a-purple font-medium">
+                        {Math.round(progress)}%
+                      </div>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button 
+                      onClick={handleJoinDeal} 
+                      className="flex-1 bg-jam3a-purple hover:bg-jam3a-deep-purple"
+                    >
+                      {currentContent.joinDeal}
+                      <ArrowRight className={`ml-2 h-4 w-4 ${isRtl ? 'transform rotate-180' : ''}`} />
+                    </Button>
+                    <Button 
+                      onClick={handleInviteFriends} 
+                      variant="outline" 
+                      className="flex-1 border-jam3a-purple text-jam3a-purple hover:bg-jam3a-purple hover:text-white"
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      {currentContent.inviteFriends}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
             
-            <div className="grid grid-cols-2 gap-6 mb-6">
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{currentContent.regularPrice}</div>
-                <div className="text-lg line-through">{deal.regularPrice} {currentContent.currency}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{currentContent.jam3aPrice}</div>
-                <div className="text-2xl font-bold text-jam3a-purple">{deal.jam3aPrice} {currentContent.currency}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{currentContent.discount}</div>
-                <div className="text-lg">{deal.discount}%</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{currentContent.timeLeft}</div>
-                <div className="text-lg">{deal.timeRemaining}</div>
-              </div>
+            {/* Product Description and Specifications */}
+            <div className="mt-8 grid grid-cols-1 gap-8">
+              {/* Description Card */}
+              {deal.description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{currentContent.description}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose max-w-none">
+                      {language === 'ar' && deal.descriptionAr ? deal.descriptionAr : deal.description}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Specifications and Features */}
+              {(deal.specifications || deal.features) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{currentContent.productDetails}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="specifications">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="specifications">{currentContent.specifications}</TabsTrigger>
+                        <TabsTrigger value="features">{currentContent.features}</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="specifications" className="p-4 border rounded-md mt-2">
+                        <div className="prose max-w-none">
+                          {language === 'ar' && deal.specificationsAr ? deal.specificationsAr : deal.specifications}
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="features" className="p-4 border rounded-md mt-2">
+                        <div className="prose max-w-none">
+                          {language === 'ar' && deal.featuresAr ? deal.featuresAr : deal.features}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* How It Works Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{currentContent.howItWorks}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-jam3a-purple/10 mb-4">
+                        <ShoppingBag className="h-6 w-6 text-jam3a-purple" />
+                      </div>
+                      <p className="font-medium">{currentContent.step1}</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-jam3a-purple/10 mb-4">
+                        <Share2 className="h-6 w-6 text-jam3a-purple" />
+                      </div>
+                      <p className="font-medium">{currentContent.step2}</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-jam3a-purple/10 mb-4">
+                        <Users className="h-6 w-6 text-jam3a-purple" />
+                      </div>
+                      <p className="font-medium">{currentContent.step3}</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-jam3a-purple/10 mb-4">
+                        <CheckCircle className="h-6 w-6 text-jam3a-purple" />
+                      </div>
+                      <p className="font-medium">{currentContent.step4}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center">
-                  <Users className="h-4 w-4 mr-2" />
-                  <span>{currentContent.participants}: {deal.currentParticipants}/{deal.maxParticipants} {currentContent.required}</span>
+          </TabsContent>
+          
+          <TabsContent value="history" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{currentContent.jam3aHistory}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
+                    <Info className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground">{currentContent.noHistory}</p>
                 </div>
-                <div className="text-jam3a-purple font-medium">
-                  {Math.round(progress)}%
-                </div>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <Button 
-                onClick={handleJoinDeal} 
-                className="flex-1 bg-jam3a-purple hover:bg-jam3a-deep-purple"
-              >
-                {currentContent.joinDeal}
-                <ArrowRight className={`ml-2 h-4 w-4 ${isRtl ? 'transform rotate-180' : ''}`} />
-              </Button>
-              <Button 
-                onClick={handleInviteFriends} 
-                variant="outline" 
-                className="flex-1 border-jam3a-purple text-jam3a-purple hover:bg-jam3a-purple hover:text-white"
-              >
-                {currentContent.inviteFriends}
-              </Button>
-            </div>
-            
-            {deal.description && (
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">{currentContent.description}</h2>
-                <div className="prose max-w-none">
-                  {language === 'ar' && deal.descriptionAr ? deal.descriptionAr : deal.description}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Specifications and Features */}
-        {(deal.specifications || deal.features) && (
-          <div className="mt-12">
-            <Tabs defaultValue="specifications">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="specifications">{currentContent.specifications}</TabsTrigger>
-                <TabsTrigger value="features">{currentContent.features}</TabsTrigger>
-              </TabsList>
-              <TabsContent value="specifications" className="p-4 border rounded-md mt-2">
-                <div className="prose max-w-none">
-                  {language === 'ar' && deal.specificationsAr ? deal.specificationsAr : deal.specifications}
-                </div>
-              </TabsContent>
-              <TabsContent value="features" className="p-4 border rounded-md mt-2">
-                <div className="prose max-w-none">
-                  {language === 'ar' && deal.featuresAr ? deal.featuresAr : deal.features}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       
       <Footer />
