@@ -1,7 +1,7 @@
 // Production environment configuration for Jam3a frontend
 const PRODUCTION_CONFIG = {
   // API base URL for production
-  API_BASE_URL: 'https://api.jam3a.me/api',
+  API_BASE_URL: 'https://jam3a-backend-yf7ml.ondigitalocean.app/api',
   
   // Frontend base URL
   FRONTEND_URL: 'https://jam3a.me',

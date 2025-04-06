@@ -9,7 +9,7 @@ export const API_BASE_URL = (() => {
     
     // Production domains
     if (hostname === 'jam3a.me' || hostname.endsWith('.jam3a.me')) {
-      return CONFIG_API_BASE_URL || 'https://api.jam3a.me/api';
+      return CONFIG_API_BASE_URL || 'https://jam3a-backend-yf7ml.ondigitalocean.app/api';
     }
     
     // Staging domains
@@ -29,12 +29,12 @@ export const API_BASE_URL = (() => {
     
     // Fallback to configuration or production API if hostname doesn't match any known environments
     console.warn(`Unknown hostname: ${hostname}, defaulting to configured API`);
-    return CONFIG_API_BASE_URL || 'https://api.jam3a.me/api';
+    return CONFIG_API_BASE_URL || 'https://jam3a-backend-yf7ml.ondigitalocean.app/api';
   }
   
   // Server-side rendering or non-browser environment
   return CONFIG_API_BASE_URL || (process.env.NODE_ENV === 'production' 
-    ? 'https://api.jam3a.me/api' 
+    ? 'https://jam3a-backend-yf7ml.ondigitalocean.app/api' 
     : 'http://localhost:5000/api');
 })();
 
