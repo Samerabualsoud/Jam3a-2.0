@@ -19,6 +19,22 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add a route handler for the root path
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'success', 
+    message: 'Jam3a API is running',
+    version: '2.0',
+    endpoints: [
+      '/api/products',
+      '/api/deals',
+      '/api/analytics',
+      '/api/email'
+    ]
+  });
+});
+
 // API routes
 app.use('/api/products', productsRoutes);
 app.use('/api/deals', dealsRoutes);
