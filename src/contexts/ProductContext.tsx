@@ -1,47 +1,42 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import productService, { ProductQueryParams } from '../services/ProductService';
+import axios from 'axios';
 
-// Enhanced Product interface with additional fields
-interface Product {
+// Define the Product type
+export interface Product {
   id: number;
   name: string;
+  description: string;
   category: string;
   price: number;
-  stock: number;
-  description?: string;
-  image?: string;
-  nameAr?: string;
-  descriptionAr?: string;
+  stock?: number;
+  sku?: string;
+  featured: boolean;
   currentAmount?: number;
   targetAmount?: number;
-  participants?: number;
-  featured?: boolean;
-  discount?: number;
-  originalPrice?: number;
-  averageJoinRate?: number;
-  supplier?: string;
-  sku?: string;
-  status?: 'active' | 'inactive' | 'draft';
-  tags?: string[];
-  dateAdded?: string;
-  lastUpdated?: string;
+  imageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface SyncStatus {
-  type: 'success' | 'warning' | 'error';
-  message: string;
-  timestamp?: number;
-}
-
-interface SyncLog {
-  action: 'add' | 'update' | 'delete' | 'bulk' | 'import' | 'export';
-  timestamp: number;
+// Define the sync log type
+export interface SyncLog {
+  id: number;
+  action: 'create' | 'update' | 'delete' | 'bulk' | 'import' | 'export';
   details: string;
-  status: 'success' | 'error';
+  status: 'success' | 'error' | 'warning';
   products: number[];
+  timestamp: number;
 }
 
-interface ProductContextType {
+// Define the sync status type
+export interface SyncStatus {
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+  timestamp: number;
+}
+
+// Define the context type
+export interface ProductContextType {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   refreshProducts: () => Promise<void>;
@@ -51,10 +46,10 @@ interface ProductContextType {
   isLoading: boolean;
   refreshJam3aDeals: () => Promise<void>;
   syncLogs: SyncLog[];
-  addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
-  updateProduct: (product: Product) => Promise<Product>;
+  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Product>;
+  updateProduct: (id: number, product: Partial<Product>) => Promise<Product>;
   deleteProduct: (id: number) => Promise<boolean>;
-  bulkUpdateProducts: (ids: number[], updates: Partial<Product>) => Promise<number>;
+  bulkUpdateProducts: (ids: number[], data: Partial<Product>) => Promise<number>;
   bulkDeleteProducts: (ids: number[]) => Promise<number>;
   importProducts: (products: Omit<Product, 'id'>[]) => Promise<number>;
   exportProducts: (ids?: number[]) => Promise<Product[]>;
@@ -62,183 +57,62 @@ interface ProductContextType {
   clearSyncStatus: () => void;
 }
 
-// Initial products data (fallback if API fails)
-const initialProducts: Product[] = [
-  { 
-    id: 1, 
-    name: "iPhone 16 Pro Max", 
-    nameAr: "آيفون 16 برو ماكس",
-    category: "Electronics", 
-    price: 4999, 
-    originalPrice: 5699,
-    stock: 50,
-    description: "The latest iPhone with A18 Pro chip, titanium design, and advanced camera system.",
-    descriptionAr: "أحدث آيفون مع شريحة A18 Pro وتصميم من التيتانيوم ونظام كاميرا متطور.",
-    image: "/images/iphone_16_pro_max_desert_titanium.webp",
-    currentAmount: 3500,
-    targetAmount: 5000,
-    participants: 7,
-    featured: true,
-    discount: 12,
-    averageJoinRate: 500,
-    status: 'active',
-    dateAdded: '2025-03-15',
-    lastUpdated: '2025-03-15',
-    supplier: 'Apple',
-    sku: 'IP16PM-256-TI'
-  },
-  // Other initial products...
-];
-
 // Create the context
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
-// Provider component
-export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [products, setProductsState] = useState<Product[]>(initialProducts);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+// Define the provider props
+interface ProductProviderProps {
+  children: ReactNode;
+}
+
+// Create a provider component
+export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) => {
+  // State for products
+  const [products, setProducts] = useState<Product[]>([]);
+  
+  // State for loading
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  // State for sync logs
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   
-  // Local storage key for products (for offline capability)
-  const STORAGE_KEY = 'jam3a_products';
+  // State for sync status
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   
-  // Load products from API on initial render
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Try to load from API first
-        try {
-          const response = await productService.getProducts();
-          // Map backend product format to frontend format
-          const mappedProducts = response.products.map(p => ({
-            id: Number(p._id),
-            name: p.name,
-            category: p.category,
-            price: p.price,
-            stock: p.stock || 0,
-            description: p.description,
-            image: p.imageUrl,
-            featured: p.featured,
-            originalPrice: p.originalPrice,
-            status: p.status,
-            supplier: p.supplier,
-            sku: p.sku,
-            tags: p.tags,
-            dateAdded: new Date(p.createdAt).toISOString().split('T')[0],
-            lastUpdated: new Date(p.updatedAt).toISOString().split('T')[0],
-          }));
-          
-          setProductsState(mappedProducts);
-          
-          // Save to local storage for offline capability
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedProducts));
-          
-          return;
-        } catch (apiError) {
-          console.warn('Failed to load products from API, falling back to local storage:', apiError);
-        }
-        
-        // Fallback to local storage if API fails
-        const storedProducts = localStorage.getItem(STORAGE_KEY);
-        if (storedProducts) {
-          setProductsState(JSON.parse(storedProducts));
-        }
-      } catch (error) {
-        console.error('Failed to load products:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadProducts();
-  }, []);
-  
-  // Enhanced setProducts function with sync status
-  const setProducts = (newProductsOrFunction: React.SetStateAction<Product[]>) => {
-    setProductsState(prevProducts => {
-      const newProducts = typeof newProductsOrFunction === 'function'
-        ? newProductsOrFunction(prevProducts)
-        : newProductsOrFunction;
-      
-      // Trigger sync status
-      setSyncStatus({
-        type: 'success',
-        message: 'Products synced successfully with website!',
-        timestamp: Date.now()
-      });
-      
-      // Clear status after 3 seconds
-      setTimeout(() => {
-        setSyncStatus(prevStatus => 
-          prevStatus?.timestamp === Date.now() ? null : prevStatus
-        );
-      }, 3000);
-      
-      return newProducts;
-    });
-  };
-
-  // Add a sync log entry
-  const addSyncLog = (log: Omit<SyncLog, 'timestamp'>) => {
-    const newLog = {
+  // Add a sync log
+  const addSyncLog = (log: Omit<SyncLog, 'id' | 'timestamp'>) => {
+    const newLog: SyncLog = {
       ...log,
+      id: Date.now(),
       timestamp: Date.now()
     };
     
-    setSyncLogs(prevLogs => [newLog, ...prevLogs].slice(0, 100)); // Keep only the last 100 logs
+    setSyncLogs(prev => [newLog, ...prev].slice(0, 100)); // Keep only the last 100 logs
   };
-
-  // Refresh products from API
+  
+  // Fetch products from API
   const refreshProducts = async (): Promise<void> => {
-    setSyncStatus({ type: 'warning', message: 'Syncing products with database...', timestamp: Date.now() });
     setIsLoading(true);
     
     try {
-      // Real API call using the product service
-      const response = await productService.getProducts();
-      
-      // Map backend product format to frontend format
-      const mappedProducts = response.products.map(p => ({
-        id: Number(p._id),
-        name: p.name,
-        category: p.category,
-        price: p.price,
-        stock: p.stock || 0,
-        description: p.description,
-        image: p.imageUrl,
-        featured: p.featured,
-        originalPrice: p.originalPrice,
-        status: p.status,
-        supplier: p.supplier,
-        sku: p.sku,
-        tags: p.tags,
-        dateAdded: new Date(p.createdAt).toISOString().split('T')[0],
-        lastUpdated: new Date(p.updatedAt).toISOString().split('T')[0],
-      }));
-      
-      setProductsState(mappedProducts);
-      
-      // Save to local storage for offline capability
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedProducts));
+      const response = await axios.get('/api/products');
+      setProducts(response.data);
       
       // Add to sync logs
       addSyncLog({
         action: 'bulk',
-        details: 'Refreshed all products from database',
+        details: `Refreshed ${response.data.length} products`,
         status: 'success',
-        products: mappedProducts.map(p => p.id)
+        products: response.data.map((p: Product) => p.id)
       });
       
       setSyncStatus({ 
         type: 'success', 
-        message: 'Products synced successfully with website!',
+        message: `Successfully refreshed ${response.data.length} products.`,
         timestamp: Date.now()
       });
     } catch (error) {
-      console.error('Failed to refresh products:', error);
+      console.error('Failed to fetch products:', error);
       
       // Add to sync logs
       addSyncLog({
@@ -250,63 +124,66 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       
       setSyncStatus({ 
         type: 'error', 
-        message: 'Failed to sync products. Please try again.',
+        message: 'Failed to refresh products. Please try again.',
         timestamp: Date.now()
       });
+      
+      // Try to load from local storage as fallback
+      const storedProducts = localStorage.getItem('products');
+      if (storedProducts) {
+        try {
+          setProducts(JSON.parse(storedProducts));
+          setSyncStatus({ 
+            type: 'warning', 
+            message: 'Using cached products. Connection to server failed.',
+            timestamp: Date.now()
+          });
+        } catch (parseError) {
+          console.error('Failed to parse stored products:', parseError);
+        }
+      }
     } finally {
       setIsLoading(false);
-      
-      // Clear status message after 3 seconds
-      setTimeout(() => {
-        setSyncStatus(prevStatus => 
-          prevStatus?.timestamp === Date.now() ? null : prevStatus
-        );
-      }, 3000);
     }
   };
-
-  // Refresh Jam3a deals from API
+  
+  // Fetch Jam3a deals from API
   const refreshJam3aDeals = async (): Promise<void> => {
     setIsLoading(true);
     
     try {
-      // Real API call using the product service with featured filter
-      const response = await productService.getProducts({ featured: true });
+      const response = await axios.get('/api/products/jam3a/deals');
       
-      // Map backend product format to frontend format
-      const mappedProducts = response.products.map(p => ({
-        id: Number(p._id),
-        name: p.name,
-        category: p.category,
-        price: p.price,
-        stock: p.stock || 0,
-        description: p.description,
-        image: p.imageUrl,
-        featured: p.featured,
-        originalPrice: p.originalPrice,
-        status: p.status,
-        supplier: p.supplier,
-        sku: p.sku,
-        tags: p.tags,
-        dateAdded: new Date(p.createdAt).toISOString().split('T')[0],
-        lastUpdated: new Date(p.updatedAt).toISOString().split('T')[0],
-      }));
+      // Update only the Jam3a deals in the products array
+      const dealsIds = response.data.map((deal: Product) => deal.id);
+      const updatedProducts = products.map(product => 
+        dealsIds.includes(product.id) 
+          ? response.data.find((deal: Product) => deal.id === product.id) 
+          : product
+      );
       
-      // Update only the featured products in the state
-      setProductsState(prevProducts => {
-        const nonFeaturedProducts = prevProducts.filter(p => !p.featured);
-        return [...nonFeaturedProducts, ...mappedProducts];
-      });
+      // Add any new deals that weren't in the products array
+      const newDeals = response.data.filter((deal: Product) => 
+        !products.some(product => product.id === deal.id)
+      );
+      
+      setProducts([...updatedProducts, ...newDeals]);
       
       // Add to sync logs
       addSyncLog({
         action: 'bulk',
-        details: 'Refreshed all Jam3a deals from database',
+        details: `Refreshed ${response.data.length} Jam3a deals`,
         status: 'success',
-        products: mappedProducts.map(p => p.id)
+        products: response.data.map((p: Product) => p.id)
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully refreshed ${response.data.length} Jam3a deals.`,
+        timestamp: Date.now()
       });
     } catch (error) {
-      console.error('Failed to refresh Jam3a deals:', error);
+      console.error('Failed to fetch Jam3a deals:', error);
       
       // Add to sync logs
       addSyncLog({
@@ -318,73 +195,55 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       
       setSyncStatus({ 
         type: 'error', 
-        message: 'Failed to sync Jam3a deals. Please try again.',
+        message: 'Failed to refresh Jam3a deals. Please try again.',
         timestamp: Date.now()
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Add a new product
-  const addProduct = async (product: Omit<Product, 'id'>): Promise<Product> => {
+  
+  // Load products on mount
+  useEffect(() => {
+    refreshProducts();
+    
+    // Set up interval to refresh products every 5 minutes
+    const intervalId = setInterval(() => {
+      refreshProducts();
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  // Save products to local storage when they change (for fallback)
+  useEffect(() => {
+    if (products.length > 0) {
+      localStorage.setItem('products', JSON.stringify(products));
+    }
+  }, [products]);
+  
+  // Add a product
+  const addProduct = async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> => {
     setIsLoading(true);
     
     try {
-      // Validate product
-      const validationErrors = validateProduct(product);
-      if (validationErrors.length > 0) {
-        throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
-      }
+      const response = await axios.post('/api/products', product);
+      const newProduct = response.data;
       
-      // Map frontend product format to backend format
-      const backendProduct = {
-        name: product.name,
-        description: product.description || '',
-        price: product.price,
-        originalPrice: product.originalPrice,
-        category: product.category,
-        imageUrl: product.image || '',
-        featured: product.featured || false,
-        status: product.status || 'active',
-        stock: product.stock || 0,
-        tags: product.tags || [],
-        specifications: {},
-        supplier: product.supplier || '',
-        sku: product.sku || '',
-      };
-      
-      // Real API call using the product service
-      const response = await productService.createProduct(backendProduct);
-      
-      // Map the response back to frontend format
-      const newProduct: Product = {
-        id: Number(response._id),
-        name: response.name,
-        category: response.category,
-        price: response.price,
-        stock: response.stock || 0,
-        description: response.description,
-        image: response.imageUrl,
-        featured: response.featured,
-        originalPrice: response.originalPrice,
-        status: response.status,
-        supplier: response.supplier,
-        sku: response.sku,
-        tags: response.tags,
-        dateAdded: new Date(response.createdAt).toISOString().split('T')[0],
-        lastUpdated: new Date(response.updatedAt).toISOString().split('T')[0],
-      };
-      
-      // Update local state
-      setProducts([...products, newProduct]);
+      setProducts(prev => [...prev, newProduct]);
       
       // Add to sync logs
       addSyncLog({
-        action: 'add',
-        details: `Added product: ${newProduct.name}`,
+        action: 'create',
+        details: `Created product: ${newProduct.name}`,
         status: 'success',
         products: [newProduct.id]
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully created product: ${newProduct.name}`,
+        timestamp: Date.now()
       });
       
       return newProduct;
@@ -393,15 +252,15 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       
       // Add to sync logs
       addSyncLog({
-        action: 'add',
-        details: `Failed to add product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        action: 'create',
+        details: `Failed to create product: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 'error',
         products: []
       });
       
       setSyncStatus({ 
         type: 'error', 
-        message: 'Failed to add product. Please try again.',
+        message: 'Failed to create product. Please try again.',
         timestamp: Date.now()
       });
       
@@ -410,59 +269,18 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(false);
     }
   };
-
-  // Update an existing product
-  const updateProduct = async (product: Product): Promise<Product> => {
+  
+  // Update a product
+  const updateProduct = async (id: number, productData: Partial<Product>): Promise<Product> => {
     setIsLoading(true);
     
     try {
-      // Validate product
-      const validationErrors = validateProduct(product);
-      if (validationErrors.length > 0) {
-        throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
-      }
+      const response = await axios.put(`/api/products/${id}`, productData);
+      const updatedProduct = response.data;
       
-      // Map frontend product format to backend format
-      const backendProduct = {
-        name: product.name,
-        description: product.description || '',
-        price: product.price,
-        originalPrice: product.originalPrice,
-        category: product.category,
-        imageUrl: product.image || '',
-        featured: product.featured || false,
-        status: product.status || 'active',
-        stock: product.stock || 0,
-        tags: product.tags || [],
-        specifications: {},
-        supplier: product.supplier || '',
-        sku: product.sku || '',
-      };
-      
-      // Real API call using the product service
-      const response = await productService.updateProduct(String(product.id), backendProduct);
-      
-      // Map the response back to frontend format
-      const updatedProduct: Product = {
-        id: Number(response._id),
-        name: response.name,
-        category: response.category,
-        price: response.price,
-        stock: response.stock || 0,
-        description: response.description,
-        image: response.imageUrl,
-        featured: response.featured,
-        originalPrice: response.originalPrice,
-        status: response.status,
-        supplier: response.supplier,
-        sku: response.sku,
-        tags: response.tags,
-        dateAdded: new Date(response.createdAt).toISOString().split('T')[0],
-        lastUpdated: new Date(response.updatedAt).toISOString().split('T')[0],
-      };
-      
-      // Update local state
-      setProducts(products.map(p => p.id === product.id ? updatedProduct : p));
+      setProducts(prev => 
+        prev.map(product => product.id === id ? updatedProduct : product)
+      );
       
       // Add to sync logs
       addSyncLog({
@@ -470,6 +288,12 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         details: `Updated product: ${updatedProduct.name}`,
         status: 'success',
         products: [updatedProduct.id]
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully updated product: ${updatedProduct.name}`,
+        timestamp: Date.now()
       });
       
       return updatedProduct;
@@ -481,7 +305,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         action: 'update',
         details: `Failed to update product: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 'error',
-        products: [product.id]
+        products: [id]
       });
       
       setSyncStatus({ 
@@ -495,24 +319,29 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(false);
     }
   };
-
+  
   // Delete a product
   const deleteProduct = async (id: number): Promise<boolean> => {
     setIsLoading(true);
     
     try {
-      // Real API call using the product service
-      await productService.deleteProduct(String(id));
+      await axios.delete(`/api/products/${id}`);
       
-      // Update local state
-      setProducts(products.filter(p => p.id !== id));
+      const deletedProduct = products.find(p => p.id === id);
+      setProducts(prev => prev.filter(product => product.id !== id));
       
       // Add to sync logs
       addSyncLog({
         action: 'delete',
-        details: `Deleted product with ID: ${id}`,
+        details: `Deleted product: ${deletedProduct?.name || id}`,
         status: 'success',
         products: [id]
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully deleted product: ${deletedProduct?.name || id}`,
+        timestamp: Date.now()
       });
       
       return true;
@@ -538,62 +367,38 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(false);
     }
   };
-
+  
   // Bulk update products
-  const bulkUpdateProducts = async (ids: number[], updates: Partial<Product>): Promise<number> => {
+  const bulkUpdateProducts = async (ids: number[], data: Partial<Product>): Promise<number> => {
     setIsLoading(true);
     
     try {
-      // Map frontend product format to backend format
-      const backendUpdates = {
-        name: updates.name,
-        description: updates.description,
-        price: updates.price,
-        originalPrice: updates.originalPrice,
-        category: updates.category,
-        imageUrl: updates.image,
-        featured: updates.featured,
-        status: updates.status,
-        stock: updates.stock,
-        tags: updates.tags,
-        supplier: updates.supplier,
-        sku: updates.sku,
-      };
-      
-      // Filter out undefined values
-      Object.keys(backendUpdates).forEach(key => {
-        if (backendUpdates[key] === undefined) {
-          delete backendUpdates[key];
-        }
+      const response = await axios.post('/api/products/bulk', {
+        action: 'update',
+        ids,
+        data
       });
       
-      // Real API call using the product service
-      const response = await productService.bulkUpdateProducts(
-        ids.map(id => String(id)),
-        backendUpdates
-      );
+      const updatedCount = response.data.updated;
       
-      if (response.success) {
-        // Update local state
-        setProducts(products.map(p => {
-          if (ids.includes(p.id)) {
-            return { ...p, ...updates, lastUpdated: new Date().toISOString().split('T')[0] };
-          }
-          return p;
-        }));
-        
-        // Add to sync logs
-        addSyncLog({
-          action: 'bulk',
-          details: `Bulk updated ${response.count} products`,
-          status: 'success',
-          products: ids
-        });
-        
-        return response.count;
-      } else {
-        throw new Error('Bulk update failed');
-      }
+      // Refresh products to get the updated data
+      await refreshProducts();
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Bulk updated ${updatedCount} products`,
+        status: 'success',
+        products: ids
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully updated ${updatedCount} products.`,
+        timestamp: Date.now()
+      });
+      
+      return updatedCount;
     } catch (error) {
       console.error('Failed to bulk update products:', error);
       
@@ -616,33 +421,37 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(false);
     }
   };
-
+  
   // Bulk delete products
   const bulkDeleteProducts = async (ids: number[]): Promise<number> => {
     setIsLoading(true);
     
     try {
-      // Real API call using the product service
-      const response = await productService.bulkDeleteProducts(
-        ids.map(id => String(id))
-      );
+      const response = await axios.post('/api/products/bulk', {
+        action: 'delete',
+        ids
+      });
       
-      if (response.success) {
-        // Update local state
-        setProducts(products.filter(p => !ids.includes(p.id)));
-        
-        // Add to sync logs
-        addSyncLog({
-          action: 'bulk',
-          details: `Bulk deleted ${response.count} products`,
-          status: 'success',
-          products: ids
-        });
-        
-        return response.count;
-      } else {
-        throw new Error('Bulk delete failed');
-      }
+      const deletedCount = response.data.deleted;
+      
+      // Update local state
+      setProducts(prev => prev.filter(product => !ids.includes(product.id)));
+      
+      // Add to sync logs
+      addSyncLog({
+        action: 'bulk',
+        details: `Bulk deleted ${deletedCount} products`,
+        status: 'success',
+        products: ids
+      });
+      
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully deleted ${deletedCount} products.`,
+        timestamp: Date.now()
+      });
+      
+      return deletedCount;
     } catch (error) {
       console.error('Failed to bulk delete products:', error);
       
@@ -665,14 +474,13 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(false);
     }
   };
-
+  
   // Import products
   const importProducts = async (productsToImport: Omit<Product, 'id'>[]): Promise<number> => {
     setIsLoading(true);
     
     try {
       // In a real implementation, we would convert the products to a file and upload
-      // For now, we'll add them one by one
       let successCount = 0;
       
       for (const product of productsToImport) {
@@ -715,17 +523,24 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(false);
     }
   };
-
+  
   // Export products
   const exportProducts = async (ids?: number[]): Promise<Product[]> => {
     setIsLoading(true);
     
     try {
-      // In a real implementation, we would call the API to get a file
-      // For now, we'll just return the products from state
-      const productsToExport = ids 
-        ? products.filter(p => ids.includes(p.id))
-        : products;
+      let productsToExport: Product[];
+      
+      if (ids && ids.length > 0) {
+        // Fetch specific products by IDs
+        const promises = ids.map(id => axios.get(`/api/products/${id}`));
+        const responses = await Promise.all(promises);
+        productsToExport = responses.map(response => response.data);
+      } else {
+        // Fetch all products
+        const response = await axios.get('/api/products');
+        productsToExport = response.data;
+      }
       
       // Add to sync logs
       addSyncLog({
@@ -758,7 +573,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(false);
     }
   };
-
+  
   // Validate product
   const validateProduct = (product: Partial<Product>): string[] => {
     const errors: string[] = [];
@@ -781,18 +596,18 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     
     return errors;
   };
-
+  
   // Clear sync status
   const clearSyncStatus = () => {
     setSyncStatus(null);
   };
-
+  
   // Compute active Jam3a deals
   const activeJam3aDeals = products.filter(p => p.currentAmount !== undefined && p.targetAmount !== undefined);
   
   // Compute featured products
   const featuredProducts = products.filter(p => p.featured);
-
+  
   // Context value
   const contextValue: ProductContextType = {
     products,
@@ -814,7 +629,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     validateProduct,
     clearSyncStatus
   };
-
+  
   return (
     <ProductContext.Provider value={contextValue}>
       {children}
@@ -835,5 +650,4 @@ export const useProductContext = (): ProductContextType => {
 
 // Export an alias for useProductContext as useProducts to fix the import issue
 export const useProducts = useProductContext;
-
 export default ProductContext;

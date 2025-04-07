@@ -1,324 +1,717 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { BarChart3, LineChart, PieChart, Save, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Button } from '../ui/button';
+import { Switch } from '../ui/switch';
+import { toast } from 'sonner';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { RefreshCw, Save, AlertCircle } from 'lucide-react';
 
-const AnalyticsIntegration = () => {
-  const [activeTab, setActiveTab] = useState("google");
-  const { toast } = useToast();
-  
-  // Form states
-  const [googleAnalytics, setGoogleAnalytics] = useState({
-    measurementId: 'G-XXXXXXXXXX',
-    enabled: true,
+// Analytics configuration interface
+interface AnalyticsConfig {
+  trackingId: string;
+  ipAnonymization: boolean;
+  trackPageViews: boolean;
+  trackEvents: boolean;
+  lastUpdated: string;
+}
+
+// Analytics data interface
+interface AnalyticsData {
+  metric: string;
+  timeRange: {
+    startDate: string;
+    endDate: string;
+    days: number;
+  };
+  data: {
+    date: string;
+    value: number;
+  }[];
+  summary: {
+    total: number;
+    average: number;
+    min: number;
+    max: number;
+  };
+}
+
+// Top pages interface
+interface TopPage {
+  path: string;
+  pageviews: number;
+  uniquePageviews: number;
+  avgTimeOnPage: number;
+  bounceRate: number;
+}
+
+// Demographics interface
+interface Demographics {
+  countries: {
+    name: string;
+    users: number;
+    percentage: number;
+  }[];
+  devices: {
+    type: string;
+    users: number;
+    percentage: number;
+  }[];
+  browsers: {
+    name: string;
+    users: number;
+    percentage: number;
+  }[];
+}
+
+// Events interface
+interface EventData {
+  name: string;
+  count: number;
+  uniqueUsers: number;
+}
+
+const AnalyticsIntegration: React.FC = () => {
+  // State for analytics configuration
+  const [config, setConfig] = useState<AnalyticsConfig>({
+    trackingId: '',
+    ipAnonymization: true,
     trackPageViews: true,
     trackEvents: true,
-    anonymizeIp: true
+    lastUpdated: ''
   });
   
-  const [metaPixel, setMetaPixel] = useState({
-    pixelId: '123456789012345',
-    enabled: true,
-    trackPageViews: true,
-    trackEvents: true
-  });
+  // State for loading
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
-  const handleSaveGoogleAnalytics = () => {
-    // In a real implementation, this would save to a database or API
-    toast({
-      title: "Google Analytics settings saved",
-      description: "Your Google Analytics configuration has been updated.",
-    });
+  // State for analytics data
+  const [pageViewsData, setPageViewsData] = useState<AnalyticsData | null>(null);
+  const [usersData, setUsersData] = useState<AnalyticsData | null>(null);
+  const [topPages, setTopPages] = useState<TopPage[]>([]);
+  const [demographics, setDemographics] = useState<Demographics | null>(null);
+  const [eventsData, setEventsData] = useState<EventData[]>([]);
+  
+  // State for date range
+  const [startDate, setStartDate] = useState<string>(
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  );
+  const [endDate, setEndDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  
+  // State for error
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch analytics configuration
+  const fetchConfig = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.get('/api/analytics/config');
+      setConfig(response.data);
+    } catch (err) {
+      console.error('Error fetching analytics configuration:', err);
+      setError('Failed to fetch analytics configuration. Please try again.');
+      
+      // Try to load from local storage as fallback
+      const storedConfig = localStorage.getItem('analyticsConfig');
+      if (storedConfig) {
+        try {
+          setConfig(JSON.parse(storedConfig));
+          toast.warning('Using cached analytics configuration. Connection to server failed.');
+        } catch (parseError) {
+          console.error('Failed to parse stored configuration:', parseError);
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handleSaveMetaPixel = () => {
-    // In a real implementation, this would save to a database or API
-    toast({
-      title: "Meta Pixel settings saved",
-      description: "Your Meta Pixel configuration has been updated.",
-    });
+  // Save analytics configuration
+  const saveConfig = async () => {
+    setIsSaving(true);
+    setError(null);
+    
+    try {
+      const response = await axios.post('/api/analytics/config', config);
+      setConfig(response.data);
+      
+      // Save to local storage as fallback
+      localStorage.setItem('analyticsConfig', JSON.stringify(response.data));
+      
+      toast.success('Analytics configuration saved successfully');
+    } catch (err) {
+      console.error('Error saving analytics configuration:', err);
+      setError('Failed to save analytics configuration. Please try again.');
+      toast.error('Failed to save analytics configuration');
+    } finally {
+      setIsSaving(false);
+    }
   };
   
-  // Mock analytics data
-  const mockAnalyticsData = {
-    pageViews: 12487,
-    uniqueVisitors: 5823,
-    bounceRate: '42.3%',
-    avgSessionDuration: '3m 12s',
-    topPages: [
-      { page: 'Homepage', views: 4521 },
-      { page: 'iPhone 16 Pro Max', views: 2134 },
-      { page: 'Samsung Galaxy S25', views: 1876 },
-      { page: 'About Us', views: 982 },
-      { page: 'FAQ', views: 745 }
-    ],
-    conversionRate: '3.8%',
-    totalConversions: 221
+  // Fetch analytics data
+  const fetchAnalyticsData = async () => {
+    setIsRefreshing(true);
+    setError(null);
+    
+    try {
+      // Fetch page views data
+      const pageViewsResponse = await axios.get('/api/analytics/data', {
+        params: {
+          startDate,
+          endDate,
+          metric: 'pageviews'
+        }
+      });
+      setPageViewsData(pageViewsResponse.data);
+      
+      // Fetch users data
+      const usersResponse = await axios.get('/api/analytics/data', {
+        params: {
+          startDate,
+          endDate,
+          metric: 'users'
+        }
+      });
+      setUsersData(usersResponse.data);
+      
+      // Fetch top pages
+      const topPagesResponse = await axios.get('/api/analytics/top-pages');
+      setTopPages(topPagesResponse.data);
+      
+      // Fetch demographics
+      const demographicsResponse = await axios.get('/api/analytics/demographics');
+      setDemographics(demographicsResponse.data);
+      
+      // Fetch events data
+      const eventsResponse = await axios.get('/api/analytics/events');
+      setEventsData(eventsResponse.data);
+      
+      toast.success('Analytics data refreshed successfully');
+    } catch (err) {
+      console.error('Error fetching analytics data:', err);
+      setError('Failed to fetch analytics data. Please try again.');
+      toast.error('Failed to refresh analytics data');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
-
+  
+  // Load data on mount
+  useEffect(() => {
+    fetchConfig();
+    fetchAnalyticsData();
+  }, []);
+  
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+  
+  // Colors for charts
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Analytics Integration</h2>
-      </div>
-      
-      {/* Analytics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Page Views</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <BarChart3 className="h-5 w-5 text-muted-foreground mr-2" />
-              <div className="text-2xl font-bold">{mockAnalyticsData.pageViews.toLocaleString()}</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Unique Visitors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <LineChart className="h-5 w-5 text-muted-foreground mr-2" />
-              <div className="text-2xl font-bold">{mockAnalyticsData.uniqueVisitors.toLocaleString()}</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <PieChart className="h-5 w-5 text-muted-foreground mr-2" />
-              <div className="text-2xl font-bold">{mockAnalyticsData.conversionRate}</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Tabs defaultValue="google" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="google">Google Analytics</TabsTrigger>
-          <TabsTrigger value="meta">Meta Pixel</TabsTrigger>
-        </TabsList>
-        
-        {/* Google Analytics Tab */}
-        <TabsContent value="google">
-          <Card>
-            <CardHeader>
-              <CardTitle>Google Analytics Configuration</CardTitle>
-              <CardDescription>Configure Google Analytics 4 for your website</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="ga-enabled" className="flex flex-col space-y-1">
-                  <span>Enable Google Analytics</span>
-                  <span className="font-normal text-xs text-muted-foreground">
-                    Turn on to start collecting analytics data
-                  </span>
-                </Label>
-                <Switch 
-                  id="ga-enabled" 
-                  checked={googleAnalytics.enabled}
-                  onCheckedChange={(checked) => setGoogleAnalytics({...googleAnalytics, enabled: checked})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="ga-measurement-id">Measurement ID</Label>
-                <Input 
-                  id="ga-measurement-id" 
-                  value={googleAnalytics.measurementId} 
-                  onChange={(e) => setGoogleAnalytics({...googleAnalytics, measurementId: e.target.value})}
-                  placeholder="G-XXXXXXXXXX"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Find your Measurement ID in your Google Analytics property settings
-                </p>
-              </div>
-              
-              <div className="space-y-4 pt-4">
-                <h3 className="font-medium">Tracking Options</h3>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="ga-track-pageviews" className="flex flex-col space-y-1">
-                    <span>Track Page Views</span>
-                    <span className="font-normal text-xs text-muted-foreground">
-                      Automatically track when users view pages
-                    </span>
-                  </Label>
-                  <Switch 
-                    id="ga-track-pageviews" 
-                    checked={googleAnalytics.trackPageViews}
-                    onCheckedChange={(checked) => setGoogleAnalytics({...googleAnalytics, trackPageViews: checked})}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="ga-track-events" className="flex flex-col space-y-1">
-                    <span>Track Events</span>
-                    <span className="font-normal text-xs text-muted-foreground">
-                      Track user interactions like button clicks and form submissions
-                    </span>
-                  </Label>
-                  <Switch 
-                    id="ga-track-events" 
-                    checked={googleAnalytics.trackEvents}
-                    onCheckedChange={(checked) => setGoogleAnalytics({...googleAnalytics, trackEvents: checked})}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="ga-anonymize-ip" className="flex flex-col space-y-1">
-                    <span>Anonymize IP Addresses</span>
-                    <span className="font-normal text-xs text-muted-foreground">
-                      Enhance user privacy by anonymizing IP addresses
-                    </span>
-                  </Label>
-                  <Switch 
-                    id="ga-anonymize-ip" 
-                    checked={googleAnalytics.anonymizeIp}
-                    onCheckedChange={(checked) => setGoogleAnalytics({...googleAnalytics, anonymizeIp: checked})}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveGoogleAnalytics}>
-                <Save className="h-4 w-4 mr-2" /> Save Configuration
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        {/* Meta Pixel Tab */}
-        <TabsContent value="meta">
-          <Card>
-            <CardHeader>
-              <CardTitle>Meta Pixel Configuration</CardTitle>
-              <CardDescription>Configure Meta Pixel (formerly Facebook Pixel) for your website</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="meta-enabled" className="flex flex-col space-y-1">
-                  <span>Enable Meta Pixel</span>
-                  <span className="font-normal text-xs text-muted-foreground">
-                    Turn on to start collecting data for Meta advertising
-                  </span>
-                </Label>
-                <Switch 
-                  id="meta-enabled" 
-                  checked={metaPixel.enabled}
-                  onCheckedChange={(checked) => setMetaPixel({...metaPixel, enabled: checked})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="meta-pixel-id">Pixel ID</Label>
-                <Input 
-                  id="meta-pixel-id" 
-                  value={metaPixel.pixelId} 
-                  onChange={(e) => setMetaPixel({...metaPixel, pixelId: e.target.value})}
-                  placeholder="123456789012345"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Find your Pixel ID in your Meta Business Manager
-                </p>
-              </div>
-              
-              <div className="space-y-4 pt-4">
-                <h3 className="font-medium">Tracking Options</h3>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="meta-track-pageviews" className="flex flex-col space-y-1">
-                    <span>Track Page Views</span>
-                    <span className="font-normal text-xs text-muted-foreground">
-                      Automatically track PageView events
-                    </span>
-                  </Label>
-                  <Switch 
-                    id="meta-track-pageviews" 
-                    checked={metaPixel.trackPageViews}
-                    onCheckedChange={(checked) => setMetaPixel({...metaPixel, trackPageViews: checked})}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="meta-track-events" className="flex flex-col space-y-1">
-                    <span>Track Standard Events</span>
-                    <span className="font-normal text-xs text-muted-foreground">
-                      Track standard events like AddToCart, InitiateCheckout, and Purchase
-                    </span>
-                  </Label>
-                  <Switch 
-                    id="meta-track-events" 
-                    checked={metaPixel.trackEvents}
-                    onCheckedChange={(checked) => setMetaPixel({...metaPixel, trackEvents: checked})}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveMetaPixel}>
-                <Save className="h-4 w-4 mr-2" /> Save Configuration
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
-      
-      {/* Analytics Data Preview */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Analytics Overview</CardTitle>
-            <Button variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" /> Refresh Data
-            </Button>
-          </div>
-          <CardDescription>Last 30 days of website analytics</CardDescription>
+          <CardTitle>Google Analytics Configuration</CardTitle>
+          <CardDescription>
+            Configure your Google Analytics tracking settings
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Performance Metrics</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bounce Rate:</span>
-                  <span className="font-medium">{mockAnalyticsData.bounceRate}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Avg. Session Duration:</span>
-                  <span className="font-medium">{mockAnalyticsData.avgSessionDuration}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Conversions:</span>
-                  <span className="font-medium">{mockAnalyticsData.totalConversions}</span>
-                </div>
-              </div>
+          {error && (
+            <div className="bg-red-50 p-4 rounded-md mb-4 flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tracking-id">Tracking ID</Label>
+              <Input
+                id="tracking-id"
+                placeholder="UA-XXXXXXXXX-X or G-XXXXXXXXXX"
+                value={config.trackingId}
+                onChange={(e) => setConfig({ ...config, trackingId: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Your Google Analytics tracking ID (UA-XXXXXXXXX-X) or measurement ID (G-XXXXXXXXXX)
+              </p>
             </div>
             
-            <div>
-              <h3 className="text-lg font-medium mb-2">Top Pages</h3>
-              <div className="space-y-2">
-                {mockAnalyticsData.topPages.map((page, index) => (
-                  <div key={index} className="flex justify-between">
-                    <span className="text-muted-foreground">{page.page}:</span>
-                    <span className="font-medium">{page.views.toLocaleString()} views</span>
-                  </div>
-                ))}
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="ip-anonymization"
+                checked={config.ipAnonymization}
+                onCheckedChange={(checked) => setConfig({ ...config, ipAnonymization: checked })}
+              />
+              <Label htmlFor="ip-anonymization">IP Anonymization</Label>
             </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="track-pageviews"
+                checked={config.trackPageViews}
+                onCheckedChange={(checked) => setConfig({ ...config, trackPageViews: checked })}
+              />
+              <Label htmlFor="track-pageviews">Track Page Views</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="track-events"
+                checked={config.trackEvents}
+                onCheckedChange={(checked) => setConfig({ ...config, trackEvents: checked })}
+              />
+              <Label htmlFor="track-events">Track Events</Label>
+            </div>
+            
+            {config.lastUpdated && (
+              <p className="text-sm text-muted-foreground">
+                Last updated: {new Date(config.lastUpdated).toLocaleString()}
+              </p>
+            )}
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={saveConfig} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Configuration
+              </>
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Analytics Dashboard</CardTitle>
+          <CardDescription>
+            View your website analytics data
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div>
+                  <Label htmlFor="start-date">Start Date</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end-date">End Date</Label>
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button onClick={fetchAnalyticsData} disabled={isRefreshing}>
+                {isRefreshing ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh Data
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <Tabs defaultValue="overview">
+              <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="pages">Top Pages</TabsTrigger>
+                <TabsTrigger value="demographics">Demographics</TabsTrigger>
+                <TabsTrigger value="events">Events</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview">
+                <div className="space-y-6">
+                  {pageViewsData && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Page Views</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{pageViewsData.summary.total.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Total Page Views</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{pageViewsData.summary.average.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Avg. Daily Page Views</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{pageViewsData.summary.min.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Min Daily Page Views</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{pageViewsData.summary.max.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Max Daily Page Views</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={pageViewsData.data}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="date" 
+                              tickFormatter={formatDate}
+                              interval={Math.ceil(pageViewsData.data.length / 10)}
+                            />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [value, 'Page Views']}
+                              labelFormatter={(label) => formatDate(label)}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="value" 
+                              stroke="#8884d8" 
+                              activeDot={{ r: 8 }} 
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {usersData && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Users</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{usersData.summary.total.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Total Users</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{usersData.summary.average.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Avg. Daily Users</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{usersData.summary.min.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Min Daily Users</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{usersData.summary.max.toLocaleString()}</div>
+                            <p className="text-sm text-muted-foreground">Max Daily Users</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={usersData.data}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="date" 
+                              tickFormatter={formatDate}
+                              interval={Math.ceil(usersData.data.length / 10)}
+                            />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [value, 'Users']}
+                              labelFormatter={(label) => formatDate(label)}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="value" 
+                              stroke="#82ca9d" 
+                              activeDot={{ r: 8 }} 
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="pages">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Top Pages</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="p-2 text-left">Page</th>
+                          <th className="p-2 text-right">Page Views</th>
+                          <th className="p-2 text-right">Unique Views</th>
+                          <th className="p-2 text-right">Avg. Time (sec)</th>
+                          <th className="p-2 text-right">Bounce Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topPages.map((page, index) => (
+                          <tr key={index} className="border-b">
+                            <td className="p-2">{page.path}</td>
+                            <td className="p-2 text-right">{page.pageviews.toLocaleString()}</td>
+                            <td className="p-2 text-right">{page.uniquePageviews.toLocaleString()}</td>
+                            <td className="p-2 text-right">{page.avgTimeOnPage}</td>
+                            <td className="p-2 text-right">{page.bounceRate}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="mt-6 h-80 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={topPages}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="path" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="pageviews" fill="#8884d8" name="Page Views" />
+                        <Bar dataKey="uniquePageviews" fill="#82ca9d" name="Unique Views" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="demographics">
+                {demographics && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Countries</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={demographics.countries}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="users"
+                                nameKey="name"
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {demographics.countries.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div>
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-muted">
+                                <th className="p-2 text-left">Country</th>
+                                <th className="p-2 text-right">Users</th>
+                                <th className="p-2 text-right">Percentage</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {demographics.countries.map((country, index) => (
+                                <tr key={index} className="border-b">
+                                  <td className="p-2">{country.name}</td>
+                                  <td className="p-2 text-right">{country.users.toLocaleString()}</td>
+                                  <td className="p-2 text-right">{country.percentage}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Devices</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={demographics.devices}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="users"
+                                nameKey="type"
+                                label={({ type, percent }) => `${type}: ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {demographics.devices.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div>
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-muted">
+                                <th className="p-2 text-left">Device</th>
+                                <th className="p-2 text-right">Users</th>
+                                <th className="p-2 text-right">Percentage</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {demographics.devices.map((device, index) => (
+                                <tr key={index} className="border-b">
+                                  <td className="p-2">{device.type}</td>
+                                  <td className="p-2 text-right">{device.users.toLocaleString()}</td>
+                                  <td className="p-2 text-right">{device.percentage}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Browsers</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={demographics.browsers}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="users"
+                                nameKey="name"
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {demographics.browsers.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div>
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-muted">
+                                <th className="p-2 text-left">Browser</th>
+                                <th className="p-2 text-right">Users</th>
+                                <th className="p-2 text-right">Percentage</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {demographics.browsers.map((browser, index) => (
+                                <tr key={index} className="border-b">
+                                  <td className="p-2">{browser.name}</td>
+                                  <td className="p-2 text-right">{browser.users.toLocaleString()}</td>
+                                  <td className="p-2 text-right">{browser.percentage}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="events">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Event Tracking</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="p-2 text-left">Event</th>
+                          <th className="p-2 text-right">Count</th>
+                          <th className="p-2 text-right">Unique Users</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {eventsData.map((event, index) => (
+                          <tr key={index} className="border-b">
+                            <td className="p-2">{event.name}</td>
+                            <td className="p-2 text-right">{event.count.toLocaleString()}</td>
+                            <td className="p-2 text-right">{event.uniqueUsers.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="mt-6 h-80 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={eventsData}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#8884d8" name="Event Count" />
+                        <Bar dataKey="uniqueUsers" fill="#82ca9d" name="Unique Users" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </CardContent>
       </Card>

@@ -1,40 +1,83 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 // Google Analytics Measurement ID
-const GA_MEASUREMENT_ID = 'G-G3N8DYCLBM'; // Updated GA measurement ID for Jam3a
+const GA_MEASUREMENT_ID = 'UA-123456789-1'; // Default ID, will be overridden by config
 
 // Initialize Google Analytics
-const initializeGA = () => {
-  if (typeof window !== 'undefined') {
-    try {
-      // Add Google Analytics script to head
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-      document.head.appendChild(script);
-
-      // Initialize gtag
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        window.dataLayer.push(arguments);
-      }
-      gtag('js', new Date());
-      gtag('config', GA_MEASUREMENT_ID, {
-        send_page_view: false, // We'll send page views manually
-        cookie_domain: 'jam3a.sa',
-        cookie_flags: 'SameSite=None;Secure',
-        anonymize_ip: true,
-        user_properties: {
-          app_version: '2.0',
-          platform: 'web'
+const initializeGA = async () => {
+  try {
+    // Fetch configuration from backend
+    const response = await axios.get('/api/analytics/config');
+    const config = response.data;
+    
+    // If no tracking ID is set, don't initialize
+    if (!config.trackingId) {
+      console.warn('[GA] No tracking ID configured. Google Analytics will not be initialized.');
+      return;
+    }
+    
+    // Create script tag
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${config.trackingId}`;
+    document.head.appendChild(script);
+    
+    // Initialize gtag
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
+    window.gtag = gtag;
+    
+    gtag('js', new Date());
+    
+    // Configure with settings from backend
+    gtag('config', config.trackingId, {
+      anonymize_ip: config.ipAnonymization,
+      send_page_view: config.trackPageViews
+    });
+    
+    console.log(`[GA] Initialized with ID: ${config.trackingId}`);
+    console.log(`[GA] IP Anonymization: ${config.ipAnonymization ? 'Enabled' : 'Disabled'}`);
+    console.log(`[GA] Page View Tracking: ${config.trackPageViews ? 'Enabled' : 'Disabled'}`);
+    console.log(`[GA] Event Tracking: ${config.trackEvents ? 'Enabled' : 'Disabled'}`);
+  } catch (error) {
+    console.error('Error initializing Google Analytics:', error);
+    
+    // Try to load from local storage as fallback
+    const storedConfig = localStorage.getItem('analyticsConfig');
+    if (storedConfig) {
+      try {
+        const config = JSON.parse(storedConfig);
+        if (config.trackingId) {
+          // Create script tag
+          const script = document.createElement('script');
+          script.async = true;
+          script.src = `https://www.googletagmanager.com/gtag/js?id=${config.trackingId}`;
+          document.head.appendChild(script);
+          
+          // Initialize gtag
+          window.dataLayer = window.dataLayer || [];
+          function gtag() {
+            window.dataLayer.push(arguments);
+          }
+          window.gtag = gtag;
+          
+          gtag('js', new Date());
+          
+          // Configure with settings from local storage
+          gtag('config', config.trackingId, {
+            anonymize_ip: config.ipAnonymization,
+            send_page_view: config.trackPageViews
+          });
+          
+          console.log(`[GA] Initialized from local storage with ID: ${config.trackingId}`);
         }
-      });
-
-      // Make gtag available globally
-      window.gtag = gtag;
-    } catch (error) {
-      console.error('Failed to initialize Google Analytics:', error);
+      } catch (parseError) {
+        console.error('Error parsing stored analytics configuration:', parseError);
+      }
     }
   }
 };
@@ -45,58 +88,80 @@ const trackPageView = (path) => {
     try {
       window.gtag('event', 'page_view', {
         page_path: path,
-        page_title: document.title || 'Jam3a',
-        page_location: window.location.href,
+        page_title: document.title
       });
-      console.log(`[GA] Page view tracked: ${path}`);
+      console.log(`[GA] Page view: ${path}`);
     } catch (error) {
       console.error('Error tracking page view:', error);
     }
   }
 };
 
-// Track event
-const trackEvent = (eventName, eventParams = {}) => {
+// Track custom event
+const trackEvent = (category, action, label = null, value = null) => {
   if (typeof window !== 'undefined' && window.gtag) {
     try {
-      window.gtag('event', eventName, eventParams);
-      console.log(`[GA] Event tracked: ${eventName}`, eventParams);
+      // Check if event tracking is enabled
+      axios.get('/api/analytics/config')
+        .then(response => {
+          const config = response.data;
+          
+          if (config.trackEvents) {
+            const eventParams = {
+              event_category: category,
+              event_label: label,
+              value: value
+            };
+            
+            // Remove undefined properties
+            Object.keys(eventParams).forEach(key => 
+              eventParams[key] === null && delete eventParams[key]
+            );
+            
+            window.gtag('event', action, eventParams);
+            console.log(`[GA] Event: ${category} - ${action} - ${label || 'N/A'}`);
+          } else {
+            console.log('[GA] Event tracking is disabled');
+          }
+        })
+        .catch(error => {
+          console.error('Error checking event tracking configuration:', error);
+          
+          // Try to load from local storage as fallback
+          const storedConfig = localStorage.getItem('analyticsConfig');
+          if (storedConfig) {
+            try {
+              const config = JSON.parse(storedConfig);
+              
+              if (config.trackEvents) {
+                const eventParams = {
+                  event_category: category,
+                  event_label: label,
+                  value: value
+                };
+                
+                // Remove undefined properties
+                Object.keys(eventParams).forEach(key => 
+                  eventParams[key] === null && delete eventParams[key]
+                );
+                
+                window.gtag('event', action, eventParams);
+                console.log(`[GA] Event (from local storage): ${category} - ${action} - ${label || 'N/A'}`);
+              }
+            } catch (parseError) {
+              console.error('Error parsing stored analytics configuration:', parseError);
+            }
+          }
+        });
     } catch (error) {
-      console.error(`Error tracking event ${eventName}:`, error);
+      console.error('Error tracking event:', error);
     }
   }
 };
 
-// Enhanced ecommerce tracking functions
+// Ecommerce tracking
 const ecommerce = {
-  // View item list
-  viewItemList: (items, listName) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      try {
-        if (!Array.isArray(items) || items.length === 0) {
-          console.warn('[GA] viewItemList called with empty or invalid items array');
-          return;
-        }
-        
-        window.gtag('event', 'view_item_list', {
-          items: items.map(item => ({
-            item_id: item?.id || 'unknown_id',
-            item_name: item?.name || 'Unknown Item',
-            price: parseFloat(item?.price || 0),
-            item_category: item?.category || 'Uncategorized',
-            item_list_name: listName || 'Default List',
-            index: item?.index || 0
-          })),
-          item_list_name: listName || 'Default List'
-        });
-        console.log(`[GA] Ecommerce: view_item_list - ${listName || 'Default List'}`);
-      } catch (error) {
-        console.error('Error tracking view_item_list:', error);
-      }
-    }
-  },
-  
-  // View item details
+  // View item
   viewItem: (item) => {
     if (typeof window !== 'undefined' && window.gtag) {
       try {
@@ -112,10 +177,11 @@ const ecommerce = {
             item_id: item?.id || 'unknown_id',
             item_name: item?.name || 'Unknown Item',
             price: parseFloat(item?.price || 0),
-            item_category: item?.category || 'Uncategorized'
+            item_category: item?.category || 'Uncategorized',
+            quantity: 1
           }]
         });
-        console.log(`[GA] Ecommerce: view_item - ${item?.name || 'Unknown Item'}`);
+        console.log(`[GA] Ecommerce: view_item - ${item?.name || 'unknown'}`);
       } catch (error) {
         console.error('Error tracking view_item:', error);
       }
@@ -133,16 +199,16 @@ const ecommerce = {
         
         window.gtag('event', 'add_to_cart', {
           currency: 'SAR',
-          value: parseFloat(item?.price || 0) * (quantity || 1),
+          value: parseFloat(item?.price || 0) * quantity,
           items: [{
             item_id: item?.id || 'unknown_id',
             item_name: item?.name || 'Unknown Item',
             price: parseFloat(item?.price || 0),
             item_category: item?.category || 'Uncategorized',
-            quantity: quantity || 1
+            quantity: quantity
           }]
         });
-        console.log(`[GA] Ecommerce: add_to_cart - ${item?.name || 'Unknown Item'} (${quantity || 1})`);
+        console.log(`[GA] Ecommerce: add_to_cart - ${item?.name || 'unknown'} (${quantity})`);
       } catch (error) {
         console.error('Error tracking add_to_cart:', error);
       }
@@ -150,17 +216,19 @@ const ecommerce = {
   },
   
   // Begin checkout
-  beginCheckout: (items, value) => {
+  beginCheckout: (items, value = 0) => {
     if (typeof window !== 'undefined' && window.gtag) {
       try {
-        if (!Array.isArray(items) || items.length === 0) {
-          console.warn('[GA] beginCheckout called with empty or invalid items array');
+        if (!items || !Array.isArray(items) || items.length === 0) {
+          console.warn('[GA] beginCheckout called with invalid items');
           return;
         }
         
         window.gtag('event', 'begin_checkout', {
           currency: 'SAR',
-          value: parseFloat(value || 0),
+          value: parseFloat(value || items.reduce((sum, item) => 
+            sum + (parseFloat(item?.price || 0) * (item?.quantity || 1)), 0
+          )),
           items: items.map(item => ({
             item_id: item?.id || 'unknown_id',
             item_name: item?.name || 'Unknown Item',
@@ -180,7 +248,7 @@ const ecommerce = {
   purchase: (transaction) => {
     if (typeof window !== 'undefined' && window.gtag) {
       try {
-        if (!transaction || !Array.isArray(transaction.items)) {
+        if (!transaction || !transaction.items || !Array.isArray(transaction.items)) {
           console.warn('[GA] purchase called with invalid transaction data');
           return;
         }
@@ -304,10 +372,38 @@ const ecommerce = {
 const setUserId = (userId) => {
   if (typeof window !== 'undefined' && window.gtag && userId) {
     try {
-      window.gtag('config', GA_MEASUREMENT_ID, {
-        user_id: userId
-      });
-      console.log(`[GA] User ID set: ${userId}`);
+      // Fetch configuration to get the tracking ID
+      axios.get('/api/analytics/config')
+        .then(response => {
+          const config = response.data;
+          
+          if (config.trackingId) {
+            window.gtag('config', config.trackingId, {
+              user_id: userId
+            });
+            console.log(`[GA] User ID set: ${userId}`);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching analytics configuration for user ID:', error);
+          
+          // Try to load from local storage as fallback
+          const storedConfig = localStorage.getItem('analyticsConfig');
+          if (storedConfig) {
+            try {
+              const config = JSON.parse(storedConfig);
+              
+              if (config.trackingId) {
+                window.gtag('config', config.trackingId, {
+                  user_id: userId
+                });
+                console.log(`[GA] User ID set (from local storage): ${userId}`);
+              }
+            } catch (parseError) {
+              console.error('Error parsing stored analytics configuration:', parseError);
+            }
+          }
+        });
     } catch (error) {
       console.error('Error setting user ID:', error);
     }
@@ -317,19 +413,26 @@ const setUserId = (userId) => {
 // Google Analytics component
 const GoogleAnalytics = () => {
   const location = useLocation();
-
+  
   // Initialize GA on mount
   useEffect(() => {
     initializeGA();
+    
+    // Set up refresh interval to check for configuration changes
+    const intervalId = setInterval(() => {
+      initializeGA();
+    }, 15 * 60 * 1000); // Check every 15 minutes
+    
+    return () => clearInterval(intervalId);
   }, []);
-
+  
   // Track page views when location changes
   useEffect(() => {
     if (location) {
       trackPageView(location.pathname + location.search);
     }
   }, [location]);
-
+  
   return null; // This component doesn't render anything
 };
 
