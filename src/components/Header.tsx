@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Users, ShoppingBag, Globe, Menu, X, User, LogOut, ShieldCheck, ShoppingCart, Heart } from 'lucide-react';
+import AdminIconFix from './AdminIconFix';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -63,7 +64,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { toast } = useToast();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -272,20 +273,7 @@ const Header = () => {
             </Button>
           </Link>
           
-          {user?.isAdmin && (
-            <Link to="/admin">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className={`text-foreground hover:text-primary transition-colors relative ${isActive('/admin') ? 'text-primary' : ''}`}
-                title={language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
-                aria-label={language === 'en' ? 'Admin Panel' : 'لوحة الإدارة'}
-              >
-                <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full" aria-hidden="true"></span>
-              </Button>
-            </Link>
-          )}
+          <AdminIconFix isAdmin={isAdmin} isActive={isActive} language={language} />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
