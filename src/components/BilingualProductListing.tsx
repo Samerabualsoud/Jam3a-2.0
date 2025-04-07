@@ -110,6 +110,21 @@ const PRODUCT_IMAGES = {
 // Default placeholder image URL for when local images fail to load
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/400x300?text=Product+Image';
 
+// Helper function to safely get category name
+const getCategoryName = (category) => {
+  if (!category) return 'Uncategorized';
+  
+  if (typeof category === 'string') {
+    return category;
+  }
+  
+  if (typeof category === 'object' && category !== null) {
+    return category.name || 'Uncategorized';
+  }
+  
+  return 'Uncategorized';
+};
+
 const BilingualProductListing = ({ product, language }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -128,7 +143,8 @@ const BilingualProductListing = ({ product, language }) => {
     currentParticipants: 0,
     maxParticipants: 10,
     featured: false,
-    status: 'active'
+    status: 'active',
+    category: 'Uncategorized'
   };
   
   // Enhanced product image selection based on product name and description
@@ -335,6 +351,11 @@ const BilingualProductListing = ({ product, language }) => {
       return safeProduct.descriptionAr || safeProduct.description || 'وصف المنتج';
     }
     return safeProduct.description || 'Product description';
+  };
+  
+  // Get product category name
+  const getProductCategoryName = () => {
+    return getCategoryName(safeProduct.category);
   };
   
   // Get product price
