@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { API_BASE_URL } from './api';
+import apiService from '@/services/api';
+import { API_BASE_URL } from '@/config';
 
 /**
  * Deal Service
@@ -12,11 +12,12 @@ const DealService = {
    */
   fetchDeals: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/deals`);
-      return response.data.data;
+      console.log('Fetching deals from:', `${API_BASE_URL}/deals`);
+      const response = await apiService.get('/deals');
+      return response.data || response;
     } catch (error) {
       console.error('Error fetching deals:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   },
 
@@ -26,11 +27,12 @@ const DealService = {
    */
   fetchFeaturedDeals: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/deals/featured`);
-      return response.data.data;
+      console.log('Fetching featured deals from:', `${API_BASE_URL}/deals/featured`);
+      const response = await apiService.get('/deals/featured');
+      return response.data || response;
     } catch (error) {
       console.error('Error fetching featured deals:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   },
 
@@ -44,11 +46,12 @@ const DealService = {
       // Extract the numeric ID part before any special characters like colon
       const cleanDealId = dealId.toString().split(':')[0];
       
-      const response = await axios.get(`${API_BASE_URL}/deals/${cleanDealId}`);
-      return response.data.data;
+      console.log('Fetching deal by ID from:', `${API_BASE_URL}/deals/${cleanDealId}`);
+      const response = await apiService.get(`/deals/${cleanDealId}`);
+      return response.data || response;
     } catch (error) {
       console.error('Error fetching deal:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   },
 
@@ -59,11 +62,12 @@ const DealService = {
    */
   fetchDealProducts: async (dealId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/deals/${dealId}/products`);
-      return response.data;
+      console.log('Fetching deal products from:', `${API_BASE_URL}/deals/${dealId}/products`);
+      const response = await apiService.get(`/deals/${dealId}/products`);
+      return response.data || response;
     } catch (error) {
       console.error('Error fetching deal products:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   },
 
@@ -75,20 +79,12 @@ const DealService = {
    */
   joinDeal: async (dealId, data) => {
     try {
-      const token = localStorage.getItem('jam3a_token');
-      const response = await axios.post(
-        `${API_BASE_URL}/deals/${dealId}/join`, 
-        data,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      return response.data;
+      console.log('Joining deal at:', `${API_BASE_URL}/deals/${dealId}/join`);
+      const response = await apiService.post(`/deals/${dealId}/join`, data);
+      return response.data || response;
     } catch (error) {
       console.error('Error joining deal:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   },
 
@@ -99,20 +95,12 @@ const DealService = {
    */
   createDeal: async (dealData) => {
     try {
-      const token = localStorage.getItem('jam3a_token');
-      const response = await axios.post(
-        `${API_BASE_URL}/deals`, 
-        dealData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      return response.data;
+      console.log('Creating deal at:', `${API_BASE_URL}/deals`);
+      const response = await apiService.post('/deals', dealData);
+      return response.data || response;
     } catch (error) {
       console.error('Error creating deal:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   },
 
@@ -124,20 +112,12 @@ const DealService = {
    */
   updateDeal: async (dealId, dealData) => {
     try {
-      const token = localStorage.getItem('jam3a_token');
-      const response = await axios.put(
-        `${API_BASE_URL}/deals/${dealId}`, 
-        dealData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      return response.data;
+      console.log('Updating deal at:', `${API_BASE_URL}/deals/${dealId}`);
+      const response = await apiService.put(`/deals/${dealId}`, dealData);
+      return response.data || response;
     } catch (error) {
       console.error('Error updating deal:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   },
 
@@ -148,19 +128,12 @@ const DealService = {
    */
   deleteDeal: async (dealId) => {
     try {
-      const token = localStorage.getItem('jam3a_token');
-      const response = await axios.delete(
-        `${API_BASE_URL}/deals/${dealId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      return response.data;
+      console.log('Deleting deal at:', `${API_BASE_URL}/deals/${dealId}`);
+      const response = await apiService.delete(`/deals/${dealId}`);
+      return response.data || response;
     } catch (error) {
       console.error('Error deleting deal:', error);
-      throw error.response?.data || error.message;
+      throw error.message || error;
     }
   }
 };

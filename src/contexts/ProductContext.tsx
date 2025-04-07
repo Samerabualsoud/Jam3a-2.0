@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
+import apiService from '@/services/api';
+import { API_BASE_URL } from '@/config';
 
 // Define the Product type
 export interface Product {
@@ -95,10 +96,12 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      const response = await axios.get('/api/products');
+      console.log('Fetching products from:', `${API_BASE_URL}/products`);
+      const response = await apiService.get('/products');
       
-      // Ensure response.data is an array
-      const productsData = Array.isArray(response.data) ? response.data : [];
+      // Ensure response is an array
+      const productsData = Array.isArray(response) ? response : 
+                          (response && Array.isArray(response.products)) ? response.products : [];
       
       console.log('Products data:', productsData);
       
@@ -158,10 +161,12 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      const response = await axios.get('/api/products/jam3a/deals');
+      console.log('Fetching Jam3a deals from:', `${API_BASE_URL}/deals`);
+      const response = await apiService.get('/deals');
       
-      // Ensure response.data is an array
-      const dealsData = Array.isArray(response.data) ? response.data : [];
+      // Ensure response is an array
+      const dealsData = Array.isArray(response) ? response : 
+                       (response && Array.isArray(response.deals)) ? response.deals : [];
       
       console.log('Jam3a deals data:', dealsData);
       
@@ -217,10 +222,12 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
   // Load products on mount
   useEffect(() => {
     refreshProducts();
+    refreshJam3aDeals();
     
     // Set up interval to refresh products every 5 minutes
     const intervalId = setInterval(() => {
       refreshProducts();
+      refreshJam3aDeals();
     }, 5 * 60 * 1000);
     
     return () => clearInterval(intervalId);
@@ -238,8 +245,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      const response = await axios.post('/api/products', product);
-      const newProduct = response.data;
+      console.log('Adding product to:', `${API_BASE_URL}/products`);
+      const newProduct = await apiService.post('/products', product);
       
       setProducts(prev => [...prev, newProduct]);
       
@@ -286,8 +293,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      const response = await axios.put(`/api/products/${id}`, productData);
-      const updatedProduct = response.data;
+      console.log('Updating product at:', `${API_BASE_URL}/products/${id}`);
+      const updatedProduct = await apiService.put(`/products/${id}`, productData);
       
       setProducts(prev => 
         prev.map(product => product.id === id ? updatedProduct : product)
@@ -336,7 +343,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      await axios.delete(`/api/products/${id}`);
+      console.log('Deleting product at:', `${API_BASE_URL}/products/${id}`);
+      await apiService.delete(`/products/${id}`);
       
       const deletedProduct = products.find(p => p.id === id);
       setProducts(prev => prev.filter(product => product.id !== id));
@@ -384,13 +392,14 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      const response = await axios.post('/api/products/bulk', {
+      console.log('Bulk updating products at:', `${API_BASE_URL}/products/bulk`);
+      const result = await apiService.post('/products/bulk', {
         action: 'update',
         ids,
         data
       });
       
-      const updatedCount = response.data.updated;
+      const updatedCount = result.updated || 0;
       
       // Refresh products to get the updated data
       await refreshProducts();
@@ -438,12 +447,13 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      const response = await axios.post('/api/products/bulk', {
+      console.log('Bulk deleting products at:', `${API_BASE_URL}/products/bulk`);
+      const result = await apiService.post('/products/bulk', {
         action: 'delete',
         ids
       });
       
-      const deletedCount = response.data.deleted;
+      const deletedCount = result.deleted || 0;
       
       // Update local state
       setProducts(prev => prev.filter(product => !ids.includes(product.id)));
@@ -491,27 +501,29 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      // In a real implementation, we would convert the products to a file and upload
-      let successCount = 0;
+      console.log('Importing products to:', `${API_BASE_URL}/products/import`);
+      const result = await apiService.post('/products/import', { products: productsToImport });
       
-      for (const product of productsToImport) {
-        try {
-          await addProduct(product);
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to import product ${product.name}:`, error);
-        }
-      }
+      const importedCount = result.imported || 0;
+      
+      // Refresh products to get the updated data
+      await refreshProducts();
       
       // Add to sync logs
       addSyncLog({
         action: 'import',
-        details: `Imported ${successCount} out of ${productsToImport.length} products`,
-        status: successCount === productsToImport.length ? 'success' : 'error',
+        details: `Imported ${importedCount} products`,
+        status: 'success',
         products: []
       });
       
-      return successCount;
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully imported ${importedCount} products.`,
+        timestamp: Date.now()
+      });
+      
+      return importedCount;
     } catch (error) {
       console.error('Failed to import products:', error);
       
@@ -540,29 +552,26 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
-      let productsToExport: Product[];
+      console.log('Exporting products from:', `${API_BASE_URL}/products/export`);
+      const result = await apiService.post('/products/export', { ids });
       
-      if (ids && ids.length > 0) {
-        // Fetch specific products by IDs
-        const promises = ids.map(id => axios.get(`/api/products/${id}`));
-        const responses = await Promise.all(promises);
-        productsToExport = responses.map(response => response.data);
-      } else {
-        // Fetch all products
-        const response = await axios.get('/api/products');
-        // Ensure response.data is an array
-        productsToExport = Array.isArray(response.data) ? response.data : [];
-      }
+      const exportedProducts = result.products || [];
       
       // Add to sync logs
       addSyncLog({
         action: 'export',
-        details: `Exported ${productsToExport.length} products`,
+        details: `Exported ${exportedProducts.length} products`,
         status: 'success',
-        products: productsToExport.map(p => p.id)
+        products: ids || []
       });
       
-      return productsToExport;
+      setSyncStatus({ 
+        type: 'success', 
+        message: `Successfully exported ${exportedProducts.length} products.`,
+        timestamp: Date.now()
+      });
+      
+      return exportedProducts;
     } catch (error) {
       console.error('Failed to export products:', error);
       
@@ -580,7 +589,10 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         timestamp: Date.now()
       });
       
-      return [];
+      // Return filtered products from local state as fallback
+      return ids 
+        ? products.filter(product => ids.includes(product.id))
+        : products;
     } finally {
       setIsLoading(false);
     }
@@ -603,7 +615,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
     
     if (product.stock !== undefined && product.stock < 0) {
-      errors.push('Stock cannot be negative');
+      errors.push('Stock must be a positive number');
     }
     
     return errors;
@@ -615,12 +627,16 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
   };
   
   // Compute active Jam3a deals
-  const activeJam3aDeals = products.filter(p => p.currentAmount !== undefined && p.targetAmount !== undefined);
+  const activeJam3aDeals = products.filter(product => 
+    product.currentAmount !== undefined && 
+    product.targetAmount !== undefined && 
+    product.currentAmount < product.targetAmount
+  );
   
   // Compute featured products
-  const featuredProducts = products.filter(p => p.featured);
+  const featuredProducts = products.filter(product => product.featured);
   
-  // Context value
+  // Provide the context value
   const contextValue: ProductContextType = {
     products,
     setProducts,
@@ -649,8 +665,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
   );
 };
 
-// Custom hook to use the product context
-export const useProductContext = (): ProductContextType => {
+// Create a hook to use the context
+export const useProductContext = () => {
   const context = useContext(ProductContext);
   
   if (context === undefined) {
@@ -659,7 +675,3 @@ export const useProductContext = (): ProductContextType => {
   
   return context;
 };
-
-// Export an alias for useProductContext as useProducts to fix the import issue
-export const useProducts = useProductContext;
-export default ProductContext;
