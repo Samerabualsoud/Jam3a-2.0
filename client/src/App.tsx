@@ -11,7 +11,7 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import AboutUs from "./pages/AboutUs";
-import { LanguageProvider } from "./components/Header";
+import { LanguageProvider } from "./components/layout/Header";
 import { AuthProvider } from "./contexts/AuthContext";
 import FAQ from "./pages/FAQ";
 import ShopJam3a from "./pages/ShopJam3a";
