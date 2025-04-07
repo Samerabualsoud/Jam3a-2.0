@@ -1,40 +1,38 @@
-// server.js for master branch (backend)
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const bodyParser = require('body-parser');
+const connectDB = require('./server/db');
 
-// Import routes
-const emailRoutes = require('./server/routes/emailRoutes');
-const dealsRoutes = require('./server/routes/api/dealsRoutes');
-const productsRoutes = require('./server/routes/api/productsRoutes');
-const analyticsRoutes = require('./server/routes/api/analyticsRoutes');
-
+// Create Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// Connect to MongoDB
+connectDB();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'dist')));
+// API Routes
+app.use('/api/deals', require('./server/routes/api/dealsRoutes'));
+app.use('/api/products', require('./server/routes/api/productsRoutes'));
+app.use('/api/analytics', require('./server/routes/api/analyticsRoutes'));
 
-// API routes
-app.use('/api/email', emailRoutes);
-app.use('/api/deals', dealsRoutes);
-app.use('/api/products', productsRoutes);
-app.use('/api/analytics', analyticsRoutes);
+// Serve static assets in production
+if (process.env.NODE_ENV === 'production') {
+  // Set static folder
+  app.use(express.static('build'));
 
-// Serve the app
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
+  });
+}
 
-// Start the server
+// Define port
+const PORT = process.env.PORT || 5000;
+
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-module.exports = app;

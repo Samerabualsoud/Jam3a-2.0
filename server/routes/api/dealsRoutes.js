@@ -1,258 +1,175 @@
-// dealsRoutes.js
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
-
-// Path to our data file
-const dataPath = path.join(__dirname, '../../data/deals.json');
-
-// Ensure data directory exists
-const ensureDataDirExists = () => {
-  const dataDir = path.join(__dirname, '../../data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-};
-
-// Initialize deals data file if it doesn't exist
-const initializeDealsData = () => {
-  ensureDataDirExists();
-  if (!fs.existsSync(dataPath)) {
-    fs.writeFileSync(dataPath, JSON.stringify([], null, 2));
-  }
-};
+const Deal = require('../models/Deal');
 
 // Get all deals
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    initializeDealsData();
-    const dealsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    res.json(dealsData);
-  } catch (error) {
-    console.error('Error reading deals data:', error);
-    res.status(500).json({ error: 'Failed to fetch deals' });
+    const deals = await Deal.find();
+    res.json(deals);
+  } catch (err) {
+    console.error('Error fetching deals:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get a specific deal by ID
-router.get('/:id', (req, res) => {
+// Get a specific deal
+router.get('/:id', async (req, res) => {
   try {
-    initializeDealsData();
-    const dealsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    const deal = dealsData.find(d => d.id === parseInt(req.params.id));
-    
+    const deal = await Deal.findOne({ id: req.params.id });
     if (!deal) {
-      return res.status(404).json({ error: 'Deal not found' });
+      return res.status(404).json({ message: 'Deal not found' });
     }
-    
     res.json(deal);
-  } catch (error) {
-    console.error('Error reading deal data:', error);
-    res.status(500).json({ error: 'Failed to fetch deal' });
+  } catch (err) {
+    console.error('Error fetching deal:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Create a new deal
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    initializeDealsData();
-    const dealsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    // Find the highest ID to ensure uniqueness
+    const maxIdDeal = await Deal.findOne().sort('-id');
+    const newId = maxIdDeal ? maxIdDeal.id + 1 : 1;
     
-    // Generate a new ID (max ID + 1)
-    const newId = dealsData.length > 0 
-      ? Math.max(...dealsData.map(d => d.id)) + 1 
-      : 1;
+    // Generate a Jam3a ID if not provided
+    let jam3aId = req.body.jam3aId;
+    if (!jam3aId) {
+      const category = req.body.category.substring(0, 3).toUpperCase();
+      jam3aId = `JAM-${category}-${String(newId).padStart(3, '0')}`;
+    }
     
-    const newDeal = {
+    const newDeal = new Deal({
       id: newId,
-      ...req.body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+      name: req.body.name,
+      description: req.body.description,
+      category: req.body.category,
+      price: req.body.price,
+      currentAmount: req.body.currentAmount || 0,
+      targetAmount: req.body.targetAmount,
+      jam3aId: jam3aId,
+      featured: req.body.featured || false,
+      usersJoined: req.body.usersJoined || 0,
+      imageUrl: req.body.imageUrl,
+      status: req.body.status || 'active'
+    });
     
-    dealsData.push(newDeal);
-    fs.writeFileSync(dataPath, JSON.stringify(dealsData, null, 2));
-    
-    res.status(201).json(newDeal);
-  } catch (error) {
-    console.error('Error creating deal:', error);
-    res.status(500).json({ error: 'Failed to create deal' });
+    const savedDeal = await newDeal.save();
+    res.status(201).json(savedDeal);
+  } catch (err) {
+    console.error('Error creating deal:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Update an existing deal
-router.put('/:id', (req, res) => {
+// Update a deal
+router.put('/:id', async (req, res) => {
   try {
-    initializeDealsData();
-    const dealsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    const dealId = parseInt(req.params.id);
-    const dealIndex = dealsData.findIndex(d => d.id === dealId);
+    const updatedDeal = await Deal.findOneAndUpdate(
+      { id: req.params.id },
+      { 
+        ...req.body,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    );
     
-    if (dealIndex === -1) {
-      return res.status(404).json({ error: 'Deal not found' });
+    if (!updatedDeal) {
+      return res.status(404).json({ message: 'Deal not found' });
     }
     
-    const updatedDeal = {
-      ...dealsData[dealIndex],
-      ...req.body,
-      id: dealId, // Ensure ID doesn't change
-      updatedAt: new Date().toISOString()
-    };
-    
-    dealsData[dealIndex] = updatedDeal;
-    fs.writeFileSync(dataPath, JSON.stringify(dealsData, null, 2));
-    
     res.json(updatedDeal);
-  } catch (error) {
-    console.error('Error updating deal:', error);
-    res.status(500).json({ error: 'Failed to update deal' });
+  } catch (err) {
+    console.error('Error updating deal:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Delete a deal
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    initializeDealsData();
-    const dealsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    const dealId = parseInt(req.params.id);
-    const dealIndex = dealsData.findIndex(d => d.id === dealId);
+    const deletedDeal = await Deal.findOneAndDelete({ id: req.params.id });
     
-    if (dealIndex === -1) {
-      return res.status(404).json({ error: 'Deal not found' });
+    if (!deletedDeal) {
+      return res.status(404).json({ message: 'Deal not found' });
     }
-    
-    dealsData.splice(dealIndex, 1);
-    fs.writeFileSync(dataPath, JSON.stringify(dealsData, null, 2));
     
     res.json({ message: 'Deal deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting deal:', error);
-    res.status(500).json({ error: 'Failed to delete deal' });
-  }
-});
-
-// Bulk operations
-router.post('/bulk', (req, res) => {
-  try {
-    initializeDealsData();
-    const dealsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    const { action, ids, data } = req.body;
-    
-    if (!action || !ids || !Array.isArray(ids)) {
-      return res.status(400).json({ error: 'Invalid request format' });
-    }
-    
-    let result;
-    
-    switch (action) {
-      case 'delete':
-        // Delete multiple deals
-        const remainingDeals = dealsData.filter(d => !ids.includes(d.id));
-        fs.writeFileSync(dataPath, JSON.stringify(remainingDeals, null, 2));
-        result = { deleted: dealsData.length - remainingDeals.length };
-        break;
-        
-      case 'update':
-        // Update multiple deals
-        if (!data) {
-          return res.status(400).json({ error: 'Data required for bulk update' });
-        }
-        
-        let updatedCount = 0;
-        const updatedDeals = dealsData.map(deal => {
-          if (ids.includes(deal.id)) {
-            updatedCount++;
-            return {
-              ...deal,
-              ...data,
-              id: deal.id, // Ensure ID doesn't change
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return deal;
-        });
-        
-        fs.writeFileSync(dataPath, JSON.stringify(updatedDeals, null, 2));
-        result = { updated: updatedCount };
-        break;
-        
-      default:
-        return res.status(400).json({ error: 'Invalid action' });
-    }
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Error performing bulk operation:', error);
-    res.status(500).json({ error: 'Failed to perform bulk operation' });
+  } catch (err) {
+    console.error('Error deleting deal:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Search and filter deals
-router.get('/search/filter', (req, res) => {
+router.get('/search/filter', async (req, res) => {
   try {
-    initializeDealsData();
-    const dealsData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    const { query, category, status, minUsers, maxUsers, featured } = req.query;
     
-    const { 
-      query, 
-      category, 
-      jam3aStatus, 
-      minUsers, 
-      maxUsers,
-      featured 
-    } = req.query;
+    // Build filter object
+    const filter = {};
     
-    let filteredDeals = [...dealsData];
-    
-    // Apply search query filter
     if (query) {
-      const searchTerm = query.toLowerCase();
-      filteredDeals = filteredDeals.filter(deal => 
-        deal.name?.toLowerCase().includes(searchTerm) || 
-        deal.description?.toLowerCase().includes(searchTerm)
-      );
+      filter.$or = [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+        { jam3aId: { $regex: query, $options: 'i' } }
+      ];
     }
     
-    // Apply category filter
     if (category) {
-      filteredDeals = filteredDeals.filter(deal => 
-        deal.category?.toLowerCase() === category.toLowerCase()
-      );
+      filter.category = category;
     }
     
-    // Apply Jam3a status filter
-    if (jam3aStatus) {
-      filteredDeals = filteredDeals.filter(deal => 
-        deal.jam3aStatus?.toLowerCase() === jam3aStatus.toLowerCase()
-      );
+    if (status) {
+      filter.status = status;
     }
     
-    // Apply users count filter
-    if (minUsers !== undefined) {
-      filteredDeals = filteredDeals.filter(deal => 
-        (deal.currentUsers || 0) >= parseInt(minUsers)
-      );
+    if (minUsers) {
+      filter.usersJoined = { $gte: parseInt(minUsers) };
     }
     
-    if (maxUsers !== undefined) {
-      filteredDeals = filteredDeals.filter(deal => 
-        (deal.currentUsers || 0) <= parseInt(maxUsers)
-      );
+    if (maxUsers) {
+      filter.usersJoined = { ...filter.usersJoined, $lte: parseInt(maxUsers) };
     }
     
-    // Apply featured filter
     if (featured !== undefined) {
-      const isFeatured = featured === 'true';
-      filteredDeals = filteredDeals.filter(deal => 
-        deal.featured === isFeatured
-      );
+      filter.featured = featured === 'true';
     }
     
-    res.json(filteredDeals);
-  } catch (error) {
-    console.error('Error searching/filtering deals:', error);
-    res.status(500).json({ error: 'Failed to search/filter deals' });
+    const deals = await Deal.find(filter);
+    res.json(deals);
+  } catch (err) {
+    console.error('Error searching deals:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get featured deals
+router.get('/featured/list', async (req, res) => {
+  try {
+    const featuredDeals = await Deal.find({ featured: true });
+    res.json(featuredDeals);
+  } catch (err) {
+    console.error('Error fetching featured deals:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get active Jam3a deals
+router.get('/jam3a/deals', async (req, res) => {
+  try {
+    const activeDeals = await Deal.find({ 
+      status: 'active',
+      currentAmount: { $gt: 0 },
+      targetAmount: { $gt: 0 }
+    });
+    res.json(activeDeals);
+  } catch (err) {
+    console.error('Error fetching active Jam3a deals:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
