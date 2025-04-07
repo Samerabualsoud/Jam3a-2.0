@@ -76,7 +76,7 @@ router.get('/config', async (req, res) => {
   }
 });
 
-// Update analytics configuration
+// Update analytics configuration (PUT)
 router.put('/config', async (req, res) => {
   try {
     const {
@@ -142,6 +142,76 @@ router.put('/config', async (req, res) => {
     }
   } catch (error) {
     console.error('Error updating analytics config:', error);
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Add POST endpoint for analytics configuration (same functionality as PUT)
+router.post('/config', async (req, res) => {
+  try {
+    const {
+      trackingId,
+      ipAnonymization,
+      trackPageViews,
+      trackEvents,
+      ecommerceTracking,
+      active
+    } = req.body;
+    
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState === 1) {
+      let config = await AnalyticsConfig.findOne();
+      
+      if (config) {
+        // Update existing config
+        config.trackingId = trackingId;
+        config.ipAnonymization = ipAnonymization;
+        config.trackPageViews = trackPageViews;
+        config.trackEvents = trackEvents;
+        config.ecommerceTracking = ecommerceTracking;
+        config.active = active;
+        config.updatedAt = Date.now();
+        
+        await config.save();
+      } else {
+        // Create new config
+        config = await AnalyticsConfig.create({
+          trackingId,
+          ipAnonymization,
+          trackPageViews,
+          trackEvents,
+          ecommerceTracking,
+          active
+        });
+      }
+      
+      return res.json(config);
+    } else {
+      // Mock response for when MongoDB is not available
+      const updatedConfig = {
+        _id: new mongoose.Types.ObjectId().toString(),
+        trackingId,
+        ipAnonymization,
+        trackPageViews,
+        trackEvents,
+        ecommerceTracking,
+        active,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Try to save to JSON file
+      try {
+        const dataPath = path.join(__dirname, '../../../data/analytics.json');
+        fs.writeFileSync(dataPath, JSON.stringify(updatedConfig, null, 2));
+      } catch (writeError) {
+        console.error('Error writing analytics config to file:', writeError);
+      }
+      
+      return res.json(updatedConfig);
+    }
+  } catch (error) {
+    console.error('Error saving analytics config:', error);
     return res.status(500).json({ message: error.message });
   }
 });

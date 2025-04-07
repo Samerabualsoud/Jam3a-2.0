@@ -1,0 +1,154 @@
+[
+  {
+    "_id": "60d21b4667d0d8992e610c85",
+    "name": "iPhone 14 Pro Max",
+    "nameAr": "آيفون 14 برو ماكس",
+    "description": "The latest iPhone with A16 Bionic chip, 48MP camera, and Dynamic Island.",
+    "descriptionAr": "أحدث آيفون مع شريحة A16 Bionic وكاميرا 48 ميجابكسل وميزة Dynamic Island.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Electronics",
+      "nameAr": "إلكترونيات"
+    },
+    "price": 4999,
+    "stock": 50,
+    "sku": "APPLE-IP14PM-256",
+    "featured": true,
+    "imageUrl": "https://images.unsplash.com/photo-1663499482523-1c0c1bae9649?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    "createdAt": "2023-01-15T10:00:00Z",
+    "updatedAt": "2023-03-20T14:30:00Z"
+  },
+  {
+    "_id": "60d21b4667d0d8992e610c86",
+    "name": "Samsung Galaxy S23 Ultra",
+    "nameAr": "سامسونج جالاكسي إس 23 ألترا",
+    "description": "Flagship Android phone with 200MP camera and S Pen support.",
+    "descriptionAr": "هاتف أندرويد رائد مع كاميرا 200 ميجابكسل ودعم قلم S Pen.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Electronics",
+      "nameAr": "إلكترونيات"
+    },
+    "price": 4799,
+    "stock": 45,
+    "sku": "SAMSUNG-S23U-512",
+    "featured": true,
+    "imageUrl": "https://images.unsplash.com/photo-1675785931264-f1f3898ee8d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    "createdAt": "2023-01-20T11:15:00Z",
+    "updatedAt": "2023-02-10T09:45:00Z"
+  },
+  {
+    "_id": "60d21b4667d0d8992e610c87",
+    "name": "MacBook Pro 16-inch",
+    "nameAr": "ماك بوك برو 16 بوصة",
+    "description": "Powerful laptop with M2 Pro chip, 16GB RAM, and 512GB SSD.",
+    "descriptionAr": "لابتوب قوي مع شريحة M2 Pro و16 جيجابايت رام و512 جيجابايت SSD.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c81",
+      "name": "Computers",
+      "nameAr": "كمبيوترات"
+    },
+    "price": 9999,
+    "stock": 30,
+    "sku": "APPLE-MBP16-M2P",
+    "featured": true,
+    "imageUrl": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1926&q=80",
+    "createdAt": "2023-02-05T08:30:00Z",
+    "updatedAt": "2023-03-15T14:20:00Z"
+  },
+  {
+    "_id": "60d21b4667d0d8992e610c88",
+    "name": "Dell XPS 15",
+    "nameAr": "ديل إكس بي إس 15",
+    "description": "Premium Windows laptop with 12th Gen Intel Core i7, 16GB RAM, and 1TB SSD.",
+    "descriptionAr": "لابتوب ويندوز ممتاز مع معالج Intel Core i7 الجيل 12 و16 جيجابايت رام و1 تيرابايت SSD.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c81",
+      "name": "Computers",
+      "nameAr": "كمبيوترات"
+    },
+    "price": 7999,
+    "stock": 25,
+    "sku": "DELL-XPS15-I7",
+    "featured": false,
+    "imageUrl": "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1932&q=80",
+    "createdAt": "2023-02-10T13:45:00Z",
+    "updatedAt": "2023-03-12T10:30:00Z"
+  },
+  {
+    "_id": "60d21b4667d0d8992e610c89",
+    "name": "Sony WH-1000XM5",
+    "nameAr": "سوني WH-1000XM5",
+    "description": "Premium noise-cancelling headphones with 30-hour battery life.",
+    "descriptionAr": "سماعات رأس متميزة بخاصية إلغاء الضوضاء وعمر بطارية 30 ساعة.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Electronics",
+      "nameAr": "إلكترونيات"
+    },
+    "price": 1499,
+    "stock": 100,
+    "sku": "SONY-WH1000XM5",
+    "featured": true,
+    "imageUrl": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2065&q=80",
+    "createdAt": "2023-03-01T09:15:00Z",
+    "updatedAt": "2023-03-25T16:40:00Z"
+  },
+  {
+    "_id": "60d21b4667d0d8992e610c8a",
+    "name": "iPad Pro 12.9-inch",
+    "nameAr": "آيباد برو 12.9 بوصة",
+    "description": "Powerful tablet with M2 chip, Liquid Retina XDR display, and Apple Pencil support.",
+    "descriptionAr": "جهاز لوحي قوي مع شريحة M2 وشاشة Liquid Retina XDR ودعم قلم Apple Pencil.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Electronics",
+      "nameAr": "إلكترونيات"
+    },
+    "price": 4499,
+    "stock": 40,
+    "sku": "APPLE-IPADPRO-12",
+    "featured": false,
+    "imageUrl": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1975&q=80",
+    "createdAt": "2023-03-10T11:30:00Z",
+    "updatedAt": "2023-03-28T14:15:00Z"
+  },
+  {
+    "_id": "60d21b4667d0d8992e610c8b",
+    "name": "Nintendo Switch OLED",
+    "nameAr": "نينتندو سويتش أوليد",
+    "description": "Hybrid gaming console with 7-inch OLED screen and enhanced audio.",
+    "descriptionAr": "وحدة ألعاب هجينة مع شاشة OLED 7 بوصة وصوت محسن.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c82",
+      "name": "Gaming",
+      "nameAr": "ألعاب"
+    },
+    "price": 1299,
+    "stock": 60,
+    "sku": "NINTENDO-SWITCH-OLED",
+    "featured": true,
+    "imageUrl": "https://images.unsplash.com/photo-1662997137206-1b1c9e5dcc2a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    "createdAt": "2023-03-15T10:20:00Z",
+    "updatedAt": "2023-03-30T10:20:00Z"
+  },
+  {
+    "_id": "60d21b4667d0d8992e610c8c",
+    "name": "PlayStation 5",
+    "nameAr": "بلايستيشن 5",
+    "description": "Next-gen gaming console with ultra-high-speed SSD and 3D audio.",
+    "descriptionAr": "وحدة ألعاب الجيل التالي مع قرص SSD فائق السرعة وصوت ثلاثي الأبعاد.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c82",
+      "name": "Gaming",
+      "nameAr": "ألعاب"
+    },
+    "price": 1999,
+    "stock": 20,
+    "sku": "SONY-PS5-DISC",
+    "featured": true,
+    "imageUrl": "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1927&q=80",
+    "createdAt": "2023-03-20T15:45:00Z",
+    "updatedAt": "2023-04-05T09:30:00Z"
+  }
+]
