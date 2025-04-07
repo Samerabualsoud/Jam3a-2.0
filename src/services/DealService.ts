@@ -41,7 +41,10 @@ const DealService = {
    */
   fetchDealById: async (dealId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/deals/${dealId}`);
+      // Extract the numeric ID part before any special characters like colon
+      const cleanDealId = dealId.toString().split(':')[0];
+      
+      const response = await axios.get(`${API_BASE_URL}/deals/${cleanDealId}`);
       return response.data.data;
     } catch (error) {
       console.error('Error fetching deal:', error);
