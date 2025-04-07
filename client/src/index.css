@@ -1,0 +1,326 @@
+/* Font imports - must be before other statements */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Original purple color scheme */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 265 89% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 260 50% 95%;
+    --secondary-foreground: 265 89% 45%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 265 89% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 10% 3.9%;
+    --sidebar-primary: 265 89% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 260 50% 95%;
+    --sidebar-accent-foreground: 265 89% 45%;
+    --sidebar-border: 240 5.9% 90%;
+    --sidebar-ring: 265 89% 50%;
+
+    /* Jam3a specific colors */
+    --jam3a-purple: 265 89% 50%;
+    --jam3a-deep-purple: 265 89% 40%;
+    --jam3a-light-purple: 260 50% 95%;
+    --jam3a-accent: 280 75% 60%;
+    --jam3a-gradient-start: 265 89% 50%;
+    --jam3a-gradient-end: 280 75% 60%;
+    
+    /* Font variables - Arabic friendly fonts */
+    --font-sans: 'Cairo', system-ui, sans-serif;
+    --font-heading: 'Tajawal', system-ui, sans-serif;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 265 89% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 265 89% 60%;
+
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 265 89% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 265 89% 60%;
+
+    /* Jam3a specific colors - dark mode */
+    --jam3a-purple: 265 89% 60%;
+    --jam3a-deep-purple: 265 89% 50%;
+    --jam3a-light-purple: 260 50% 15%;
+    --jam3a-accent: 280 75% 70%;
+    --jam3a-gradient-start: 265 89% 60%;
+    --jam3a-gradient-end: 280 75% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    @apply bg-background text-foreground;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply tracking-tight;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/50 rounded-full transition-colors;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/70;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--jam3a-gradient-start))] to-[hsl(var(--jam3a-gradient-end))];
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-br from-[hsl(var(--jam3a-gradient-start))] to-[hsl(var(--jam3a-gradient-end))];
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1;
+  }
+
+  .hero-section {
+    @apply relative overflow-hidden bg-gradient-to-br from-[hsl(var(--jam3a-gradient-start)/0.1)] to-[hsl(var(--jam3a-gradient-end)/0.1)] py-16 md:py-24;
+  }
+
+  .hero-section::before {
+    content: "";
+    @apply absolute top-0 left-0 w-full h-full bg-[url('/images/pattern.svg')] bg-repeat opacity-5 pointer-events-none;
+  }
+
+  .feature-card {
+    @apply relative overflow-hidden rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:shadow-primary/10 hover:-translate-y-1;
+  }
+
+  .feature-card::before {
+    content: "";
+    @apply absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[hsl(var(--jam3a-gradient-start))] to-[hsl(var(--jam3a-gradient-end))];
+  }
+
+  .product-card {
+    @apply overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 hover:shadow-md hover:shadow-primary/10;
+  }
+
+  .product-image {
+    @apply aspect-video w-full object-cover transition-transform duration-300 hover:scale-105;
+  }
+
+  .badge-discount {
+    @apply absolute top-2 right-2 bg-primary/90 text-primary-foreground text-xs font-medium px-2 py-1 rounded-full;
+  }
+
+  .badge-status {
+    @apply text-xs font-medium px-2 py-1 rounded-full;
+  }
+
+  .price-current {
+    @apply text-xl font-bold text-primary;
+  }
+
+  .price-original {
+    @apply text-sm text-muted-foreground line-through;
+  }
+
+  .progress-bar {
+    @apply h-2 overflow-hidden rounded-full bg-secondary;
+  }
+
+  .progress-value {
+    @apply h-full bg-primary;
+  }
+
+  .nav-link {
+    @apply relative px-3 py-2 text-foreground/70 hover:text-foreground transition-colors;
+  }
+
+  .nav-link.active {
+    @apply text-primary font-medium;
+  }
+
+  .nav-link.active::after {
+    content: "";
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-full;
+  }
+
+  .footer-link {
+    @apply text-muted-foreground hover:text-foreground transition-colors;
+  }
+
+  .social-icon {
+    @apply h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors;
+    @apply mx-2; /* Added spacing between social icons */
+  }
+
+  /* Components with purple theme */
+  .jam3a-button-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+
+  .jam3a-button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+
+  .jam3a-button-outline {
+    @apply border border-primary text-primary hover:bg-primary/10 px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+
+  .jam3a-card {
+    @apply bg-card text-card-foreground rounded-xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  .jam3a-input {
+    @apply bg-background border border-input rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .jam3a-label {
+    @apply text-sm font-medium text-muted-foreground mb-1;
+  }
+
+  .jam3a-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .jam3a-badge-primary {
+    @apply bg-primary/20 text-primary;
+  }
+
+  .jam3a-badge-secondary {
+    @apply bg-secondary text-secondary-foreground;
+  }
+
+  .jam3a-badge-accent {
+    @apply bg-accent/20 text-accent;
+  }
+
+  .payment-option {
+    @apply flex items-center p-4 border rounded-lg cursor-pointer transition-colors;
+  }
+
+  .payment-option-active {
+    @apply border-primary bg-primary/5;
+  }
+
+  .payment-option-icon {
+    @apply w-8 h-8 mr-3 text-primary;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s infinite;
+}
+
+/* RTL Support */
+.rtl .nav-link.active::after {
+  @apply right-0 left-auto;
+}
+
+.rtl .feature-card::before {
+  @apply right-0 left-auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-section {
+    @apply py-12;
+  }
+}
