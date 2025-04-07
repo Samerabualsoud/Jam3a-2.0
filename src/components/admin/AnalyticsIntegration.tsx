@@ -170,7 +170,19 @@ const AnalyticsIntegration: React.FC = () => {
           metric: 'pageviews'
         }
       });
-      setPageViewsData(pageViewsResponse.data);
+      
+      // Ensure data is properly formatted
+      const pageViewsResponseData = pageViewsResponse.data;
+      if (pageViewsResponseData && typeof pageViewsResponseData === 'object') {
+        // Ensure data property is an array
+        if (!pageViewsResponseData.data || !Array.isArray(pageViewsResponseData.data)) {
+          pageViewsResponseData.data = [];
+        }
+        setPageViewsData(pageViewsResponseData);
+      } else {
+        setPageViewsData(null);
+        console.error('Invalid page views data format:', pageViewsResponseData);
+      }
       
       // Fetch users data
       const usersResponse = await axios.get('/api/analytics/data', {
@@ -180,19 +192,58 @@ const AnalyticsIntegration: React.FC = () => {
           metric: 'users'
         }
       });
-      setUsersData(usersResponse.data);
+      
+      // Ensure data is properly formatted
+      const usersResponseData = usersResponse.data;
+      if (usersResponseData && typeof usersResponseData === 'object') {
+        // Ensure data property is an array
+        if (!usersResponseData.data || !Array.isArray(usersResponseData.data)) {
+          usersResponseData.data = [];
+        }
+        setUsersData(usersResponseData);
+      } else {
+        setUsersData(null);
+        console.error('Invalid users data format:', usersResponseData);
+      }
       
       // Fetch top pages
       const topPagesResponse = await axios.get('/api/analytics/top-pages');
-      setTopPages(topPagesResponse.data);
+      // Ensure top pages is an array
+      const topPagesData = Array.isArray(topPagesResponse.data) ? topPagesResponse.data : [];
+      setTopPages(topPagesData);
       
       // Fetch demographics
       const demographicsResponse = await axios.get('/api/analytics/demographics');
-      setDemographics(demographicsResponse.data);
+      const demographicsData = demographicsResponse.data;
+      
+      // Ensure demographics data is properly formatted
+      if (demographicsData && typeof demographicsData === 'object') {
+        // Ensure countries property is an array
+        if (!demographicsData.countries || !Array.isArray(demographicsData.countries)) {
+          demographicsData.countries = [];
+        }
+        
+        // Ensure devices property is an array
+        if (!demographicsData.devices || !Array.isArray(demographicsData.devices)) {
+          demographicsData.devices = [];
+        }
+        
+        // Ensure browsers property is an array
+        if (!demographicsData.browsers || !Array.isArray(demographicsData.browsers)) {
+          demographicsData.browsers = [];
+        }
+        
+        setDemographics(demographicsData);
+      } else {
+        setDemographics(null);
+        console.error('Invalid demographics data format:', demographicsData);
+      }
       
       // Fetch events data
       const eventsResponse = await axios.get('/api/analytics/events');
-      setEventsData(eventsResponse.data);
+      // Ensure events data is an array
+      const eventsData = Array.isArray(eventsResponse.data) ? eventsResponse.data : [];
+      setEventsData(eventsData);
       
       toast.success('Analytics data refreshed successfully');
     } catch (err) {
@@ -385,7 +436,7 @@ const AnalyticsIntegration: React.FC = () => {
                           </CardContent>
                         </Card>
                       </div>
-                      {pageViewsData.data && pageViewsData.data.length > 0 && (
+                      {pageViewsData.data && Array.isArray(pageViewsData.data) && pageViewsData.data.length > 0 && (
                         <div className="h-80 w-full">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart
@@ -445,7 +496,7 @@ const AnalyticsIntegration: React.FC = () => {
                           </CardContent>
                         </Card>
                       </div>
-                      {usersData.data && usersData.data.length > 0 && (
+                      {usersData.data && Array.isArray(usersData.data) && usersData.data.length > 0 && (
                         <div className="h-80 w-full">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart
@@ -487,7 +538,7 @@ const AnalyticsIntegration: React.FC = () => {
               <TabsContent value="pages">
                 <div>
                   <h3 className="text-lg font-medium mb-4">Top Pages</h3>
-                  {topPages && topPages.length > 0 ? (
+                  {Array.isArray(topPages) && topPages.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="w-full border-collapse">
                         <thead>
@@ -528,7 +579,7 @@ const AnalyticsIntegration: React.FC = () => {
                         <h3 className="text-lg font-medium mb-4">Countries</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="h-80">
-                            {demographics.countries && demographics.countries.length > 0 && (
+                            {demographics.countries && Array.isArray(demographics.countries) && demographics.countries.length > 0 && (
                               <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                   <Pie
@@ -561,7 +612,7 @@ const AnalyticsIntegration: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {demographics.countries && demographics.countries.map((country, index) => (
+                                {demographics.countries && Array.isArray(demographics.countries) && demographics.countries.map((country, index) => (
                                   <tr key={index} className="border-b">
                                     <td className="p-2">{country.name}</td>
                                     <td className="p-2 text-right">{country.users.toLocaleString()}</td>
@@ -578,7 +629,7 @@ const AnalyticsIntegration: React.FC = () => {
                         <h3 className="text-lg font-medium mb-4">Devices</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="h-80">
-                            {demographics.devices && demographics.devices.length > 0 && (
+                            {demographics.devices && Array.isArray(demographics.devices) && demographics.devices.length > 0 && (
                               <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                   <Pie
@@ -611,7 +662,7 @@ const AnalyticsIntegration: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {demographics.devices && demographics.devices.map((device, index) => (
+                                {demographics.devices && Array.isArray(demographics.devices) && demographics.devices.map((device, index) => (
                                   <tr key={index} className="border-b">
                                     <td className="p-2">{device.type}</td>
                                     <td className="p-2 text-right">{device.users.toLocaleString()}</td>
@@ -628,7 +679,7 @@ const AnalyticsIntegration: React.FC = () => {
                         <h3 className="text-lg font-medium mb-4">Browsers</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="h-80">
-                            {demographics.browsers && demographics.browsers.length > 0 && (
+                            {demographics.browsers && Array.isArray(demographics.browsers) && demographics.browsers.length > 0 && (
                               <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                   <Pie
@@ -642,7 +693,7 @@ const AnalyticsIntegration: React.FC = () => {
                                     nameKey="name"
                                     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                   >
-                                    {demographics.browsers.map((entry, index) => (
+                                    {demographics.browsers && Array.isArray(demographics.browsers) && demographics.browsers.map((entry, index) => (
                                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                   </Pie>
@@ -661,7 +712,7 @@ const AnalyticsIntegration: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {demographics.browsers && demographics.browsers.map((browser, index) => (
+                                {demographics.browsers && Array.isArray(demographics.browsers) && demographics.browsers.map((browser, index) => (
                                   <tr key={index} className="border-b">
                                     <td className="p-2">{browser.name}</td>
                                     <td className="p-2 text-right">{browser.users.toLocaleString()}</td>
@@ -685,7 +736,7 @@ const AnalyticsIntegration: React.FC = () => {
               <TabsContent value="events">
                 <div>
                   <h3 className="text-lg font-medium mb-4">Events</h3>
-                  {eventsData && eventsData.length > 0 ? (
+                  {Array.isArray(eventsData) && eventsData.length > 0 ? (
                     <>
                       <div className="overflow-x-auto mb-6">
                         <table className="w-full border-collapse">
