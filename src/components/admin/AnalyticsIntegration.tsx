@@ -356,7 +356,7 @@ const AnalyticsIntegration: React.FC = () => {
               
               <TabsContent value="overview">
                 <div className="space-y-6">
-                  {pageViewsData && (
+                  {pageViewsData && pageViewsData.summary && (
                     <div>
                       <h3 className="text-lg font-medium mb-2">Page Views</h3>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -385,36 +385,38 @@ const AnalyticsIntegration: React.FC = () => {
                           </CardContent>
                         </Card>
                       </div>
-                      <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={pageViewsData.data}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                              dataKey="date" 
-                              tickFormatter={formatDate}
-                              interval={Math.ceil(pageViewsData.data.length / 10)}
-                            />
-                            <YAxis />
-                            <Tooltip 
-                              formatter={(value) => [value, 'Page Views']}
-                              labelFormatter={(label) => formatDate(label)}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="value" 
-                              stroke="#8884d8" 
-                              activeDot={{ r: 8 }} 
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
+                      {pageViewsData.data && pageViewsData.data.length > 0 && (
+                        <div className="h-80 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                              data={pageViewsData.data}
+                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis 
+                                dataKey="date" 
+                                tickFormatter={formatDate}
+                                interval={Math.ceil(pageViewsData.data.length / 10)}
+                              />
+                              <YAxis />
+                              <Tooltip 
+                                formatter={(value) => [value, 'Page Views']}
+                                labelFormatter={(label) => formatDate(label)}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="value" 
+                                stroke="#8884d8" 
+                                activeDot={{ r: 8 }} 
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
                     </div>
                   )}
                   
-                  {usersData && (
+                  {usersData && usersData.summary && (
                     <div>
                       <h3 className="text-lg font-medium mb-2">Users</h3>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -443,32 +445,40 @@ const AnalyticsIntegration: React.FC = () => {
                           </CardContent>
                         </Card>
                       </div>
-                      <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={usersData.data}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                              dataKey="date" 
-                              tickFormatter={formatDate}
-                              interval={Math.ceil(usersData.data.length / 10)}
-                            />
-                            <YAxis />
-                            <Tooltip 
-                              formatter={(value) => [value, 'Users']}
-                              labelFormatter={(label) => formatDate(label)}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="value" 
-                              stroke="#82ca9d" 
-                              activeDot={{ r: 8 }} 
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
+                      {usersData.data && usersData.data.length > 0 && (
+                        <div className="h-80 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                              data={usersData.data}
+                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis 
+                                dataKey="date" 
+                                tickFormatter={formatDate}
+                                interval={Math.ceil(usersData.data.length / 10)}
+                              />
+                              <YAxis />
+                              <Tooltip 
+                                formatter={(value) => [value, 'Users']}
+                                labelFormatter={(label) => formatDate(label)}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="value" 
+                                stroke="#82ca9d" 
+                                activeDot={{ r: 8 }} 
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {!pageViewsData && !usersData && (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No analytics data available. Please refresh the data.</p>
                     </div>
                   )}
                 </div>
@@ -477,238 +487,248 @@ const AnalyticsIntegration: React.FC = () => {
               <TabsContent value="pages">
                 <div>
                   <h3 className="text-lg font-medium mb-4">Top Pages</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-muted">
-                          <th className="p-2 text-left">Page</th>
-                          <th className="p-2 text-right">Page Views</th>
-                          <th className="p-2 text-right">Unique Views</th>
-                          <th className="p-2 text-right">Avg. Time (sec)</th>
-                          <th className="p-2 text-right">Bounce Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {topPages.map((page, index) => (
-                          <tr key={index} className="border-b">
-                            <td className="p-2">{page.path}</td>
-                            <td className="p-2 text-right">{page.pageviews.toLocaleString()}</td>
-                            <td className="p-2 text-right">{page.uniquePageviews.toLocaleString()}</td>
-                            <td className="p-2 text-right">{page.avgTimeOnPage}</td>
-                            <td className="p-2 text-right">{page.bounceRate}%</td>
+                  {topPages && topPages.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-muted">
+                            <th className="p-2 text-left">Page</th>
+                            <th className="p-2 text-right">Page Views</th>
+                            <th className="p-2 text-right">Unique Views</th>
+                            <th className="p-2 text-right">Avg. Time (sec)</th>
+                            <th className="p-2 text-right">Bounce Rate</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="mt-6 h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={topPages}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="path" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="pageviews" fill="#8884d8" name="Page Views" />
-                        <Bar dataKey="uniquePageviews" fill="#82ca9d" name="Unique Views" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {topPages.map((page, index) => (
+                            <tr key={index} className="border-b">
+                              <td className="p-2">{page.path}</td>
+                              <td className="p-2 text-right">{page.pageviews.toLocaleString()}</td>
+                              <td className="p-2 text-right">{page.uniquePageviews.toLocaleString()}</td>
+                              <td className="p-2 text-right">{page.avgTimeOnPage}</td>
+                              <td className="p-2 text-right">{page.bounceRate}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No top pages data available. Please refresh the data.</p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
               
               <TabsContent value="demographics">
-                {demographics && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-4">Countries</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={demographics.countries}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="users"
-                                nameKey="name"
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              >
-                                {demographics.countries.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div>
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="bg-muted">
-                                <th className="p-2 text-left">Country</th>
-                                <th className="p-2 text-right">Users</th>
-                                <th className="p-2 text-right">Percentage</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {demographics.countries.map((country, index) => (
-                                <tr key={index} className="border-b">
-                                  <td className="p-2">{country.name}</td>
-                                  <td className="p-2 text-right">{country.users.toLocaleString()}</td>
-                                  <td className="p-2 text-right">{country.percentage}%</td>
+                <div className="space-y-6">
+                  {demographics ? (
+                    <>
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Countries</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="h-80">
+                            {demographics.countries && demographics.countries.length > 0 && (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={demographics.countries}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    dataKey="users"
+                                    nameKey="name"
+                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                  >
+                                    {demographics.countries.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            )}
+                          </div>
+                          <div>
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="bg-muted">
+                                  <th className="p-2 text-left">Country</th>
+                                  <th className="p-2 text-right">Users</th>
+                                  <th className="p-2 text-right">Percentage</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {demographics.countries && demographics.countries.map((country, index) => (
+                                  <tr key={index} className="border-b">
+                                    <td className="p-2">{country.name}</td>
+                                    <td className="p-2 text-right">{country.users.toLocaleString()}</td>
+                                    <td className="p-2 text-right">{country.percentage}%</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-4">Devices</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={demographics.devices}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="users"
-                                nameKey="type"
-                                label={({ type, percent }) => `${type}: ${(percent * 100).toFixed(0)}%`}
-                              >
-                                {demographics.devices.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div>
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="bg-muted">
-                                <th className="p-2 text-left">Device</th>
-                                <th className="p-2 text-right">Users</th>
-                                <th className="p-2 text-right">Percentage</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {demographics.devices.map((device, index) => (
-                                <tr key={index} className="border-b">
-                                  <td className="p-2">{device.type}</td>
-                                  <td className="p-2 text-right">{device.users.toLocaleString()}</td>
-                                  <td className="p-2 text-right">{device.percentage}%</td>
+                      
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Devices</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="h-80">
+                            {demographics.devices && demographics.devices.length > 0 && (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={demographics.devices}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    dataKey="users"
+                                    nameKey="type"
+                                    label={({ type, percent }) => `${type}: ${(percent * 100).toFixed(0)}%`}
+                                  >
+                                    {demographics.devices.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            )}
+                          </div>
+                          <div>
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="bg-muted">
+                                  <th className="p-2 text-left">Device</th>
+                                  <th className="p-2 text-right">Users</th>
+                                  <th className="p-2 text-right">Percentage</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {demographics.devices && demographics.devices.map((device, index) => (
+                                  <tr key={index} className="border-b">
+                                    <td className="p-2">{device.type}</td>
+                                    <td className="p-2 text-right">{device.users.toLocaleString()}</td>
+                                    <td className="p-2 text-right">{device.percentage}%</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-4">Browsers</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={demographics.browsers}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="users"
-                                nameKey="name"
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              >
-                                {demographics.browsers.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div>
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="bg-muted">
-                                <th className="p-2 text-left">Browser</th>
-                                <th className="p-2 text-right">Users</th>
-                                <th className="p-2 text-right">Percentage</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {demographics.browsers.map((browser, index) => (
-                                <tr key={index} className="border-b">
-                                  <td className="p-2">{browser.name}</td>
-                                  <td className="p-2 text-right">{browser.users.toLocaleString()}</td>
-                                  <td className="p-2 text-right">{browser.percentage}%</td>
+                      
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Browsers</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="h-80">
+                            {demographics.browsers && demographics.browsers.length > 0 && (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={demographics.browsers}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    dataKey="users"
+                                    nameKey="name"
+                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                  >
+                                    {demographics.browsers.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip formatter={(value) => [`${value} users`, 'Users']} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            )}
+                          </div>
+                          <div>
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="bg-muted">
+                                  <th className="p-2 text-left">Browser</th>
+                                  <th className="p-2 text-right">Users</th>
+                                  <th className="p-2 text-right">Percentage</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {demographics.browsers && demographics.browsers.map((browser, index) => (
+                                  <tr key={index} className="border-b">
+                                    <td className="p-2">{browser.name}</td>
+                                    <td className="p-2 text-right">{browser.users.toLocaleString()}</td>
+                                    <td className="p-2 text-right">{browser.percentage}%</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No demographics data available. Please refresh the data.</p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </TabsContent>
               
               <TabsContent value="events">
                 <div>
-                  <h3 className="text-lg font-medium mb-4">Event Tracking</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-muted">
-                          <th className="p-2 text-left">Event</th>
-                          <th className="p-2 text-right">Count</th>
-                          <th className="p-2 text-right">Unique Users</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {eventsData.map((event, index) => (
-                          <tr key={index} className="border-b">
-                            <td className="p-2">{event.name}</td>
-                            <td className="p-2 text-right">{event.count.toLocaleString()}</td>
-                            <td className="p-2 text-right">{event.uniqueUsers.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="mt-6 h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={eventsData}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#8884d8" name="Event Count" />
-                        <Bar dataKey="uniqueUsers" fill="#82ca9d" name="Unique Users" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <h3 className="text-lg font-medium mb-4">Events</h3>
+                  {eventsData && eventsData.length > 0 ? (
+                    <>
+                      <div className="overflow-x-auto mb-6">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-muted">
+                              <th className="p-2 text-left">Event</th>
+                              <th className="p-2 text-right">Count</th>
+                              <th className="p-2 text-right">Unique Users</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {eventsData.map((event, index) => (
+                              <tr key={index} className="border-b">
+                                <td className="p-2">{event.name}</td>
+                                <td className="p-2 text-right">{event.count.toLocaleString()}</td>
+                                <td className="p-2 text-right">{event.uniqueUsers.toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={eventsData}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="count" fill="#8884d8" name="Count" />
+                            <Bar dataKey="uniqueUsers" fill="#82ca9d" name="Unique Users" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No events data available. Please refresh the data.</p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
