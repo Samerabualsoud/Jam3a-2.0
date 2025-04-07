@@ -96,19 +96,25 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     
     try {
       const response = await axios.get('/api/products');
-      setProducts(response.data);
+      
+      // Ensure response.data is an array
+      const productsData = Array.isArray(response.data) ? response.data : [];
+      
+      console.log('Products data:', productsData);
+      
+      setProducts(productsData);
       
       // Add to sync logs
       addSyncLog({
         action: 'bulk',
-        details: `Refreshed ${response.data.length} products`,
+        details: `Refreshed ${productsData.length} products`,
         status: 'success',
-        products: response.data.map((p: Product) => p.id)
+        products: productsData.map((p: Product) => p.id)
       });
       
       setSyncStatus({ 
         type: 'success', 
-        message: `Successfully refreshed ${response.data.length} products.`,
+        message: `Successfully refreshed ${productsData.length} products.`,
         timestamp: Date.now()
       });
     } catch (error) {
@@ -154,16 +160,21 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     try {
       const response = await axios.get('/api/products/jam3a/deals');
       
+      // Ensure response.data is an array
+      const dealsData = Array.isArray(response.data) ? response.data : [];
+      
+      console.log('Jam3a deals data:', dealsData);
+      
       // Update only the Jam3a deals in the products array
-      const dealsIds = response.data.map((deal: Product) => deal.id);
+      const dealsIds = dealsData.map((deal: Product) => deal.id);
       const updatedProducts = products.map(product => 
         dealsIds.includes(product.id) 
-          ? response.data.find((deal: Product) => deal.id === product.id) 
+          ? dealsData.find((deal: Product) => deal.id === product.id) 
           : product
       );
       
       // Add any new deals that weren't in the products array
-      const newDeals = response.data.filter((deal: Product) => 
+      const newDeals = dealsData.filter((deal: Product) => 
         !products.some(product => product.id === deal.id)
       );
       
@@ -172,14 +183,14 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       // Add to sync logs
       addSyncLog({
         action: 'bulk',
-        details: `Refreshed ${response.data.length} Jam3a deals`,
+        details: `Refreshed ${dealsData.length} Jam3a deals`,
         status: 'success',
-        products: response.data.map((p: Product) => p.id)
+        products: dealsData.map((p: Product) => p.id)
       });
       
       setSyncStatus({ 
         type: 'success', 
-        message: `Successfully refreshed ${response.data.length} Jam3a deals.`,
+        message: `Successfully refreshed ${dealsData.length} Jam3a deals.`,
         timestamp: Date.now()
       });
     } catch (error) {
@@ -539,7 +550,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       } else {
         // Fetch all products
         const response = await axios.get('/api/products');
-        productsToExport = response.data;
+        // Ensure response.data is an array
+        productsToExport = Array.isArray(response.data) ? response.data : [];
       }
       
       // Add to sync logs
