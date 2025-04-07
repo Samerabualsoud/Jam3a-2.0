@@ -6,6 +6,11 @@ const Schema = mongoose.Schema;
  * Represents group buying deals in the Jam3a platform
  */
 const JamDealSchema = new Schema({
+  jam3aId: {
+    type: String,
+    unique: true,
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'Title is required'],

@@ -126,10 +126,24 @@ router.get('/featured', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const deal = await JamDeal.findById(req.params.id)
+    // Try to find by jam3aId first, then by MongoDB _id if not found
+    let deal = await JamDeal.findOne({ jam3aId: req.params.id })
       .populate('category', 'name')
       .populate('createdBy', 'name')
       .lean();
+    
+    // If not found by jam3aId, try to find by MongoDB _id
+    if (!deal) {
+      try {
+        deal = await JamDeal.findById(req.params.id)
+          .populate('category', 'name')
+          .populate('createdBy', 'name')
+          .lean();
+      } catch (idErr) {
+        // Invalid ObjectId format or other error
+        console.log('Error finding by ID:', idErr.message);
+      }
+    }
 
     if (!deal) {
       return res.status(404).json({ msg: 'Deal not found' });
@@ -159,6 +173,38 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
 });
+
+/**
+ * Generate a unique Jam3a ID for a deal
+ * Format: JAM-YY-MM-NNNN
+ * @returns {Promise<string>} Unique Jam3a ID
+ */
+async function generateUniqueJam3aId() {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2); // Last 2 digits of year
+  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Month (1-12) padded to 2 digits
+  
+  // Find the highest sequential number for the current month
+  const latestDeal = await JamDeal.findOne({
+    jam3aId: new RegExp(`^JAM-${year}-${month}-`)
+  }).sort({ jam3aId: -1 });
+  
+  let sequentialNumber = 1; // Default start at 1
+  
+  if (latestDeal && latestDeal.jam3aId) {
+    // Extract the sequential number from the latest deal ID
+    const match = latestDeal.jam3aId.match(/JAM-\d{2}-\d{2}-(\d{4})/);
+    if (match && match[1]) {
+      sequentialNumber = parseInt(match[1], 10) + 1;
+    }
+  }
+  
+  // Format the sequential number to 4 digits with leading zeros
+  const formattedNumber = sequentialNumber.toString().padStart(4, '0');
+  
+  // Combine all parts to create the unique ID
+  return `JAM-${year}-${month}-${formattedNumber}`;
+}
 
 /**
  * @route   POST /api/deals
@@ -201,9 +247,13 @@ router.post('/', [
     if (!categoryExists) {
       return res.status(400).json({ msg: 'Category not found' });
     }
+    
+    // Generate unique Jam3a ID
+    const jam3aId = await generateUniqueJam3aId();
 
     // Create new deal
     const newDeal = new JamDeal({
+      jam3aId,
       title,
       titleAr,
       description,
