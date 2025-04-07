@@ -77,12 +77,16 @@ const FeaturedDeals = () => {
     loadFeaturedDeals();
   }, []);
 
-  const handleViewDeal = (dealId) => {
-    navigate(`/jam3a/${dealId}`);
+  const handleViewDeal = (deal) => {
+    // Use jam3aId if available, otherwise fall back to _id
+    const dealIdentifier = deal.jam3aId || deal._id;
+    navigate(`/jam3a/${dealIdentifier}`);
   };
   
-  const handleJoinDeal = (dealId) => {
-    navigate(`/join-jam3a/${dealId}`);
+  const handleJoinDeal = (deal) => {
+    // Use jam3aId if available, otherwise fall back to _id
+    const dealIdentifier = deal.jam3aId || deal._id;
+    navigate(`/join-jam3a/${dealIdentifier}`);
   };
 
   if (isLoading) {
@@ -161,14 +165,14 @@ const FeaturedDeals = () => {
                     
                     <div className="flex flex-col gap-2">
                       <Button 
-                        onClick={() => handleViewDeal(deal._id)} 
+                        onClick={() => handleViewDeal(deal)} 
                         variant="outline"
                         className="w-full border-jam3a-purple text-jam3a-purple hover:bg-jam3a-purple hover:text-white"
                       >
                         {currentContent.viewDeal}
                       </Button>
                       <Button 
-                        onClick={() => handleJoinDeal(deal._id)} 
+                        onClick={() => handleJoinDeal(deal)} 
                         className="w-full bg-jam3a-purple hover:bg-jam3a-deep-purple"
                       >
                         {currentContent.joinDeal}

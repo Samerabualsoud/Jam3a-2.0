@@ -128,6 +128,8 @@ const DealDetails = () => {
 
       try {
         setIsLoading(true);
+        // Use the dealId directly - it could be either a MongoDB ObjectId or a jam3aId
+        // The backend now supports finding deals by either ID type
         const dealData = await fetchDealById(dealId).catch(err => {
           console.error('Error fetching deal:', err);
           return null;
