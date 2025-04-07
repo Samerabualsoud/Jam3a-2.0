@@ -1,172 +1,63 @@
+// Zapier integration service for Jam3a
 const axios = require('axios');
-const { EMAIL_CONFIG } = require('./emailService');
 
-// Zapier integration configuration
-const ZAPIER_CONFIG = {
-  // Zapier deploy key for authentication
-  deployKey: 'e6bf28375f5f9d1ebec636ac2915fdc8',
-  
-  // Zapier webhook URLs for different actions
-  webhooks: {
-    waitlist: 'https://hooks.zapier.com/hooks/catch/123456/abcdef/', 
-    registration: 'https://hooks.zapier.com/hooks/catch/123456/ghijkl/', 
-    newsletter: 'https://hooks.zapier.com/hooks/catch/123456/mnopqr/', 
-    orderConfirmation: 'https://hooks.zapier.com/hooks/catch/123456/stuvwx/', 
-    groupComplete: 'https://hooks.zapier.com/hooks/catch/123456/yz1234/' 
-  },
-  // Default webhook for general purpose use
-  defaultWebhook: 'https://hooks.zapier.com/hooks/catch/123456/default/'
+// Zapier webhook URLs - these should be set in environment variables in production
+const ZAPIER_WEBHOOKS = {
+  waitlist: process.env.ZAPIER_WEBHOOK_WAITLIST || 'https://hooks.zapier.com/hooks/catch/123456/abcdef/',
+  registration: process.env.ZAPIER_WEBHOOK_REGISTRATION || 'https://hooks.zapier.com/hooks/catch/123456/ghijkl/',
+  newsletter: process.env.ZAPIER_WEBHOOK_NEWSLETTER || 'https://hooks.zapier.com/hooks/catch/123456/mnopqr/',
+  order: process.env.ZAPIER_WEBHOOK_ORDER || 'https://hooks.zapier.com/hooks/catch/123456/stuvwx/',
+  group: process.env.ZAPIER_WEBHOOK_GROUP || 'https://hooks.zapier.com/hooks/catch/123456/yzabcd/',
+  custom: process.env.ZAPIER_WEBHOOK_CUSTOM || 'https://hooks.zapier.com/hooks/catch/123456/efghij/'
 };
 
-/**
- * Send data to Zapier webhook
- * @param {string} webhookType - Type of webhook to use (waitlist, registration, etc.)
- * @param {object} data - Data to send to Zapier
- * @returns {Promise<object>} - Response from Zapier
- */
-const sendToZapier = async (webhookType, data) => {
+// Send data to Zapier webhook
+const sendToZapier = async (type, data) => {
   try {
-    // Get the appropriate webhook URL
-    const webhookUrl = ZAPIER_CONFIG.webhooks[webhookType] || ZAPIER_CONFIG.defaultWebhook;
-    
-    if (!webhookUrl) {
-      throw new Error(`No webhook URL configured for type: ${webhookType}`);
+    // Validate webhook type
+    if (!ZAPIER_WEBHOOKS[type]) {
+      throw new Error(`Invalid webhook type: ${type}`);
     }
-
-    // Add timestamp and source information
-    const enrichedData = {
+    
+    // Add timestamp
+    const payload = {
       ...data,
-      timestamp: new Date().toISOString(),
-      source: 'Jam3a Website',
-      environment: process.env.NODE_ENV || 'development'
+      timestamp: new Date().toISOString()
     };
-
-    // Send data to Zapier webhook with deploy key in headers
-    const response = await axios.post(webhookUrl, enrichedData, {
-      headers: {
-        'X-Zapier-Deploy-Key': ZAPIER_CONFIG.deployKey,
-        'Content-Type': 'application/json'
-      }
-    });
     
-    console.log(`Data sent to Zapier ${webhookType} webhook:`, {
-      status: response.status,
-      statusText: response.statusText,
-      data: enrichedData
-    });
+    // Send to Zapier
+    const response = await axios.post(ZAPIER_WEBHOOKS[type], payload);
     
-    return { 
-      success: true, 
-      status: response.status,
-      data: response.data
-    };
+    console.log(`Data sent to Zapier ${type} webhook:`, response.status);
+    return { success: true, status: response.status };
   } catch (error) {
-    console.error(`Error sending data to Zapier ${webhookType} webhook:`, error);
-    
-    // Return detailed error information
-    return { 
-      success: false, 
-      error: error.message,
-      details: error.response ? {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data
-      } : null
-    };
+    console.error(`Error sending to Zapier ${type} webhook:`, error);
+    return { success: false, error: error.message };
   }
 };
 
-/**
- * Send waitlist registration to Zapier
- * @param {object} userData - User data including email, name, etc.
- * @returns {Promise<object>} - Response from Zapier
- */
-const sendWaitlistToZapier = async (userData) => {
-  return sendToZapier('waitlist', {
-    email: userData.email,
-    name: userData.name || '',
-    joinDate: new Date().toLocaleDateString(),
-    position: Math.floor(Math.random() * 100) + 1, // Simulated waitlist position
-    interests: userData.interests || [],
-    source: userData.source || 'website',
-    locale: userData.locale || 'en'
-  });
+// Specific webhook functions
+const sendWaitlistToZapier = async (data) => {
+  return sendToZapier('waitlist', data);
 };
 
-/**
- * Send user registration to Zapier
- * @param {object} userData - User registration data
- * @returns {Promise<object>} - Response from Zapier
- */
-const sendRegistrationToZapier = async (userData) => {
-  return sendToZapier('registration', {
-    email: userData.email,
-    name: userData.name || '',
-    username: userData.username || '',
-    registrationDate: new Date().toLocaleDateString(),
-    accountType: userData.accountType || 'customer',
-    preferences: userData.preferences || {},
-    locale: userData.locale || 'en'
-  });
+const sendRegistrationToZapier = async (data) => {
+  return sendToZapier('registration', data);
 };
 
-/**
- * Send newsletter subscription to Zapier
- * @param {object} subscriptionData - Newsletter subscription data
- * @returns {Promise<object>} - Response from Zapier
- */
-const sendNewsletterSubscriptionToZapier = async (subscriptionData) => {
-  return sendToZapier('newsletter', {
-    email: subscriptionData.email,
-    name: subscriptionData.name || '',
-    subscriptionDate: new Date().toLocaleDateString(),
-    interests: subscriptionData.interests || [],
-    source: subscriptionData.source || 'website',
-    locale: subscriptionData.locale || 'en'
-  });
+const sendNewsletterSubscriptionToZapier = async (data) => {
+  return sendToZapier('newsletter', data);
 };
 
-/**
- * Send order confirmation to Zapier
- * @param {object} orderData - Order data
- * @returns {Promise<object>} - Response from Zapier
- */
-const sendOrderConfirmationToZapier = async (orderData) => {
-  return sendToZapier('orderConfirmation', {
-    email: orderData.email,
-    name: orderData.name || '',
-    orderId: orderData.orderId,
-    orderDate: new Date().toLocaleDateString(),
-    items: orderData.items || [],
-    total: orderData.total,
-    currency: orderData.currency || 'SAR',
-    shippingAddress: orderData.shippingAddress || {},
-    paymentMethod: orderData.paymentMethod || ''
-  });
+const sendOrderConfirmationToZapier = async (data) => {
+  return sendToZapier('order', data);
 };
 
-/**
- * Send group completion notification to Zapier
- * @param {object} groupData - Group completion data
- * @returns {Promise<object>} - Response from Zapier
- */
-const sendGroupCompleteToZapier = async (groupData) => {
-  return sendToZapier('groupComplete', {
-    email: groupData.email,
-    name: groupData.name || '',
-    groupId: groupData.groupId,
-    completionDate: new Date().toLocaleDateString(),
-    productName: groupData.productName,
-    groupSize: groupData.groupSize,
-    discount: groupData.discount,
-    finalPrice: groupData.finalPrice,
-    currency: groupData.currency || 'SAR',
-    members: groupData.members || []
-  });
+const sendGroupCompleteToZapier = async (data) => {
+  return sendToZapier('group', data);
 };
 
 module.exports = {
-  ZAPIER_CONFIG,
   sendToZapier,
   sendWaitlistToZapier,
   sendRegistrationToZapier,

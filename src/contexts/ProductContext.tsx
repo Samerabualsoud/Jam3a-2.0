@@ -4,10 +4,14 @@ import { API_BASE_URL } from '@/config';
 
 // Define the Product type
 export interface Product {
-  id: number;
+  _id: string;
   name: string;
   description: string;
-  category: string;
+  category: {
+    _id: string;
+    name: string;
+    nameAr?: string;
+  };
   price: number;
   stock?: number;
   sku?: string;
@@ -19,13 +23,40 @@ export interface Product {
   updatedAt: string;
 }
 
+// Define the Deal type
+export interface Deal {
+  _id: string;
+  jam3aId: string;
+  title: string;
+  titleAr?: string;
+  description: string;
+  descriptionAr?: string;
+  category: {
+    _id: string;
+    name: string;
+    nameAr?: string;
+  };
+  regularPrice: number;
+  jam3aPrice: number;
+  discountPercentage: number;
+  currentParticipants: number;
+  maxParticipants: number;
+  timeRemaining: string;
+  expiryDate: string;
+  featured: boolean;
+  image: string;
+  status: 'active' | 'pending' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Define the sync log type
 export interface SyncLog {
   id: number;
   action: 'create' | 'update' | 'delete' | 'bulk' | 'import' | 'export';
   details: string;
   status: 'success' | 'error' | 'warning';
-  products: number[];
+  products: string[];
   timestamp: number;
 }
 
@@ -39,21 +70,22 @@ export interface SyncStatus {
 // Define the context type
 export interface ProductContextType {
   products: Product[];
+  deals: Deal[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   refreshProducts: () => Promise<void>;
-  activeJam3aDeals: Product[];
+  activeJam3aDeals: Deal[];
   featuredProducts: Product[];
   syncStatus: SyncStatus | null;
   isLoading: boolean;
   refreshJam3aDeals: () => Promise<void>;
   syncLogs: SyncLog[];
-  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Product>;
-  updateProduct: (id: number, product: Partial<Product>) => Promise<Product>;
-  deleteProduct: (id: number) => Promise<boolean>;
-  bulkUpdateProducts: (ids: number[], data: Partial<Product>) => Promise<number>;
-  bulkDeleteProducts: (ids: number[]) => Promise<number>;
-  importProducts: (products: Omit<Product, 'id'>[]) => Promise<number>;
-  exportProducts: (ids?: number[]) => Promise<Product[]>;
+  addProduct: (product: Omit<Product, '_id' | 'createdAt' | 'updatedAt'>) => Promise<Product>;
+  updateProduct: (id: string, product: Partial<Product>) => Promise<Product>;
+  deleteProduct: (id: string) => Promise<boolean>;
+  bulkUpdateProducts: (ids: string[], data: Partial<Product>) => Promise<number>;
+  bulkDeleteProducts: (ids: string[]) => Promise<number>;
+  importProducts: (products: Omit<Product, '_id'>[]) => Promise<number>;
+  exportProducts: (ids?: string[]) => Promise<Product[]>;
   validateProduct: (product: Partial<Product>) => string[];
   clearSyncStatus: () => void;
 }
@@ -70,6 +102,9 @@ interface ProductProviderProps {
 export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) => {
   // State for products
   const [products, setProducts] = useState<Product[]>([]);
+  
+  // State for deals
+  const [deals, setDeals] = useState<Deal[]>([]);
   
   // State for loading
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -99,9 +134,20 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       console.log('Fetching products from:', `${API_BASE_URL}/products`);
       const response = await apiService.get('/products');
       
-      // Ensure response is an array
-      const productsData = Array.isArray(response) ? response : 
-                          (response && Array.isArray(response.products)) ? response.products : [];
+      // Extract data from response - handle both formats
+      let productsData;
+      if (response && response.data && response.data.data) {
+        // New API format: { success: true, data: [...] }
+        productsData = response.data.data;
+      } else if (response && response.data) {
+        // Direct data format
+        productsData = Array.isArray(response.data) ? response.data : [];
+      } else if (Array.isArray(response)) {
+        // Direct array format
+        productsData = response;
+      } else {
+        productsData = [];
+      }
       
       console.log('Products data:', productsData);
       
@@ -112,7 +158,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         action: 'bulk',
         details: `Refreshed ${productsData.length} products`,
         status: 'success',
-        products: productsData.map((p: Product) => p.id)
+        products: productsData.map((p: Product) => p._id)
       });
       
       setSyncStatus({ 
@@ -120,6 +166,9 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         message: `Successfully refreshed ${productsData.length} products.`,
         timestamp: Date.now()
       });
+      
+      // Save to localStorage for offline fallback
+      localStorage.setItem('products', JSON.stringify(productsData));
     } catch (error) {
       console.error('Failed to fetch products:', error);
       
@@ -164,33 +213,31 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       console.log('Fetching Jam3a deals from:', `${API_BASE_URL}/deals`);
       const response = await apiService.get('/deals');
       
-      // Ensure response is an array
-      const dealsData = Array.isArray(response) ? response : 
-                       (response && Array.isArray(response.deals)) ? response.deals : [];
+      // Extract data from response - handle both formats
+      let dealsData;
+      if (response && response.data && response.data.data) {
+        // New API format: { success: true, data: [...] }
+        dealsData = response.data.data;
+      } else if (response && response.data) {
+        // Direct data format
+        dealsData = Array.isArray(response.data) ? response.data : [];
+      } else if (Array.isArray(response)) {
+        // Direct array format
+        dealsData = response;
+      } else {
+        dealsData = [];
+      }
       
       console.log('Jam3a deals data:', dealsData);
       
-      // Update only the Jam3a deals in the products array
-      const dealsIds = dealsData.map((deal: Product) => deal.id);
-      const updatedProducts = products.map(product => 
-        dealsIds.includes(product.id) 
-          ? dealsData.find((deal: Product) => deal.id === product.id) 
-          : product
-      );
-      
-      // Add any new deals that weren't in the products array
-      const newDeals = dealsData.filter((deal: Product) => 
-        !products.some(product => product.id === deal.id)
-      );
-      
-      setProducts([...updatedProducts, ...newDeals]);
+      setDeals(dealsData);
       
       // Add to sync logs
       addSyncLog({
         action: 'bulk',
         details: `Refreshed ${dealsData.length} Jam3a deals`,
         status: 'success',
-        products: dealsData.map((p: Product) => p.id)
+        products: dealsData.map((d: Deal) => d._id)
       });
       
       setSyncStatus({ 
@@ -198,6 +245,9 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         message: `Successfully refreshed ${dealsData.length} Jam3a deals.`,
         timestamp: Date.now()
       });
+      
+      // Save to localStorage for offline fallback
+      localStorage.setItem('deals', JSON.stringify(dealsData));
     } catch (error) {
       console.error('Failed to fetch Jam3a deals:', error);
       
@@ -214,17 +264,32 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         message: 'Failed to refresh Jam3a deals. Please try again.',
         timestamp: Date.now()
       });
+      
+      // Try to load from local storage as fallback
+      const storedDeals = localStorage.getItem('deals');
+      if (storedDeals) {
+        try {
+          setDeals(JSON.parse(storedDeals));
+          setSyncStatus({ 
+            type: 'warning', 
+            message: 'Using cached deals. Connection to server failed.',
+            timestamp: Date.now()
+          });
+        } catch (parseError) {
+          console.error('Failed to parse stored deals:', parseError);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
   };
   
-  // Load products on mount
+  // Load products and deals on mount
   useEffect(() => {
     refreshProducts();
     refreshJam3aDeals();
     
-    // Set up interval to refresh products every 5 minutes
+    // Set up interval to refresh products and deals every 5 minutes
     const intervalId = setInterval(() => {
       refreshProducts();
       refreshJam3aDeals();
@@ -233,29 +298,36 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     return () => clearInterval(intervalId);
   }, []);
   
-  // Save products to local storage when they change (for fallback)
-  useEffect(() => {
-    if (products.length > 0) {
-      localStorage.setItem('products', JSON.stringify(products));
-    }
-  }, [products]);
+  // Get active Jam3a deals
+  const activeJam3aDeals = deals.filter(deal => deal.status === 'active');
   
-  // Add a product
-  const addProduct = async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> => {
-    setIsLoading(true);
-    
+  // Get featured products
+  const featuredProducts = products.filter(product => product.featured);
+  
+  // Add a new product
+  const addProduct = async (product: Omit<Product, '_id' | 'createdAt' | 'updatedAt'>): Promise<Product> => {
     try {
-      console.log('Adding product to:', `${API_BASE_URL}/products`);
-      const newProduct = await apiService.post('/products', product);
+      const response = await apiService.post('/products', product);
       
-      setProducts(prev => [...prev, newProduct]);
+      // Extract data from response
+      let newProduct;
+      if (response && response.data && response.data.data) {
+        newProduct = response.data.data;
+      } else if (response && response.data) {
+        newProduct = response.data;
+      } else {
+        throw new Error('Invalid response format');
+      }
+      
+      // Update products state
+      setProducts(prev => [newProduct, ...prev]);
       
       // Add to sync logs
       addSyncLog({
         action: 'create',
         details: `Created product: ${newProduct.name}`,
         status: 'success',
-        products: [newProduct.id]
+        products: [newProduct._id]
       });
       
       setSyncStatus({ 
@@ -283,29 +355,33 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       });
       
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
   
   // Update a product
-  const updateProduct = async (id: number, productData: Partial<Product>): Promise<Product> => {
-    setIsLoading(true);
-    
+  const updateProduct = async (id: string, product: Partial<Product>): Promise<Product> => {
     try {
-      console.log('Updating product at:', `${API_BASE_URL}/products/${id}`);
-      const updatedProduct = await apiService.put(`/products/${id}`, productData);
+      const response = await apiService.put(`/products/${id}`, product);
       
-      setProducts(prev => 
-        prev.map(product => product.id === id ? updatedProduct : product)
-      );
+      // Extract data from response
+      let updatedProduct;
+      if (response && response.data && response.data.data) {
+        updatedProduct = response.data.data;
+      } else if (response && response.data) {
+        updatedProduct = response.data;
+      } else {
+        throw new Error('Invalid response format');
+      }
+      
+      // Update products state
+      setProducts(prev => prev.map(p => p._id === id ? updatedProduct : p));
       
       // Add to sync logs
       addSyncLog({
         action: 'update',
         details: `Updated product: ${updatedProduct.name}`,
         status: 'success',
-        products: [updatedProduct.id]
+        products: [updatedProduct._id]
       });
       
       setSyncStatus({ 
@@ -333,37 +409,39 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       });
       
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
   
   // Delete a product
-  const deleteProduct = async (id: number): Promise<boolean> => {
-    setIsLoading(true);
-    
+  const deleteProduct = async (id: string): Promise<boolean> => {
     try {
-      console.log('Deleting product at:', `${API_BASE_URL}/products/${id}`);
-      await apiService.delete(`/products/${id}`);
+      const response = await apiService.delete(`/products/${id}`);
       
-      const deletedProduct = products.find(p => p.id === id);
-      setProducts(prev => prev.filter(product => product.id !== id));
+      // Check if deletion was successful
+      const success = response && (response.data?.success || response.status === 200);
       
-      // Add to sync logs
-      addSyncLog({
-        action: 'delete',
-        details: `Deleted product: ${deletedProduct?.name || id}`,
-        status: 'success',
-        products: [id]
-      });
-      
-      setSyncStatus({ 
-        type: 'success', 
-        message: `Successfully deleted product: ${deletedProduct?.name || id}`,
-        timestamp: Date.now()
-      });
-      
-      return true;
+      if (success) {
+        // Update products state
+        setProducts(prev => prev.filter(p => p._id !== id));
+        
+        // Add to sync logs
+        addSyncLog({
+          action: 'delete',
+          details: `Deleted product with ID: ${id}`,
+          status: 'success',
+          products: [id]
+        });
+        
+        setSyncStatus({ 
+          type: 'success', 
+          message: 'Successfully deleted product',
+          timestamp: Date.now()
+        });
+        
+        return true;
+      } else {
+        throw new Error('Failed to delete product');
+      }
     } catch (error) {
       console.error('Failed to delete product:', error);
       
@@ -382,26 +460,25 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       });
       
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
   
   // Bulk update products
-  const bulkUpdateProducts = async (ids: number[], data: Partial<Product>): Promise<number> => {
-    setIsLoading(true);
-    
+  const bulkUpdateProducts = async (ids: string[], data: Partial<Product>): Promise<number> => {
     try {
-      console.log('Bulk updating products at:', `${API_BASE_URL}/products/bulk`);
-      const result = await apiService.post('/products/bulk', {
-        action: 'update',
-        ids,
-        data
-      });
+      const response = await apiService.put('/products/bulk', { ids, data });
       
-      const updatedCount = result.updated || 0;
+      // Extract data from response
+      let updatedCount;
+      if (response && response.data && response.data.data) {
+        updatedCount = response.data.data.count || 0;
+      } else if (response && response.data) {
+        updatedCount = response.data.count || 0;
+      } else {
+        updatedCount = 0;
+      }
       
-      // Refresh products to get the updated data
+      // Refresh products to get updated data
       await refreshProducts();
       
       // Add to sync logs
@@ -414,7 +491,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       
       setSyncStatus({ 
         type: 'success', 
-        message: `Successfully updated ${updatedCount} products.`,
+        message: `Successfully updated ${updatedCount} products`,
         timestamp: Date.now()
       });
       
@@ -437,26 +514,26 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       });
       
       return 0;
-    } finally {
-      setIsLoading(false);
     }
   };
   
   // Bulk delete products
-  const bulkDeleteProducts = async (ids: number[]): Promise<number> => {
-    setIsLoading(true);
-    
+  const bulkDeleteProducts = async (ids: string[]): Promise<number> => {
     try {
-      console.log('Bulk deleting products at:', `${API_BASE_URL}/products/bulk`);
-      const result = await apiService.post('/products/bulk', {
-        action: 'delete',
-        ids
-      });
+      const response = await apiService.post('/products/bulk-delete', { ids });
       
-      const deletedCount = result.deleted || 0;
+      // Extract data from response
+      let deletedCount;
+      if (response && response.data && response.data.data) {
+        deletedCount = response.data.data.count || 0;
+      } else if (response && response.data) {
+        deletedCount = response.data.count || 0;
+      } else {
+        deletedCount = 0;
+      }
       
-      // Update local state
-      setProducts(prev => prev.filter(product => !ids.includes(product.id)));
+      // Update products state
+      setProducts(prev => prev.filter(p => !ids.includes(p._id)));
       
       // Add to sync logs
       addSyncLog({
@@ -468,7 +545,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       
       setSyncStatus({ 
         type: 'success', 
-        message: `Successfully deleted ${deletedCount} products.`,
+        message: `Successfully deleted ${deletedCount} products`,
         timestamp: Date.now()
       });
       
@@ -491,22 +568,25 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       });
       
       return 0;
-    } finally {
-      setIsLoading(false);
     }
   };
   
   // Import products
-  const importProducts = async (productsToImport: Omit<Product, 'id'>[]): Promise<number> => {
-    setIsLoading(true);
-    
+  const importProducts = async (products: Omit<Product, '_id'>[]): Promise<number> => {
     try {
-      console.log('Importing products to:', `${API_BASE_URL}/products/import`);
-      const result = await apiService.post('/products/import', { products: productsToImport });
+      const response = await apiService.post('/products/import', { products });
       
-      const importedCount = result.imported || 0;
+      // Extract data from response
+      let importedCount;
+      if (response && response.data && response.data.data) {
+        importedCount = response.data.data.count || 0;
+      } else if (response && response.data) {
+        importedCount = response.data.count || 0;
+      } else {
+        importedCount = 0;
+      }
       
-      // Refresh products to get the updated data
+      // Refresh products to get updated data
       await refreshProducts();
       
       // Add to sync logs
@@ -519,7 +599,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       
       setSyncStatus({ 
         type: 'success', 
-        message: `Successfully imported ${importedCount} products.`,
+        message: `Successfully imported ${importedCount} products`,
         timestamp: Date.now()
       });
       
@@ -542,20 +622,23 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       });
       
       return 0;
-    } finally {
-      setIsLoading(false);
     }
   };
   
   // Export products
-  const exportProducts = async (ids?: number[]): Promise<Product[]> => {
-    setIsLoading(true);
-    
+  const exportProducts = async (ids?: string[]): Promise<Product[]> => {
     try {
-      console.log('Exporting products from:', `${API_BASE_URL}/products/export`);
-      const result = await apiService.post('/products/export', { ids });
+      const response = await apiService.post('/products/export', { ids });
       
-      const exportedProducts = result.products || [];
+      // Extract data from response
+      let exportedProducts;
+      if (response && response.data && response.data.data) {
+        exportedProducts = response.data.data;
+      } else if (response && response.data) {
+        exportedProducts = response.data;
+      } else {
+        exportedProducts = [];
+      }
       
       // Add to sync logs
       addSyncLog({
@@ -567,7 +650,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       
       setSyncStatus({ 
         type: 'success', 
-        message: `Successfully exported ${exportedProducts.length} products.`,
+        message: `Successfully exported ${exportedProducts.length} products`,
         timestamp: Date.now()
       });
       
@@ -589,12 +672,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         timestamp: Date.now()
       });
       
-      // Return filtered products from local state as fallback
-      return ids 
-        ? products.filter(product => ids.includes(product.id))
-        : products;
-    } finally {
-      setIsLoading(false);
+      return [];
     }
   };
   
@@ -603,19 +681,19 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     const errors: string[] = [];
     
     if (!product.name || product.name.trim() === '') {
-      errors.push('Name is required');
+      errors.push('Product name is required');
     }
     
-    if (!product.category || product.category.trim() === '') {
-      errors.push('Category is required');
+    if (!product.description || product.description.trim() === '') {
+      errors.push('Product description is required');
+    }
+    
+    if (!product.category) {
+      errors.push('Product category is required');
     }
     
     if (product.price === undefined || product.price < 0) {
-      errors.push('Price must be a positive number');
-    }
-    
-    if (product.stock !== undefined && product.stock < 0) {
-      errors.push('Stock must be a positive number');
+      errors.push('Product price must be a positive number');
     }
     
     return errors;
@@ -626,55 +704,40 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setSyncStatus(null);
   };
   
-  // Compute active Jam3a deals
-  const activeJam3aDeals = products.filter(product => 
-    product.currentAmount !== undefined && 
-    product.targetAmount !== undefined && 
-    product.currentAmount < product.targetAmount
-  );
-  
-  // Compute featured products
-  const featuredProducts = products.filter(product => product.featured);
-  
-  // Provide the context value
-  const contextValue: ProductContextType = {
-    products,
-    setProducts,
-    refreshProducts,
-    activeJam3aDeals,
-    featuredProducts,
-    syncStatus,
-    isLoading,
-    refreshJam3aDeals,
-    syncLogs,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    bulkUpdateProducts,
-    bulkDeleteProducts,
-    importProducts,
-    exportProducts,
-    validateProduct,
-    clearSyncStatus
-  };
-  
   return (
-    <ProductContext.Provider value={contextValue}>
+    <ProductContext.Provider
+      value={{
+        products,
+        deals,
+        setProducts,
+        refreshProducts,
+        activeJam3aDeals,
+        featuredProducts,
+        syncStatus,
+        isLoading,
+        refreshJam3aDeals,
+        syncLogs,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        bulkUpdateProducts,
+        bulkDeleteProducts,
+        importProducts,
+        exportProducts,
+        validateProduct,
+        clearSyncStatus
+      }}
+    >
       {children}
     </ProductContext.Provider>
   );
 };
 
 // Create a hook to use the context
-export const useProductContext = () => {
+export const useProducts = () => {
   const context = useContext(ProductContext);
-  
   if (context === undefined) {
-    throw new Error('useProductContext must be used within a ProductProvider');
+    throw new Error('useProducts must be used within a ProductProvider');
   }
-  
   return context;
 };
-
-// Export an alias for useProductContext as useProducts to maintain compatibility
-export const useProducts = useProductContext;

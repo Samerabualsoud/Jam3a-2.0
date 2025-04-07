@@ -1,160 +1,261 @@
+// Routes for email functionality
 const express = require('express');
 const router = express.Router();
-const { sendToZapier, sendWaitlistToZapier, sendRegistrationToZapier, 
-        sendNewsletterSubscriptionToZapier, sendOrderConfirmationToZapier, 
-        sendGroupCompleteToZapier } = require('../zapierService');
-const { sendEmail } = require('../emailService');
+const { sendEmail, sendBulkEmails } = require('../emailService');
 
-// Middleware to validate email
-const validateEmail = (req, res, next) => {
-  const { to } = req.body;
-  if (!to || typeof to !== 'string' || !to.includes('@')) {
-    return res.status(400).json({ success: false, error: 'Invalid email address' });
+// Middleware to validate email request
+const validateEmailRequest = (req, res, next) => {
+  const { to, subject, template } = req.body;
+  
+  if (!to) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Recipient email is required' 
+    });
   }
+  
+  if (!subject) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Email subject is required' 
+    });
+  }
+  
+  if (!template) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Email template is required' 
+    });
+  }
+  
   next();
 };
 
-// Route to handle email sending with Zapier integration
-router.post('/send', validateEmail, async (req, res) => {
+// Send a single email
+router.post('/send', validateEmailRequest, async (req, res) => {
   try {
-    const { from, to, subject, template, data } = req.body;
+    const { to, subject, template, data, attachments } = req.body;
     
-    // Send email through regular email service
-    const emailResult = await sendEmail({ from, to, subject, template, data });
-    
-    // Determine if we should also send to Zapier based on template type
-    let zapierResult = { success: true, zapier: false };
-    
-    if (template === 'waitlist') {
-      zapierResult = await sendWaitlistToZapier({
-        email: to,
-        name: data.name || '',
-        ...data
-      });
-      zapierResult.zapier = true;
-    } 
-    else if (template === 'registration') {
-      zapierResult = await sendRegistrationToZapier({
-        email: to,
-        name: data.name || '',
-        ...data
-      });
-      zapierResult.zapier = true;
-    }
-    else if (template === 'newsletter') {
-      zapierResult = await sendNewsletterSubscriptionToZapier({
-        email: to,
-        name: data.name || '',
-        ...data
-      });
-      zapierResult.zapier = true;
-    }
-    else if (template === 'order-confirmation') {
-      zapierResult = await sendOrderConfirmationToZapier({
-        email: to,
-        name: data.name || '',
-        orderId: data.orderDetails?.id || Date.now().toString(),
-        items: data.orderDetails?.items || [],
-        total: data.orderDetails?.total || 0,
-        ...data
-      });
-      zapierResult.zapier = true;
-    }
-    else if (template === 'group-complete') {
-      zapierResult = await sendGroupCompleteToZapier({
-        email: to,
-        name: data.name || '',
-        groupId: data.groupDetails?.id || Date.now().toString(),
-        productName: data.groupDetails?.productName || '',
-        groupSize: data.groupDetails?.groupSize || 0,
-        discount: data.groupDetails?.discount || 0,
-        finalPrice: data.groupDetails?.finalPrice || 0,
-        ...data
-      });
-      zapierResult.zapier = true;
-    }
-    
-    // Return combined results
-    res.json({
-      success: emailResult.success && zapierResult.success,
-      email: emailResult,
-      zapier: zapierResult
+    const result = await sendEmail({
+      to,
+      subject,
+      template,
+      data,
+      attachments
     });
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        messageId: result.messageId 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error 
+      });
+    }
   } catch (error) {
-    console.error('Error in email route:', error);
+    console.error('Error in /email/send route:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message || 'An error occurred while sending email' 
+      error: error.message 
     });
   }
 });
 
-// Direct webhook endpoints for Zapier integration
-
-// Waitlist registration webhook
-router.post('/zapier/waitlist', async (req, res) => {
+// Send bulk emails
+router.post('/bulk', async (req, res) => {
   try {
-    const result = await sendWaitlistToZapier(req.body);
-    res.json(result);
+    const { recipients, subject, template, data, attachments } = req.body;
+    
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Recipients must be a non-empty array' 
+      });
+    }
+    
+    if (!subject) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email subject is required' 
+      });
+    }
+    
+    if (!template) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email template is required' 
+      });
+    }
+    
+    const result = await sendBulkEmails({
+      recipients,
+      subject,
+      template,
+      data,
+      attachments
+    });
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        summary: result.summary,
+        results: result.results
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error,
+        results: result.results
+      });
+    }
   } catch (error) {
-    console.error('Error in waitlist webhook:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error in /email/bulk route:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
-// User registration webhook
-router.post('/zapier/registration', async (req, res) => {
+// Send welcome email
+router.post('/welcome', async (req, res) => {
   try {
-    const result = await sendRegistrationToZapier(req.body);
-    res.json(result);
+    const { email, name } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email is required' 
+      });
+    }
+    
+    const result = await sendEmail({
+      to: email,
+      subject: 'Welcome to Jam3a!',
+      template: 'welcome',
+      data: { 
+        name: name || 'Valued Customer'
+      }
+    });
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        messageId: result.messageId 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error 
+      });
+    }
   } catch (error) {
-    console.error('Error in registration webhook:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error in /email/welcome route:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
-// Newsletter subscription webhook
-router.post('/zapier/newsletter', async (req, res) => {
+// Send order confirmation email
+router.post('/order-confirmation', async (req, res) => {
   try {
-    const result = await sendNewsletterSubscriptionToZapier(req.body);
-    res.json(result);
+    const { email, name, orderDetails } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email is required' 
+      });
+    }
+    
+    if (!orderDetails) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order details are required' 
+      });
+    }
+    
+    const result = await sendEmail({
+      to: email,
+      subject: 'Your Jam3a Order Confirmation',
+      template: 'order-confirmation',
+      data: { 
+        name: name || 'Valued Customer',
+        orderDetails
+      }
+    });
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        messageId: result.messageId 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error 
+      });
+    }
   } catch (error) {
-    console.error('Error in newsletter webhook:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error in /email/order-confirmation route:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
-// Order confirmation webhook
-router.post('/zapier/order', async (req, res) => {
+// Send group complete email
+router.post('/group-complete', async (req, res) => {
   try {
-    const result = await sendOrderConfirmationToZapier(req.body);
-    res.json(result);
+    const { email, name, groupDetails } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email is required' 
+      });
+    }
+    
+    if (!groupDetails) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Group details are required' 
+      });
+    }
+    
+    const result = await sendEmail({
+      to: email,
+      subject: 'Your Jam3a Group is Complete!',
+      template: 'group-complete',
+      data: { 
+        name: name || 'Valued Customer',
+        groupDetails
+      }
+    });
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        messageId: result.messageId 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error 
+      });
+    }
   } catch (error) {
-    console.error('Error in order webhook:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Group completion webhook
-router.post('/zapier/group', async (req, res) => {
-  try {
-    const result = await sendGroupCompleteToZapier(req.body);
-    res.json(result);
-  } catch (error) {
-    console.error('Error in group webhook:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Generic webhook for custom Zapier integrations
-router.post('/zapier/custom/:type', async (req, res) => {
-  try {
-    const { type } = req.params;
-    const result = await sendToZapier(type, req.body);
-    res.json(result);
-  } catch (error) {
-    console.error(`Error in custom webhook (${req.params.type}):`, error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error in /email/group-complete route:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 

@@ -64,7 +64,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import axios from 'axios';
+import apiService from '@/services/api';
 import { API_BASE_URL } from '@/config';
 
 // Define the Deal type
@@ -166,11 +166,15 @@ const DealsManager: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_BASE_URL}/deals`);
-      if (response.data && Array.isArray(response.data.data)) {
-        setDeals(response.data.data);
+      const response = await apiService.get('/deals');
+      console.log('Deals API response:', response);
+      
+      if (response && response.data) {
+        setDeals(response.data);
+      } else if (Array.isArray(response)) {
+        setDeals(response);
       } else {
-        console.error('Invalid response format:', response.data);
+        console.error('Invalid response format:', response);
         setDeals([]);
         setError('Invalid response format from API');
       }
@@ -186,11 +190,15 @@ const DealsManager: React.FC = () => {
   // Fetch all categories
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/categories`);
-      if (response.data && Array.isArray(response.data.data)) {
-        setCategories(response.data.data);
+      const response = await apiService.get('/categories');
+      console.log('Categories API response:', response);
+      
+      if (response && response.data) {
+        setCategories(response.data);
+      } else if (Array.isArray(response)) {
+        setCategories(response);
       } else {
-        console.error('Invalid categories response format:', response.data);
+        console.error('Invalid categories response format:', response);
         setCategories([]);
       }
     } catch (err) {
@@ -241,7 +249,7 @@ const DealsManager: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  // Open dialog for confirming deal deletion
+  // Open dialog for deleting a deal
   const handleDeleteConfirm = (deal: Deal) => {
     setCurrentDeal(deal);
     setIsDeleteDialogOpen(true);
@@ -250,88 +258,93 @@ const DealsManager: React.FC = () => {
   // Submit form for creating or updating a deal
   const onSubmit = async (values: DealFormValues) => {
     try {
+      setIsLoading(true);
+      
+      // Calculate discount percentage
+      const discountPercentage = ((values.regularPrice - values.jam3aPrice) / values.regularPrice) * 100;
+      
+      const dealData = {
+        ...values,
+        discountPercentage: Math.round(discountPercentage * 100) / 100,
+      };
+      
       if (currentDeal) {
         // Update existing deal
-        await axios.put(`${API_BASE_URL}/deals/${currentDeal._id}`, {
-          ...values,
-          discountPercentage: Math.round(((values.regularPrice - values.jam3aPrice) / values.regularPrice) * 100),
-        });
-        toast({
-          title: 'Deal updated',
-          description: 'The deal has been updated successfully.',
-        });
+        const response = await apiService.put(`/deals/${currentDeal._id}`, dealData);
+        
+        if (response && response.data) {
+          setDeals(prev => prev.map(d => d._id === currentDeal._id ? response.data : d));
+          
+          toast({
+            title: 'Deal updated',
+            description: `${values.title} has been updated successfully.`,
+            variant: 'default',
+          });
+        }
       } else {
         // Create new deal
-        await axios.post(`${API_BASE_URL}/deals`, {
-          ...values,
-          discountPercentage: Math.round(((values.regularPrice - values.jam3aPrice) / values.regularPrice) * 100),
-          currentParticipants: 0,
-        });
-        toast({
-          title: 'Deal created',
-          description: 'The deal has been created successfully.',
-        });
+        const response = await apiService.post('/deals', dealData);
+        
+        if (response && response.data) {
+          setDeals(prev => [...prev, response.data]);
+          
+          toast({
+            title: 'Deal created',
+            description: `${values.title} has been created successfully.`,
+            variant: 'default',
+          });
+        }
       }
+      
       setIsDialogOpen(false);
-      fetchDeals();
     } catch (err) {
       console.error('Error saving deal:', err);
+      
       toast({
-        variant: 'destructive',
         title: 'Error',
-        description: 'Failed to save deal. Please try again.',
+        description: `Failed to ${currentDeal ? 'update' : 'create'} deal. Please try again.`,
+        variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Delete a deal
-  const handleDeleteDeal = async () => {
+  const handleDelete = async () => {
     if (!currentDeal) return;
     
     try {
-      await axios.delete(`${API_BASE_URL}/deals/${currentDeal._id}`);
+      setIsLoading(true);
+      
+      await apiService.delete(`/deals/${currentDeal._id}`);
+      
+      setDeals(prev => prev.filter(d => d._id !== currentDeal._id));
+      
       toast({
         title: 'Deal deleted',
-        description: 'The deal has been deleted successfully.',
+        description: `${currentDeal.title} has been deleted successfully.`,
+        variant: 'default',
       });
+      
       setIsDeleteDialogOpen(false);
-      fetchDeals();
     } catch (err) {
       console.error('Error deleting deal:', err);
+      
       toast({
-        variant: 'destructive',
         title: 'Error',
         description: 'Failed to delete deal. Please try again.',
-      });
-    }
-  };
-
-  // Toggle featured status
-  const handleToggleFeatured = async (deal: Deal) => {
-    try {
-      await axios.put(`${API_BASE_URL}/deals/${deal._id}`, {
-        ...deal,
-        featured: !deal.featured,
-      });
-      toast({
-        title: deal.featured ? 'Deal unfeatured' : 'Deal featured',
-        description: `The deal has been ${deal.featured ? 'removed from' : 'added to'} featured deals.`,
-      });
-      fetchDeals();
-    } catch (err) {
-      console.error('Error toggling featured status:', err);
-      toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update featured status. Please try again.',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Filter deals based on search term and filters
   const filteredDeals = deals.filter(deal => {
     // Search term filter
-    const searchMatch = 
+    const searchMatch = searchTerm === '' || 
       deal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       deal.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       deal.jam3aId.toLowerCase().includes(searchTerm.toLowerCase());
@@ -343,584 +356,584 @@ const DealsManager: React.FC = () => {
     const statusMatch = statusFilter === 'all' || deal.status === statusFilter;
     
     // Featured filter
-    const featuredMatch = 
-      featuredFilter === 'all' || 
+    const featuredMatch = featuredFilter === 'all' || 
       (featuredFilter === 'featured' && deal.featured) || 
       (featuredFilter === 'not-featured' && !deal.featured);
     
     // Participants filter
-    let participantsMatch = true;
-    if (participantsFilter === 'low') {
-      participantsMatch = deal.currentParticipants < 5;
-    } else if (participantsFilter === 'medium') {
-      participantsMatch = deal.currentParticipants >= 5 && deal.currentParticipants < 10;
-    } else if (participantsFilter === 'high') {
-      participantsMatch = deal.currentParticipants >= 10;
-    }
+    const participantsMatch = participantsFilter === 'all' || 
+      (participantsFilter === 'low' && deal.currentParticipants < 5) ||
+      (participantsFilter === 'medium' && deal.currentParticipants >= 5 && deal.currentParticipants < 10) ||
+      (participantsFilter === 'high' && deal.currentParticipants >= 10);
     
     return searchMatch && categoryMatch && statusMatch && featuredMatch && participantsMatch;
   });
 
-  // Render loading state
-  if (isLoading && deals.length === 0) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Deals Management</CardTitle>
-        </CardHeader>
-        <CardContent className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading deals...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Render error state
-  if (error && deals.length === 0) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Deals Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center gap-4 py-8">
-            <AlertCircle className="h-12 w-12 text-destructive" />
-            <h3 className="text-lg font-semibold">Error Loading Deals</h3>
-            <p className="text-sm text-muted-foreground text-center max-w-md">{error}</p>
-            <Button onClick={fetchDeals} className="mt-2">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Render status badge
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-500">Active</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500">Pending</Badge>;
+      case 'completed':
+        return <Badge className="bg-blue-500">Completed</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-500">Cancelled</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Deals Management</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Search and filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search deals by title, description or ID..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category._id} value={category._id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={featuredFilter} onValueChange={setFeaturedFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by featured" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Deals</SelectItem>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="not-featured">Not Featured</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={participantsFilter} onValueChange={setParticipantsFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by participants" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Participants</SelectItem>
-                <SelectItem value="low">Low (< 5)</SelectItem>
-                <SelectItem value="medium">Medium (5-9)</SelectItem>
-                <SelectItem value="high">High (10+)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Deals Management</h2>
+        <Button onClick={handleCreateDeal}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add New Deal
+        </Button>
+      </div>
+      
+      {error && (
+        <div className="bg-destructive/15 text-destructive p-4 rounded-md flex items-start">
+          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+          <p>{error}</p>
         </div>
-        
-        {/* Create deal button */}
-        <div className="mb-4">
-          <Button onClick={handleCreateDeal}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Deal
-          </Button>
-        </div>
-        
-        {/* Deals table */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Jam3a ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-center">Participants</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Featured</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDeals.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
-                    No deals found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredDeals.map((deal) => (
-                  <TableRow key={deal._id}>
-                    <TableCell className="font-medium">{deal.jam3aId}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <img 
-                          src={deal.image} 
-                          alt={deal.title} 
-                          className="h-8 w-8 rounded-md object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40?text=Jam3a';
-                          }}
-                        />
-                        <span className="truncate max-w-[150px]">{deal.title}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{deal.category?.name || 'Uncategorized'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm line-through text-muted-foreground">{deal.regularPrice} SAR</span>
-                        <span className="font-medium">{deal.jam3aPrice} SAR</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {deal.currentParticipants}/{deal.maxParticipants}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={
-                        deal.status === 'active' ? 'default' :
-                        deal.status === 'pending' ? 'outline' :
-                        deal.status === 'completed' ? 'success' : 'destructive'
-                      }>
-                        {deal.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleToggleFeatured(deal)}
-                        title={deal.featured ? 'Remove from featured' : 'Add to featured'}
-                      >
-                        <Star className={`h-4 w-4 ${deal.featured ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleEditDeal(deal)}
-                          title="Edit deal"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => handleDeleteConfirm(deal)}
-                          title="Delete deal"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        
-        {/* Create/Edit Deal Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{currentDeal ? 'Edit Deal' : 'Create New Deal'}</DialogTitle>
-              <DialogDescription>
-                {currentDeal 
-                  ? 'Update the details of an existing deal.' 
-                  : 'Fill in the details to create a new Jam3a deal.'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <Tabs defaultValue="basic" className="w-full">
-                  <TabsList className="grid grid-cols-3 mb-4">
-                    <TabsTrigger value="basic">Basic Information</TabsTrigger>
-                    <TabsTrigger value="pricing">Pricing & Participants</TabsTrigger>
-                    <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
-                  </TabsList>
-                  
-                  {/* Basic Information Tab */}
-                  <TabsContent value="basic" className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="jam3aId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Jam3a ID</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="JAM-XXX-000" />
-                          </FormControl>
-                          <FormDescription>
-                            Unique identifier for this deal (format: JAM-XXX-000)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Title (English)</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Deal title in English" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="titleAr"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Title (Arabic)</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Deal title in Arabic" dir="rtl" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description (English)</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                {...field} 
-                                placeholder="Deal description in English" 
-                                rows={4}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="descriptionAr"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description (Arabic)</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                {...field} 
-                                placeholder="Deal description in Arabic" 
-                                rows={4}
-                                dir="rtl"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="categoryId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Category</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categories.map((category) => (
-                                <SelectItem key={category._id} value={category._id}>
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="image"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Image URL</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="https://example.com/image.jpg" />
-                          </FormControl>
-                          <FormDescription>
-                            URL to the deal's main image
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TabsContent>
-                  
-                  {/* Pricing & Participants Tab */}
-                  <TabsContent value="pricing" className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="regularPrice"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Regular Price (SAR)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                {...field} 
-                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Original price before discount
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="jam3aPrice"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Jam3a Price (SAR)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                {...field} 
-                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Discounted price for Jam3a participants
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="bg-muted p-4 rounded-md">
-                      <p className="text-sm font-medium mb-2">Discount Calculation</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold">
-                          {form.watch('regularPrice') && form.watch('jam3aPrice')
-                            ? Math.round(((form.watch('regularPrice') - form.watch('jam3aPrice')) / form.watch('regularPrice')) * 100)
-                            : 0}%
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          ({form.watch('regularPrice') - form.watch('jam3aPrice')} SAR savings)
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="maxParticipants"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Maximum Participants</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              {...field} 
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Maximum number of people who can join this deal
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="expiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Date when this deal expires
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TabsContent>
-                  
-                  {/* Advanced Settings Tab */}
-                  <TabsContent value="advanced" className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="featured"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Featured Deal</FormLabel>
-                            <FormDescription>
-                              Featured deals appear prominently on the homepage
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Current status of this deal
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TabsContent>
-                </Tabs>
+      )}
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Deals</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search deals..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category._id} value={category._id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {currentDeal ? 'Update Deal' : 'Create Deal'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this deal? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="bg-muted p-4 rounded-md mb-4">
-              <p className="font-medium">{currentDeal?.title}</p>
-              <p className="text-sm text-muted-foreground">ID: {currentDeal?.jam3aId}</p>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={featuredFilter} onValueChange={setFeaturedFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Featured" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Deals</SelectItem>
+                    <SelectItem value="featured">Featured</SelectItem>
+                    <SelectItem value="not-featured">Not Featured</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={participantsFilter} onValueChange={setParticipantsFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Participants" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Participants</SelectItem>
+                    <SelectItem value="low">Low (< 5)</SelectItem>
+                    <SelectItem value="medium">Medium (5-9)</SelectItem>
+                    <SelectItem value="high">High (10+)</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button variant="outline" onClick={() => fetchDeals()}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteDeal}>
-                Delete Deal
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+            
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredDeals.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No deals found. Try adjusting your filters or create a new deal.
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Jam3a ID</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Participants</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Featured</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDeals.map((deal) => (
+                      <TableRow key={deal._id}>
+                        <TableCell className="font-medium">{deal.jam3aId}</TableCell>
+                        <TableCell>{deal.title}</TableCell>
+                        <TableCell>{deal.category.name}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="line-through text-muted-foreground">SAR {deal.regularPrice}</span>
+                            <span className="font-medium">SAR {deal.jam3aPrice}</span>
+                            <span className="text-xs text-green-600">-{Math.round(deal.discountPercentage)}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {deal.currentParticipants} / {deal.maxParticipants}
+                        </TableCell>
+                        <TableCell>
+                          {renderStatusBadge(deal.status)}
+                        </TableCell>
+                        <TableCell>
+                          {deal.featured ? (
+                            <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                          ) : (
+                            <Star className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleEditDeal(deal)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="text-destructive"
+                              onClick={() => handleDeleteConfirm(deal)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Create/Edit Deal Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{currentDeal ? 'Edit Deal' : 'Create New Deal'}</DialogTitle>
+            <DialogDescription>
+              {currentDeal
+                ? 'Update the details of an existing deal.'
+                : 'Add a new deal to your platform.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Tabs defaultValue="basic">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                  <TabsTrigger value="pricing">Pricing & Participants</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="basic" className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="jam3aId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Jam3a ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Unique identifier for this deal (format: JAM-XXX-XXX)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          The main title of the deal
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="titleAr"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Arabic Title (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} dir="rtl" />
+                        </FormControl>
+                        <FormDescription>
+                          Arabic version of the title
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            rows={4}
+                            placeholder="Describe the deal..."
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Detailed description of the deal
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="descriptionAr"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Arabic Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            rows={4}
+                            placeholder="وصف الصفقة..."
+                            dir="rtl"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Arabic version of the description
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category._id} value={category._id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          The category this deal belongs to
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="image"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          URL of the deal image
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="pricing" className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="regularPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Regular Price (SAR)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Original price before discount
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="jam3aPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Jam3a Price (SAR)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Discounted price for Jam3a participants
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {form.watch('regularPrice') > 0 && form.watch('jam3aPrice') > 0 && (
+                    <div className="p-4 bg-muted rounded-md">
+                      <p className="font-medium">Discount: {Math.round(((form.watch('regularPrice') - form.watch('jam3aPrice')) / form.watch('regularPrice')) * 100)}%</p>
+                      <p className="text-sm text-muted-foreground">Savings: SAR {(form.watch('regularPrice') - form.watch('jam3aPrice')).toFixed(2)}</p>
+                    </div>
+                  )}
+                  
+                  <FormField
+                    control={form.control}
+                    name="maxParticipants"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Participants</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="2"
+                            step="1"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Maximum number of participants for this deal
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="expiryDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Expiry Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Date when this deal expires
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="settings" className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="featured"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Featured Deal
+                          </FormLabel>
+                          <FormDescription>
+                            Featured deals appear prominently on the homepage
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Current status of the deal
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+              </Tabs>
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>Save</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the deal "{currentDeal?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>Delete</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
