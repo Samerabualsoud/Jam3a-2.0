@@ -22,10 +22,16 @@ const Admin = () => {
   const { user, isAuthenticated, isAdmin } = useAuth();
   const { toast } = useToast();
 
+  // Check if user has admin email
+  const hasAdminEmail = user && user.email === 'admin@jam3a.me';
+  
+  // Combined admin check - either has isAdmin flag or admin email
+  const isAdminUser = isAdmin || hasAdminEmail;
+
   // Redirect non-admin users - this is a backup security measure
   // The main protection is handled by the AdminRoute component
   useEffect(() => {
-    if (isAuthenticated && user && !isAdmin) {
+    if (isAuthenticated && user && !isAdminUser) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to access the admin panel.",
@@ -33,9 +39,9 @@ const Admin = () => {
       });
       navigate("/");
     }
-  }, [isAuthenticated, user, isAdmin, navigate, toast]);
+  }, [isAuthenticated, user, isAdminUser, navigate, toast]);
 
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAuthenticated || !isAdminUser) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Card className="w-[400px]">
