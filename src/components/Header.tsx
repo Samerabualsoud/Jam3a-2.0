@@ -273,7 +273,7 @@ const Header = () => {
             </Button>
           </Link>
           
-          <AdminIconFix isAdmin={isAdmin} isActive={isActive} language={language} />
+          <AdminIconFix isAdmin={isAdmin} isActive={isActive} language={language} user={user} />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

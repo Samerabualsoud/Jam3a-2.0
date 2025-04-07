@@ -8,10 +8,14 @@ interface AdminIconProps {
   isAdmin: boolean;
   isActive: (path: string) => boolean;
   language: 'en' | 'ar';
+  user: any;
 }
 
-const AdminIcon: React.FC<AdminIconProps> = ({ isAdmin, isActive, language }) => {
-  if (!isAdmin) return null;
+const AdminIcon: React.FC<AdminIconProps> = ({ isAdmin, isActive, language, user }) => {
+  // Check if user is admin by email or isAdmin property
+  const isAdminUser = isAdmin || (user && user.email === 'admin@jam3a.me');
+  
+  if (!isAdminUser) return null;
   
   return (
     <Link to="/admin">
