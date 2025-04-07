@@ -8,6 +8,19 @@ const ActiveJam3aDeals = () => {
   const { activeJam3aDeals } = useProducts();
   const { language } = useLanguage();
   
+  // Ensure deals have valid properties to prevent rendering errors
+  const safeDeals = activeJam3aDeals.map(deal => ({
+    ...deal,
+    // Ensure _id is used as key instead of id
+    id: deal._id || deal.id || `deal-${Math.random().toString(36).substr(2, 9)}`,
+    // Ensure image exists
+    image: deal.image || 'https://via.placeholder.com/400x300?text=No+Image',
+    // Ensure category is an object with name property
+    category: typeof deal.category === 'object' && deal.category !== null 
+      ? deal.category 
+      : { _id: '0', name: typeof deal.category === 'string' ? deal.category : 'Uncategorized' }
+  }));
+  
   return (
     <div className="container mx-auto py-8">
       <h2 className={`text-3xl font-bold mb-6 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
@@ -23,8 +36,8 @@ const ActiveJam3aDeals = () => {
         
         <TabsContent value="all">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {activeJam3aDeals.length > 0 ? (
-              activeJam3aDeals.map(deal => (
+            {safeDeals.length > 0 ? (
+              safeDeals.map(deal => (
                 <BilingualProductListing key={deal.id} product={deal} language={language} />
               ))
             ) : (
@@ -37,9 +50,17 @@ const ActiveJam3aDeals = () => {
         
         <TabsContent value="electronics">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {activeJam3aDeals.filter(deal => deal.category === 'Electronics').length > 0 ? (
-              activeJam3aDeals
-                .filter(deal => deal.category === 'Electronics')
+            {safeDeals.filter(deal => 
+              deal.category && 
+              (deal.category.name === 'Electronics' || 
+               (typeof deal.category === 'string' && deal.category === 'Electronics'))
+            ).length > 0 ? (
+              safeDeals
+                .filter(deal => 
+                  deal.category && 
+                  (deal.category.name === 'Electronics' || 
+                   (typeof deal.category === 'string' && deal.category === 'Electronics'))
+                )
                 .map(deal => (
                   <BilingualProductListing key={deal.id} product={deal} language={language} />
                 ))
@@ -53,9 +74,17 @@ const ActiveJam3aDeals = () => {
         
         <TabsContent value="computers">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {activeJam3aDeals.filter(deal => deal.category === 'Computers').length > 0 ? (
-              activeJam3aDeals
-                .filter(deal => deal.category === 'Computers')
+            {safeDeals.filter(deal => 
+              deal.category && 
+              (deal.category.name === 'Computers' || 
+               (typeof deal.category === 'string' && deal.category === 'Computers'))
+            ).length > 0 ? (
+              safeDeals
+                .filter(deal => 
+                  deal.category && 
+                  (deal.category.name === 'Computers' || 
+                   (typeof deal.category === 'string' && deal.category === 'Computers'))
+                )
                 .map(deal => (
                   <BilingualProductListing key={deal.id} product={deal} language={language} />
                 ))

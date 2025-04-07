@@ -44,7 +44,7 @@ export interface Deal {
   timeRemaining: string;
   expiryDate: string;
   featured: boolean;
-  image: string;
+  image?: string;
   status: 'active' | 'pending' | 'completed' | 'cancelled';
   createdAt: string;
   updatedAt: string;
@@ -98,6 +98,140 @@ interface ProductProviderProps {
   children: ReactNode;
 }
 
+// Sample products data for fallback
+const SAMPLE_PRODUCTS: Product[] = [
+  {
+    _id: "60d21b4667d0d8992e610c85",
+    name: "iPhone 14 Pro Max",
+    description: "The latest iPhone with A16 Bionic chip, 48MP camera, and Dynamic Island.",
+    category: {
+      _id: "60d21b4667d0d8992e610c80",
+      name: "Electronics",
+      nameAr: "إلكترونيات"
+    },
+    price: 4999,
+    stock: 50,
+    sku: "APPLE-IP14PM-256",
+    featured: true,
+    imageUrl: "https://images.unsplash.com/photo-1663499482523-1c0c1bae9649?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    createdAt: "2023-01-15T10:00:00Z",
+    updatedAt: "2023-03-20T14:30:00Z"
+  },
+  {
+    _id: "60d21b4667d0d8992e610c86",
+    name: "Samsung Galaxy S23 Ultra",
+    description: "Flagship Android phone with 200MP camera and S Pen support.",
+    category: {
+      _id: "60d21b4667d0d8992e610c80",
+      name: "Electronics",
+      nameAr: "إلكترونيات"
+    },
+    price: 4799,
+    stock: 45,
+    sku: "SAMSUNG-S23U-512",
+    featured: true,
+    imageUrl: "https://images.unsplash.com/photo-1675785931264-f1f3898ee8d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    createdAt: "2023-01-20T11:15:00Z",
+    updatedAt: "2023-02-10T09:45:00Z"
+  },
+  {
+    _id: "60d21b4667d0d8992e610c87",
+    name: "MacBook Pro 16-inch",
+    description: "Powerful laptop with M2 Pro chip, 16GB RAM, and 512GB SSD.",
+    category: {
+      _id: "60d21b4667d0d8992e610c81",
+      name: "Computers",
+      nameAr: "كمبيوترات"
+    },
+    price: 9999,
+    stock: 30,
+    sku: "APPLE-MBP16-M2P",
+    featured: true,
+    imageUrl: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1926&q=80",
+    createdAt: "2023-02-05T08:30:00Z",
+    updatedAt: "2023-03-15T14:20:00Z"
+  }
+];
+
+// Sample deals data for fallback
+const SAMPLE_DEALS: Deal[] = [
+  {
+    _id: "60d21b4667d0d8992e610d85",
+    jam3aId: "JAM3A-001",
+    title: "iPhone 14 Pro Max Group Buy",
+    titleAr: "شراء جماعي لآيفون 14 برو ماكس",
+    description: "Join our group buy for the latest iPhone 14 Pro Max and save 15% off retail price. Limited spots available!",
+    descriptionAr: "انضم إلى الشراء الجماعي لأحدث آيفون 14 برو ماكس ووفر 15% من سعر التجزئة. الأماكن محدودة!",
+    category: {
+      _id: "60d21b4667d0d8992e610c80",
+      name: "Electronics",
+      nameAr: "إلكترونيات"
+    },
+    regularPrice: 4999,
+    jam3aPrice: 4249,
+    discountPercentage: 15,
+    currentParticipants: 8,
+    maxParticipants: 10,
+    timeRemaining: "2 days",
+    expiryDate: "2025-04-10T23:59:59Z",
+    featured: true,
+    image: "https://images.unsplash.com/photo-1663499482523-1c0c1bae9649?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    status: "active",
+    createdAt: "2025-04-01T10:00:00Z",
+    updatedAt: "2025-04-05T14:30:00Z"
+  },
+  {
+    _id: "60d21b4667d0d8992e610d86",
+    jam3aId: "JAM3A-002",
+    title: "Samsung Galaxy S23 Ultra Group Buy",
+    titleAr: "شراء جماعي لسامسونج جالاكسي إس 23 ألترا",
+    description: "Get the Samsung Galaxy S23 Ultra at 12% off when you join our group buy. Premium Android experience for less!",
+    descriptionAr: "احصل على سامسونج جالاكسي إس 23 ألترا بخصم 12% عند انضمامك إلى الشراء الجماعي. تجربة أندرويد متميزة بسعر أقل!",
+    category: {
+      _id: "60d21b4667d0d8992e610c80",
+      name: "Electronics",
+      nameAr: "إلكترونيات"
+    },
+    regularPrice: 4799,
+    jam3aPrice: 4223,
+    discountPercentage: 12,
+    currentParticipants: 6,
+    maxParticipants: 10,
+    timeRemaining: "3 days",
+    expiryDate: "2025-04-11T23:59:59Z",
+    featured: true,
+    image: "https://images.unsplash.com/photo-1675785931264-f1f3898ee8d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    status: "active",
+    createdAt: "2025-04-02T11:15:00Z",
+    updatedAt: "2025-04-05T09:45:00Z"
+  },
+  {
+    _id: "60d21b4667d0d8992e610d87",
+    jam3aId: "JAM3A-003",
+    title: "MacBook Pro 16-inch Group Buy",
+    titleAr: "شراء جماعي لماك بوك برو 16 بوصة",
+    description: "Save 10% on the powerful MacBook Pro 16-inch with M2 Pro chip. Perfect for professionals and creatives.",
+    descriptionAr: "وفر 10% على ماك بوك برو 16 بوصة القوي مع شريحة M2 Pro. مثالي للمحترفين والمبدعين.",
+    category: {
+      _id: "60d21b4667d0d8992e610c81",
+      name: "Computers",
+      nameAr: "كمبيوترات"
+    },
+    regularPrice: 9999,
+    jam3aPrice: 8999,
+    discountPercentage: 10,
+    currentParticipants: 4,
+    maxParticipants: 8,
+    timeRemaining: "5 days",
+    expiryDate: "2025-04-13T23:59:59Z",
+    featured: true,
+    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1926&q=80",
+    status: "active",
+    createdAt: "2025-04-03T08:30:00Z",
+    updatedAt: "2025-04-05T14:20:00Z"
+  }
+];
+
 // Create a provider component
 export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) => {
   // State for products
@@ -132,43 +266,85 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     
     try {
       console.log('Fetching products from:', `${API_BASE_URL}/products`);
-      const response = await apiService.get('/products');
       
-      // Extract data from response - handle both formats
-      let productsData;
-      if (response && response.data && response.data.data) {
-        // New API format: { success: true, data: [...] }
-        productsData = response.data.data;
-      } else if (response && response.data) {
-        // Direct data format
-        productsData = Array.isArray(response.data) ? response.data : [];
-      } else if (Array.isArray(response)) {
-        // Direct array format
-        productsData = response;
-      } else {
-        productsData = [];
+      try {
+        const response = await apiService.get('/products');
+        
+        // Extract data from response - handle both formats
+        let productsData;
+        if (response && response.data && response.data.data) {
+          // New API format: { success: true, data: [...] }
+          productsData = response.data.data;
+        } else if (response && response.data) {
+          // Direct data format
+          productsData = Array.isArray(response.data) ? response.data : [];
+        } else if (Array.isArray(response)) {
+          // Direct array format
+          productsData = response;
+        } else {
+          productsData = [];
+        }
+        
+        console.log('Products data:', productsData);
+        
+        // If we got an empty array but expected data, throw an error to trigger fallback
+        if (productsData.length === 0) {
+          console.warn('API returned empty products array, will try fallbacks');
+          throw new Error('Empty products array from API');
+        }
+        
+        setProducts(productsData);
+        
+        // Add to sync logs
+        addSyncLog({
+          action: 'bulk',
+          details: `Refreshed ${productsData.length} products`,
+          status: 'success',
+          products: productsData.map((p: Product) => p._id)
+        });
+        
+        setSyncStatus({ 
+          type: 'success', 
+          message: `Successfully refreshed ${productsData.length} products.`,
+          timestamp: Date.now()
+        });
+        
+        // Save to localStorage for offline fallback
+        localStorage.setItem('products', JSON.stringify(productsData));
+      } catch (apiError) {
+        console.warn('API error, trying localStorage fallback:', apiError);
+        
+        // Try to load from local storage as fallback
+        const storedProducts = localStorage.getItem('products');
+        if (storedProducts) {
+          try {
+            const parsedProducts = JSON.parse(storedProducts);
+            if (Array.isArray(parsedProducts) && parsedProducts.length > 0) {
+              setProducts(parsedProducts);
+              setSyncStatus({ 
+                type: 'warning', 
+                message: 'Using cached products. Connection to server failed.',
+                timestamp: Date.now()
+              });
+              return; // Exit early if localStorage fallback worked
+            }
+          } catch (parseError) {
+            console.error('Failed to parse stored products:', parseError);
+          }
+        }
+        
+        // If localStorage fallback failed, use sample data
+        console.warn('Using sample products data as final fallback');
+        setProducts(SAMPLE_PRODUCTS);
+        setSyncStatus({ 
+          type: 'warning', 
+          message: 'Using sample products. Connection to server failed.',
+          timestamp: Date.now()
+        });
+        
+        // Save sample data to localStorage for future fallback
+        localStorage.setItem('products', JSON.stringify(SAMPLE_PRODUCTS));
       }
-      
-      console.log('Products data:', productsData);
-      
-      setProducts(productsData);
-      
-      // Add to sync logs
-      addSyncLog({
-        action: 'bulk',
-        details: `Refreshed ${productsData.length} products`,
-        status: 'success',
-        products: productsData.map((p: Product) => p._id)
-      });
-      
-      setSyncStatus({ 
-        type: 'success', 
-        message: `Successfully refreshed ${productsData.length} products.`,
-        timestamp: Date.now()
-      });
-      
-      // Save to localStorage for offline fallback
-      localStorage.setItem('products', JSON.stringify(productsData));
     } catch (error) {
       console.error('Failed to fetch products:', error);
       
@@ -182,24 +358,15 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       
       setSyncStatus({ 
         type: 'error', 
-        message: 'Failed to refresh products. Please try again.',
+        message: 'Failed to refresh products. Using fallback data.',
         timestamp: Date.now()
       });
       
-      // Try to load from local storage as fallback
-      const storedProducts = localStorage.getItem('products');
-      if (storedProducts) {
-        try {
-          setProducts(JSON.parse(storedProducts));
-          setSyncStatus({ 
-            type: 'warning', 
-            message: 'Using cached products. Connection to server failed.',
-            timestamp: Date.now()
-          });
-        } catch (parseError) {
-          console.error('Failed to parse stored products:', parseError);
-        }
-      }
+      // Use sample data as final fallback
+      setProducts(SAMPLE_PRODUCTS);
+      
+      // Save sample data to localStorage for future fallback
+      localStorage.setItem('products', JSON.stringify(SAMPLE_PRODUCTS));
     } finally {
       setIsLoading(false);
     }
@@ -211,43 +378,97 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     
     try {
       console.log('Fetching Jam3a deals from:', `${API_BASE_URL}/deals`);
-      const response = await apiService.get('/deals');
       
-      // Extract data from response - handle both formats
-      let dealsData;
-      if (response && response.data && response.data.data) {
-        // New API format: { success: true, data: [...] }
-        dealsData = response.data.data;
-      } else if (response && response.data) {
-        // Direct data format
-        dealsData = Array.isArray(response.data) ? response.data : [];
-      } else if (Array.isArray(response)) {
-        // Direct array format
-        dealsData = response;
-      } else {
-        dealsData = [];
+      try {
+        const response = await apiService.get('/deals');
+        
+        // Extract data from response - handle both formats
+        let dealsData;
+        if (response && response.data && response.data.data) {
+          // New API format: { success: true, data: [...] }
+          dealsData = response.data.data;
+        } else if (response && response.data) {
+          // Direct data format
+          dealsData = Array.isArray(response.data) ? response.data : [];
+        } else if (Array.isArray(response)) {
+          // Direct array format
+          dealsData = response;
+        } else {
+          dealsData = [];
+        }
+        
+        console.log('Jam3a deals data:', dealsData);
+        
+        // If we got an empty array but expected data, throw an error to trigger fallback
+        if (dealsData.length === 0) {
+          console.warn('API returned empty deals array, will try fallbacks');
+          throw new Error('Empty deals array from API');
+        }
+        
+        // Ensure all deals have an image property to prevent TypeError
+        const processedDeals = dealsData.map((deal: Deal) => ({
+          ...deal,
+          image: deal.image || 'https://via.placeholder.com/400x300?text=No+Image'
+        }));
+        
+        setDeals(processedDeals);
+        
+        // Add to sync logs
+        addSyncLog({
+          action: 'bulk',
+          details: `Refreshed ${processedDeals.length} Jam3a deals`,
+          status: 'success',
+          products: processedDeals.map((d: Deal) => d._id)
+        });
+        
+        setSyncStatus({ 
+          type: 'success', 
+          message: `Successfully refreshed ${processedDeals.length} Jam3a deals.`,
+          timestamp: Date.now()
+        });
+        
+        // Save to localStorage for offline fallback
+        localStorage.setItem('deals', JSON.stringify(processedDeals));
+      } catch (apiError) {
+        console.warn('API error, trying localStorage fallback:', apiError);
+        
+        // Try to load from local storage as fallback
+        const storedDeals = localStorage.getItem('deals');
+        if (storedDeals) {
+          try {
+            const parsedDeals = JSON.parse(storedDeals);
+            if (Array.isArray(parsedDeals) && parsedDeals.length > 0) {
+              // Ensure all deals have an image property to prevent TypeError
+              const processedDeals = parsedDeals.map((deal: Deal) => ({
+                ...deal,
+                image: deal.image || 'https://via.placeholder.com/400x300?text=No+Image'
+              }));
+              
+              setDeals(processedDeals);
+              setSyncStatus({ 
+                type: 'warning', 
+                message: 'Using cached deals. Connection to server failed.',
+                timestamp: Date.now()
+              });
+              return; // Exit early if localStorage fallback worked
+            }
+          } catch (parseError) {
+            console.error('Failed to parse stored deals:', parseError);
+          }
+        }
+        
+        // If localStorage fallback failed, use sample data
+        console.warn('Using sample deals data as final fallback');
+        setDeals(SAMPLE_DEALS);
+        setSyncStatus({ 
+          type: 'warning', 
+          message: 'Using sample deals. Connection to server failed.',
+          timestamp: Date.now()
+        });
+        
+        // Save sample data to localStorage for future fallback
+        localStorage.setItem('deals', JSON.stringify(SAMPLE_DEALS));
       }
-      
-      console.log('Jam3a deals data:', dealsData);
-      
-      setDeals(dealsData);
-      
-      // Add to sync logs
-      addSyncLog({
-        action: 'bulk',
-        details: `Refreshed ${dealsData.length} Jam3a deals`,
-        status: 'success',
-        products: dealsData.map((d: Deal) => d._id)
-      });
-      
-      setSyncStatus({ 
-        type: 'success', 
-        message: `Successfully refreshed ${dealsData.length} Jam3a deals.`,
-        timestamp: Date.now()
-      });
-      
-      // Save to localStorage for offline fallback
-      localStorage.setItem('deals', JSON.stringify(dealsData));
     } catch (error) {
       console.error('Failed to fetch Jam3a deals:', error);
       
@@ -261,24 +482,15 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       
       setSyncStatus({ 
         type: 'error', 
-        message: 'Failed to refresh Jam3a deals. Please try again.',
+        message: 'Failed to refresh Jam3a deals. Using fallback data.',
         timestamp: Date.now()
       });
       
-      // Try to load from local storage as fallback
-      const storedDeals = localStorage.getItem('deals');
-      if (storedDeals) {
-        try {
-          setDeals(JSON.parse(storedDeals));
-          setSyncStatus({ 
-            type: 'warning', 
-            message: 'Using cached deals. Connection to server failed.',
-            timestamp: Date.now()
-          });
-        } catch (parseError) {
-          console.error('Failed to parse stored deals:', parseError);
-        }
-      }
+      // Use sample data as final fallback
+      setDeals(SAMPLE_DEALS);
+      
+      // Save sample data to localStorage for future fallback
+      localStorage.setItem('deals', JSON.stringify(SAMPLE_DEALS));
     } finally {
       setIsLoading(false);
     }
@@ -513,7 +725,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         timestamp: Date.now()
       });
       
-      return 0;
+      throw error;
     }
   };
   
@@ -567,7 +779,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         timestamp: Date.now()
       });
       
-      return 0;
+      throw error;
     }
   };
   
@@ -621,7 +833,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         timestamp: Date.now()
       });
       
-      return 0;
+      throw error;
     }
   };
   
@@ -635,7 +847,9 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       if (response && response.data && response.data.data) {
         exportedProducts = response.data.data;
       } else if (response && response.data) {
-        exportedProducts = response.data;
+        exportedProducts = Array.isArray(response.data) ? response.data : [];
+      } else if (Array.isArray(response)) {
+        exportedProducts = response;
       } else {
         exportedProducts = [];
       }
@@ -645,7 +859,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         action: 'export',
         details: `Exported ${exportedProducts.length} products`,
         status: 'success',
-        products: ids || []
+        products: exportedProducts.map((p: Product) => p._id)
       });
       
       setSyncStatus({ 
@@ -663,7 +877,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         action: 'export',
         details: `Failed to export products: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 'error',
-        products: ids || []
+        products: []
       });
       
       setSyncStatus({ 
@@ -672,7 +886,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         timestamp: Date.now()
       });
       
-      return [];
+      // Return current products as fallback
+      return products;
     }
   };
   
@@ -692,8 +907,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       errors.push('Product category is required');
     }
     
-    if (product.price === undefined || product.price < 0) {
-      errors.push('Product price must be a positive number');
+    if (product.price === undefined || product.price <= 0) {
+      errors.push('Product price must be greater than 0');
     }
     
     return errors;
@@ -704,40 +919,43 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     setSyncStatus(null);
   };
   
+  // Provide context value
+  const contextValue: ProductContextType = {
+    products,
+    deals,
+    setProducts,
+    refreshProducts,
+    activeJam3aDeals,
+    featuredProducts,
+    syncStatus,
+    isLoading,
+    refreshJam3aDeals,
+    syncLogs,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    bulkUpdateProducts,
+    bulkDeleteProducts,
+    importProducts,
+    exportProducts,
+    validateProduct,
+    clearSyncStatus
+  };
+  
   return (
-    <ProductContext.Provider
-      value={{
-        products,
-        deals,
-        setProducts,
-        refreshProducts,
-        activeJam3aDeals,
-        featuredProducts,
-        syncStatus,
-        isLoading,
-        refreshJam3aDeals,
-        syncLogs,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        bulkUpdateProducts,
-        bulkDeleteProducts,
-        importProducts,
-        exportProducts,
-        validateProduct,
-        clearSyncStatus
-      }}
-    >
+    <ProductContext.Provider value={contextValue}>
       {children}
     </ProductContext.Provider>
   );
 };
 
-// Create a hook to use the context
-export const useProducts = () => {
+// Custom hook to use the product context
+export const useProducts = (): ProductContextType => {
   const context = useContext(ProductContext);
+  
   if (context === undefined) {
     throw new Error('useProducts must be used within a ProductProvider');
   }
+  
   return context;
 };

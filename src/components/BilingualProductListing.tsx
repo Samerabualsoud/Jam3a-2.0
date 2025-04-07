@@ -107,26 +107,58 @@ const PRODUCT_IMAGES = {
   FALLBACK: '/images/iphone_16_pink.webp'
 };
 
+// Default placeholder image URL for when local images fail to load
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/400x300?text=Product+Image';
+
 const BilingualProductListing = ({ product, language }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState('');
+  const [imageError, setImageError] = useState(false);
+  
+  // Ensure we have a valid product object
+  const safeProduct = product ? product : {
+    name: 'Product Name',
+    description: 'Product Description',
+    price: 0,
+    regularPrice: 0,
+    jam3aPrice: 0,
+    discountPercentage: 0,
+    currentParticipants: 0,
+    maxParticipants: 10,
+    featured: false,
+    status: 'active'
+  };
   
   // Enhanced product image selection based on product name and description
   const getProductImage = () => {
+    // If image loading previously failed, use placeholder
+    if (imageError) {
+      return PLACEHOLDER_IMAGE;
+    }
+    
     // Guard against undefined product
-    if (!product) {
+    if (!safeProduct) {
       return PRODUCT_IMAGES.FALLBACK;
     }
     
-    // If product already has an image, use it
-    if (product.image && typeof product.image === 'string' && product.image.startsWith('http')) {
-      return product.image;
+    // If product already has an image URL, use it
+    if (safeProduct.image && typeof safeProduct.image === 'string') {
+      if (safeProduct.image.startsWith('http')) {
+        return safeProduct.image;
+      }
     }
     
-    const productName = (product.name || '').toLowerCase();
-    const productDescription = (product.description || '').toLowerCase();
+    // If product has imageUrl, use it
+    if (safeProduct.imageUrl && typeof safeProduct.imageUrl === 'string') {
+      if (safeProduct.imageUrl.startsWith('http')) {
+        return safeProduct.imageUrl;
+      }
+    }
+    
+    const productName = (safeProduct.name || safeProduct.title || '').toLowerCase();
+    const productDescription = (safeProduct.description || '').toLowerCase();
     const combinedText = `${productName} ${productDescription}`;
     
     // Try to match product with our image mapping system
@@ -245,136 +277,167 @@ const BilingualProductListing = ({ product, language }) => {
     return PRODUCT_IMAGES.FALLBACK;
   };
   
-  // Calculate and update progress
+  // Handle image loading errors
+  const handleImageError = () => {
+    console.warn('Image failed to load, using placeholder');
+    setImageError(true);
+  };
+  
+  // Calculate progress for deals
   useEffect(() => {
-    if (product && product.currentAmount && product.targetAmount) {
-      const calculatedProgress = (product.currentAmount / product.targetAmount) * 100;
-      setProgress(calculatedProgress > 100 ? 100 : calculatedProgress);
-      
-      // Calculate time left based on average join rate and remaining amount
-      const remainingAmount = product.targetAmount - product.currentAmount;
-      if (remainingAmount > 0 && product.averageJoinRate) {
-        const hoursLeft = Math.ceil(remainingAmount / product.averageJoinRate);
-        setTimeLeft(hoursLeft <= 24 
-          ? `${hoursLeft} ${language === 'ar' ? 'ساعة' : 'hours'}`
-          : `${Math.ceil(hoursLeft / 24)} ${language === 'ar' ? 'يوم' : 'days'}`);
-      } else if (remainingAmount <= 0) {
-        setTimeLeft(language === 'ar' ? 'مكتمل!' : 'Complete!');
-      } else {
-        setTimeLeft(language === 'ar' ? 'قريباً' : 'Soon');
+    if (safeProduct.currentParticipants && safeProduct.maxParticipants) {
+      const calculatedProgress = (safeProduct.currentParticipants / safeProduct.maxParticipants) * 100;
+      setProgress(calculatedProgress);
+    }
+    
+    if (safeProduct.timeRemaining) {
+      setTimeLeft(safeProduct.timeRemaining);
+    } else if (safeProduct.expiryDate) {
+      try {
+        const expiryDate = new Date(safeProduct.expiryDate);
+        const now = new Date();
+        const diffTime = Math.abs(expiryDate - now);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        setTimeLeft(`${diffDays} days`);
+      } catch (error) {
+        console.error('Error calculating time left:', error);
+        setTimeLeft('Limited time');
       }
     }
-  }, [product, language]);
+  }, [safeProduct]);
   
-  // Handle navigation to product detail
-  const handleViewDetails = () => {
-    if (product && product.id) {
-      navigate(`/product/${product.id}`);
+  // Handle product click
+  const handleProductClick = () => {
+    // Determine if this is a product or deal
+    const isDeal = 'jam3aPrice' in safeProduct;
+    
+    if (isDeal) {
+      navigate(`/deal/${safeProduct._id || safeProduct.id}`);
+    } else {
+      navigate(`/product/${safeProduct._id || safeProduct.id}`);
     }
   };
   
-  // Handle joining a Jam3a
-  const handleJoinJam3a = () => {
-    if (product && product.id) {
-      navigate(`/join-jam3a/${product.id}`);
+  // Determine if this is a product or deal
+  const isDeal = 'jam3aPrice' in safeProduct || 'jam3aId' in safeProduct;
+  
+  // Get product name/title based on language
+  const getProductName = () => {
+    if (language === 'ar') {
+      return safeProduct.nameAr || safeProduct.titleAr || safeProduct.name || safeProduct.title || 'منتج';
     }
+    return safeProduct.name || safeProduct.title || 'Product';
   };
   
-  if (!product) {
-    return null;
-  }
+  // Get product description based on language
+  const getProductDescription = () => {
+    if (language === 'ar') {
+      return safeProduct.descriptionAr || safeProduct.description || 'وصف المنتج';
+    }
+    return safeProduct.description || 'Product description';
+  };
+  
+  // Get product price
+  const getProductPrice = () => {
+    if (isDeal) {
+      return safeProduct.jam3aPrice || 0;
+    }
+    return safeProduct.price || 0;
+  };
+  
+  // Get regular price (for deals)
+  const getRegularPrice = () => {
+    return safeProduct.regularPrice || safeProduct.price || 0;
+  };
+  
+  // Get discount percentage
+  const getDiscountPercentage = () => {
+    if (isDeal && safeProduct.discountPercentage) {
+      return safeProduct.discountPercentage;
+    }
+    
+    if (isDeal && safeProduct.regularPrice && safeProduct.jam3aPrice) {
+      return Math.round(((safeProduct.regularPrice - safeProduct.jam3aPrice) / safeProduct.regularPrice) * 100);
+    }
+    
+    return 0;
+  };
   
   return (
-    <Card className="w-full max-w-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
-      <div className="relative h-48 overflow-hidden">
+    <Card className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+      <div className="relative h-48 overflow-hidden bg-gray-100">
         <img 
           src={getProductImage()} 
-          alt={language === 'ar' ? 'المنتج غير متوفر' : 'Product not available'} 
-          className="w-full h-full object-cover transition-transform hover:scale-105"
+          alt={getProductName()}
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          onError={handleImageError}
         />
-        {product.featured && (
-          <Badge className="absolute top-2 right-2 bg-yellow-500">
+        {safeProduct.featured && (
+          <Badge className="absolute top-2 right-2 bg-primary text-white">
             {language === 'ar' ? 'مميز' : 'Featured'}
           </Badge>
         )}
-        {product.discount > 0 && (
-          <Badge className="absolute top-2 left-2 bg-red-500">
-            {`-${product.discount}%`}
+        {isDeal && getDiscountPercentage() > 0 && (
+          <Badge className="absolute top-2 left-2 bg-red-500 text-white">
+            {getDiscountPercentage()}% {language === 'ar' ? 'خصم' : 'OFF'}
           </Badge>
         )}
       </div>
       
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className={`text-lg font-bold ${language === 'ar' ? 'text-right' : 'text-left'}`}>
-            {language === 'ar' ? product.nameAr || product.name : product.name}
-          </CardTitle>
-          <Badge variant="outline" className="text-xs">
-            {product.category}
-          </Badge>
-        </div>
-        <CardDescription className={`text-sm ${language === 'ar' ? 'text-right' : 'text-left'}`}>
-          {language === 'ar' ? product.descriptionAr || product.description : product.description}
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="text-lg font-bold line-clamp-1">{getProductName()}</CardTitle>
+        <CardDescription className="line-clamp-2 h-10 text-sm">
+          {getProductDescription()}
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="pb-2">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-1">
-            <span className="text-lg font-bold">{product.price} SAR</span>
-            {product.originalPrice > product.price && (
-              <span className="text-sm line-through text-gray-500">{product.originalPrice} SAR</span>
+      <CardContent className="p-4 pt-2">
+        {isDeal ? (
+          <div className="flex flex-col space-y-2">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-bold">{getProductPrice()} SAR</span>
+                <span className="text-sm text-gray-500 line-through">{getRegularPrice()} SAR</span>
+              </div>
+              {language === 'ar' ? (
+                <span className="text-xs text-gray-500">
+                  {safeProduct.currentParticipants || 0} / {safeProduct.maxParticipants || 0} مشارك
+                </span>
+              ) : (
+                <span className="text-xs text-gray-500">
+                  {safeProduct.currentParticipants || 0} / {safeProduct.maxParticipants || 0} joined
+                </span>
+              )}
+            </div>
+            
+            <Progress value={progress} className="h-2" />
+            
+            <div className="flex justify-between items-center text-xs text-gray-500">
+              <span>{language === 'ar' ? 'الوقت المتبقي:' : 'Time left:'}</span>
+              <span>{timeLeft || (language === 'ar' ? 'وقت محدود' : 'Limited time')}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold">{getProductPrice()} SAR</span>
+            {safeProduct.stock !== undefined && (
+              <span className="text-xs text-gray-500">
+                {language === 'ar' ? `المخزون: ${safeProduct.stock}` : `Stock: ${safeProduct.stock}`}
+              </span>
             )}
           </div>
-          <Badge variant={progress >= 100 ? "success" : "secondary"} className="text-xs">
-            {progress >= 100 
-              ? (language === 'ar' ? 'مكتمل' : 'Complete') 
-              : (language === 'ar' ? 'قيد التقدم' : 'In Progress')}
-          </Badge>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>{language === 'ar' ? 'التقدم:' : 'Progress:'}</span>
-            <span>{Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-          
-          <div className="flex justify-between text-sm">
-            <span>{language === 'ar' ? 'المبلغ الحالي:' : 'Current Amount:'}</span>
-            <span>{product.currentAmount} / {product.targetAmount} SAR</span>
-          </div>
-          
-          {timeLeft && (
-            <div className="flex justify-between text-sm">
-              <span>{language === 'ar' ? 'الوقت المتبقي:' : 'Time Left:'}</span>
-              <span>{timeLeft}</span>
-            </div>
-          )}
-          
-          <div className="flex justify-between text-sm">
-            <span>{language === 'ar' ? 'المشاركين:' : 'Participants:'}</span>
-            <span>{product.participants || 0}</span>
-          </div>
-        </div>
+        )}
       </CardContent>
       
-      <Separator />
-      
-      <CardFooter className="pt-4 flex gap-2">
+      <CardFooter className="p-4 pt-0">
         <Button 
-          variant="outline" 
-          className="flex-1" 
-          onClick={handleViewDetails}
+          variant="default" 
+          className="w-full"
+          onClick={handleProductClick}
         >
-          {language === 'ar' ? 'عرض التفاصيل' : 'View Details'}
-        </Button>
-        <Button 
-          className="flex-1" 
-          onClick={handleJoinJam3a}
-          disabled={progress >= 100}
-        >
-          {language === 'ar' ? 'انضم للجمعة' : 'Join Jam3a'}
+          {isDeal 
+            ? (language === 'ar' ? 'انضم إلى الجمعة' : 'Join Jam3a') 
+            : (language === 'ar' ? 'عرض التفاصيل' : 'View Details')}
         </Button>
       </CardFooter>
     </Card>
