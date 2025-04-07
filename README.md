@@ -1,6 +1,8 @@
-# Jam3a-2.0 Restructured
+# Jam3a Hub Collective
 
-This repository contains the restructured version of the Jam3a-2.0 application, organized according to modern best practices for React/Node.js applications.
+## Project Overview
+
+This repository contains the restructured version of the Jam3a-2.0 application, organized according to modern best practices for React/Node.js applications. The platform enables group buying and collective purchasing experiences.
 
 ## Project Structure
 
@@ -14,6 +16,29 @@ Additionally, there are dedicated directories for:
 - `docs/` - Project documentation
 - `config/` - Shared configuration
 - `scripts/` - Utility scripts
+
+## Features
+
+- Group buying platform
+- User authentication with role-based access control
+- Product management
+- Deal creation and management
+- Email notifications
+- Analytics integration
+- Dynamic group deals with bilingual support (English/Arabic)
+- Responsive design for mobile and desktop
+
+## Technologies Used
+
+- Vite
+- TypeScript
+- React
+- React Router
+- Tailwind CSS
+- shadcn/ui components
+- Node.js
+- Express
+- MongoDB
 
 ## Getting Started
 
@@ -51,13 +76,16 @@ For the client:
 cd client && npm run dev
 ```
 
-## Features
+## Implementation Details
 
-- Group buying platform
-- User authentication
-- Product management
-- Deal creation and management
-- Email notifications
+The project includes:
+
+- Navigation system with proper routing
+- Authentication context with persistent login
+- Role-based access control
+- Bilingual product listings
+- Shop all deals functionality
+- Email notification system
 - Analytics integration
 
 ## Documentation
@@ -67,3 +95,10 @@ See the `docs/` directory for detailed documentation on:
 - API endpoints
 - Deployment guides
 - Development guides
+
+## Recent Updates
+
+- Restructured repository according to best practices
+- Fixed "Join this Jam3a" buttons with proper navigation handlers
+- Enhanced authentication system with persistent login and role checking
+- Updated routing configuration with protected routes

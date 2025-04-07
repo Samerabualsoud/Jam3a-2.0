@@ -1,0 +1,43 @@
+{
+  "name": "jam3a-hub-collective",
+  "spec": {
+    "name": "jam3a-hub-collective",
+    "region": "fra",
+    "services": [
+      {
+        "name": "jam3a-web",
+        "github": {
+          "repo": "your-github-username/jam3a-hub-collective",
+          "branch": "main",
+          "deploy_on_push": true
+        },
+        "source_dir": "/",
+        "envs": [
+          {
+            "key": "NODE_ENV",
+            "value": "production",
+            "scope": "RUN_AND_BUILD_TIME"
+          }
+        ],
+        "build_command": "npm install && npm run build",
+        "run_command": "npm start",
+        "http_port": 8080,
+        "routes": [
+          {
+            "path": "/"
+          }
+        ],
+        "health_check": {
+          "http_path": "/health",
+          "initial_delay_seconds": 10,
+          "period_seconds": 30,
+          "timeout_seconds": 5,
+          "success_threshold": 1,
+          "failure_threshold": 3
+        },
+        "instance_count": 1,
+        "instance_size_slug": "basic-xs"
+      }
+    ]
+  }
+}
