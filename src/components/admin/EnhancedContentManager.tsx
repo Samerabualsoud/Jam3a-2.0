@@ -1,38 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  PlusCircle, 
-  ImagePlus, 
-  Save, 
-  Trash2, 
-  Edit, 
-  Eye, 
-  Upload, 
-  X, 
-  Camera, 
-  FileImage, 
-  Loader2, 
-  Globe, 
-  History, 
-  RotateCcw, 
-  Check, 
-  Copy,
-  ArrowUpDown,
-  Filter,
-  Search,
-  RefreshCw,
-  Languages,
-  Clock
-} from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardFooter 
+} from "@/components/ui/card";
 import { 
   Dialog,
   DialogContent,
@@ -42,10 +16,42 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Pencil, 
+  Trash2, 
+  Plus, 
+  Search, 
+  Image, 
+  RefreshCw, 
+  Upload, 
+  Save, 
+  Eye, 
+  Globe, 
+  FileText, 
+  Home, 
+  ShoppingBag 
+} from "lucide-react";
 import { 
   Table, 
   TableHeader, 
@@ -56,7 +62,7 @@ import {
 } from "@/components/ui/table";
 import axios from 'axios';
 import { useLanguage } from '@/components/Header';
-import { useProductContext } from '@/contexts/ProductContext';
+import { useProducts } from '@/contexts/ProductContext';
 
 // Import WYSIWYG editor
 import dynamic from 'next/dynamic';
@@ -69,2424 +75,1710 @@ const UPLOAD_SERVICES = {
     name: 'Cloudinary',
     uploadUrl: 'https://api.cloudinary.com/v1_1/jam3a-cloud/image/upload',
     uploadPreset: 'jam3a_uploads',
-    cloudName: 'jam3a-cloud'
+    transformationOptions: {
+      width: 800,
+      crop: 'limit',
+      format: 'auto',
+      quality: 'auto'
+    }
   },
   IMGBB: {
     name: 'ImgBB',
     uploadUrl: 'https://api.imgbb.com/1/upload',
-    apiKey: '9c7eb7b7a0e5d64b1b4f5c5e5d64b1b4' // Replace with your actual API key
-  },
-  LOCAL: {
-    name: 'Local Storage',
-    uploadUrl: '/api/upload', // This would be your backend endpoint
-    maxSize: 10 * 1024 * 1024 // 10MB
+    apiKey: '9c70243e48e5af92a8b567ef764f92ea'
   }
 };
 
-// Default to Cloudinary for production, ImgBB as fallback
-const DEFAULT_UPLOAD_SERVICE = UPLOAD_SERVICES.CLOUDINARY;
+// Content types
+const CONTENT_TYPES = {
+  PAGE: 'page',
+  BLOG: 'blog',
+  PRODUCT_DESCRIPTION: 'product_description',
+  CATEGORY_DESCRIPTION: 'category_description',
+  EMAIL_TEMPLATE: 'email_template',
+  LANDING_PAGE: 'landing_page'
+};
 
-// Content types and interfaces
-interface Banner {
-  id: number;
-  title: string;
-  titleAr?: string;
-  image: string;
-  active: boolean;
-  link?: string;
-  startDate?: string;
-  endDate?: string;
-  lastUpdated?: string;
-  version?: number;
-}
+// Content status options
+const CONTENT_STATUS = {
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+  SCHEDULED: 'scheduled',
+  ARCHIVED: 'archived'
+};
 
-interface Page {
-  id: number;
+// Content interface
+interface Content {
+  id: string;
   title: string;
   titleAr?: string;
   slug: string;
+  type: string;
   content: string;
   contentAr?: string;
-  lastUpdated: string;
-  metaDescription?: string;
-  metaDescriptionAr?: string;
-  version?: number;
-  publishStatus?: 'published' | 'draft' | 'scheduled';
-  publishDate?: string;
-  author?: string;
+  status: string;
+  author: string;
   featuredImage?: string;
-}
-
-interface FAQ {
-  id: number;
-  question: string;
-  questionAr?: string;
-  answer: string;
-  answerAr?: string;
-  category?: string;
-  order?: number;
-  lastUpdated?: string;
-  version?: number;
-}
-
-interface ContentSection {
-  id: number;
-  name: string;
-  nameAr?: string;
-  identifier: string;
-  content: string;
-  contentAr?: string;
-  type: 'text' | 'html' | 'image' | 'video' | 'carousel';
-  lastUpdated?: string;
-  version?: number;
-}
-
-interface ContentVersion {
-  id: number;
-  contentId: number;
-  contentType: 'banner' | 'page' | 'faq' | 'section';
-  version: number;
-  content: any;
+  seoTitle?: string;
+  seoDescription?: string;
+  tags?: string[];
+  relatedProducts?: string[];
   createdAt: string;
-  createdBy?: string;
-  notes?: string;
+  updatedAt: string;
+  publishedAt?: string;
+  scheduledAt?: string;
 }
 
-// Functional Image upload component with actual upload capability
-const ImageUploader = ({ onImageUpload, currentImage, label = "Upload Image" }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState("");
-  const [preview, setPreview] = useState(currentImage || "");
-  const fileInputRef = useRef(null);
-  const { toast } = useToast();
-  const [uploadService, setUploadService] = useState(DEFAULT_UPLOAD_SERVICE);
+// Content filter interface
+interface ContentFilters {
+  type: string;
+  status: string;
+  author: string;
+  tag: string;
+  dateRange: [string, string];
+}
 
-  useEffect(() => {
-    setPreview(currentImage || "");
-  }, [currentImage]);
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const files = e.dataTransfer.files;
-    if (files.length) {
-      handleFiles(files[0]);
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const files = e.target.files;
-    if (files?.length) {
-      handleFiles(files[0]);
-    }
-  };
-
-  const handleFiles = (file) => {
-    // Check file type
-    if (!file.type.match('image.*')) {
-      setError("Please select an image file");
-      toast({
-        title: "Invalid file type",
-        description: "Please select an image file (JPEG, PNG, GIF, etc.)",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Check file size
-    if (file.size > uploadService.maxSize) {
-      setError(`File too large. Maximum size is ${uploadService.maxSize / (1024 * 1024)}MB`);
-      toast({
-        title: "File too large",
-        description: `Maximum file size is ${uploadService.maxSize / (1024 * 1024)}MB`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload file
-    uploadFile(file);
-  };
-
-  const uploadFile = async (file) => {
-    setIsUploading(true);
-    setUploadProgress(0);
-    setError("");
-
-    try {
-      let formData = new FormData();
-      
-      // Configure based on selected service
-      if (uploadService === UPLOAD_SERVICES.CLOUDINARY) {
-        formData.append('file', file);
-        formData.append('upload_preset', uploadService.uploadPreset);
-        formData.append('cloud_name', uploadService.cloudName);
-      } else if (uploadService === UPLOAD_SERVICES.IMGBB) {
-        formData.append('image', file);
-        formData.append('key', uploadService.apiKey);
-      } else {
-        // Local storage
-        formData.append('file', file);
-      }
-
-      const response = await axios.post(uploadService.uploadUrl, formData, {
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
-      });
-
-      // Handle different response formats
-      let imageUrl = '';
-      if (uploadService === UPLOAD_SERVICES.CLOUDINARY) {
-        imageUrl = response.data.secure_url;
-      } else if (uploadService === UPLOAD_SERVICES.IMGBB) {
-        imageUrl = response.data.data.url;
-      } else {
-        // Local storage
-        imageUrl = response.data.url;
-      }
-
-      // Call the callback with the uploaded image URL
-      onImageUpload(imageUrl);
-      
-      toast({
-        title: "Upload successful",
-        description: "Your image has been uploaded successfully",
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      setError("Failed to upload image. Please try again.");
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your image. Please try again.",
-        variant: "destructive"
-      });
-      
-      // Fallback to another service if primary fails
-      if (uploadService === UPLOAD_SERVICES.CLOUDINARY) {
-        toast({
-          title: "Trying alternative upload service",
-          description: "Switching to ImgBB as fallback",
-        });
-        setUploadService(UPLOAD_SERVICES.IMGBB);
-        // Retry with new service
-        uploadFile(file);
-        return;
-      }
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleButtonClick = () => {
-    fileInputRef.current.click();
-  };
-
-  const handleRemoveImage = () => {
-    setPreview("");
-    onImageUpload("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div
-        className={`border-2 border-dashed rounded-lg p-4 text-center ${
-          isDragging ? "border-primary bg-primary/5" : "border-border"
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {preview ? (
-          <div className="relative">
-            <img
-              src={preview}
-              alt="Preview"
-              className="mx-auto max-h-64 rounded-md object-contain"
-            />
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8 rounded-full"
-              onClick={handleRemoveImage}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="py-4">
-            <FileImage className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">
-              Drag and drop an image, or{" "}
-              <span
-                className="cursor-pointer text-primary hover:underline"
-                onClick={handleButtonClick}
-              >
-                browse
-              </span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              PNG, JPG or GIF up to 10MB
-            </p>
-          </div>
-        )}
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          accept="image/*"
-        />
-      </div>
-
-      {isUploading && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span>Uploading...</span>
-            <span>{uploadProgress}%</span>
-          </div>
-          <Progress value={uploadProgress} className="h-1" />
-        </div>
-      )}
-
-      {error && (
-        <Alert variant="destructive" className="mt-2">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-    </div>
-  );
-};
-
-// Version History component
-const VersionHistory = ({ versions, onRestore, contentType }) => {
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Version History</h3>
-      {versions.length === 0 ? (
-        <p className="text-muted-foreground">No previous versions available.</p>
-      ) : (
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Version</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {versions.map((version) => (
-                <TableRow key={version.id}>
-                  <TableCell>v{version.version}</TableCell>
-                  <TableCell>{new Date(version.createdAt).toLocaleString()}</TableCell>
-                  <TableCell>{version.createdBy || 'System'}</TableCell>
-                  <TableCell>{version.notes || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => onRestore(version)}
-                      className="h-8 px-2"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                      Restore
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Enhanced Content Manager Component
 const EnhancedContentManager = () => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("banners");
-  const { language, setLanguage } = useLanguage();
-  const { products, setProducts, refreshProducts, syncStatus, isLoading: productsLoading } = useProductContext();
-  
-  // State for real data
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [pages, setPages] = useState<Page[]>([]);
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [sections, setSections] = useState<ContentSection[]>([]);
+  const [contents, setContents] = useState<Content[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // State for editing
-  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
-  const [editingPage, setEditingPage] = useState<Page | null>(null);
-  const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
-  const [editingSection, setEditingSection] = useState<ContentSection | null>(null);
-  
-  // State for version history
-  const [versions, setVersions] = useState<ContentVersion[]>([]);
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const [currentContentId, setCurrentContentId] = useState<number | null>(null);
-  const [currentContentType, setCurrentContentType] = useState<'banner' | 'page' | 'faq' | 'section' | null>(null);
-  
-  // State for language toggle
-  const [editingLanguage, setEditingLanguage] = useState<'en' | 'ar'>('en');
-  
-  // State for search and filters
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    banners: { active: null },
-    pages: { publishStatus: '' },
-    faqs: { category: '' },
-    sections: { type: '' }
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddingContent, setIsAddingContent] = useState(false);
+  const [editingContent, setEditingContent] = useState<Content | null>(null);
+  const [viewingContent, setViewingContent] = useState<Content | null>(null);
+  const [selectedContents, setSelectedContents] = useState<string[]>([]);
+  const [filters, setFilters] = useState<ContentFilters>({
+    type: '',
+    status: '',
+    author: '',
+    tag: '',
+    dateRange: ['', '']
   });
-  
-  // Fetch data on component mount
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');
+  const [uploadService, setUploadService] = useState('CLOUDINARY');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const { language } = useLanguage();
+  const { products } = useProducts();
+
+  // Initialize with demo content
   useEffect(() => {
-    const fetchData = async () => {
+    // Simulate API call to fetch content
+    const fetchContent = async () => {
       setIsLoading(true);
       try {
-        // Real API calls to fetch data from backend
-        const fetchBanners = async () => {
-          try {
-            const response = await axios.get('/api/banners');
-            if (response.data && Array.isArray(response.data)) {
-              setBanners(response.data);
-            } else {
-              console.warn("Banners data is not an array, using fallback");
-              setBanners([]);
-            }
-            return true;
-          } catch (error) {
-            console.error("Error fetching banners:", error);
-            return false;
-          }
-        };
-
-        const fetchPages = async () => {
-          try {
-            const response = await axios.get('/api/pages');
-            if (response.data && Array.isArray(response.data)) {
-              setPages(response.data);
-            } else {
-              console.warn("Pages data is not an array, using fallback");
-              setPages([]);
-            }
-            return true;
-          } catch (error) {
-            console.error("Error fetching pages:", error);
-            return false;
-          }
-        };
-
-        const fetchFAQs = async () => {
-          try {
-            const response = await axios.get('/api/faqs');
-            if (response.data && Array.isArray(response.data)) {
-              setFaqs(response.data);
-            } else {
-              console.warn("FAQs data is not an array, using fallback");
-              setFaqs([]);
-            }
-            return true;
-          } catch (error) {
-            console.error("Error fetching FAQs:", error);
-            return false;
-          }
-        };
-
-        const fetchSections = async () => {
-          try {
-            const response = await axios.get('/api/sections');
-            if (response.data && Array.isArray(response.data)) {
-              setSections(response.data);
-            } else {
-              console.warn("Sections data is not an array, using fallback");
-              setSections([]);
-            }
-            return true;
-          } catch (error) {
-            console.error("Error fetching sections:", error);
-            return false;
-          }
-        };
-
-        // Execute all fetch operations in parallel
-        const results = await Promise.allSettled([
-          fetchBanners(),
-          fetchPages(),
-          fetchFAQs(),
-          fetchSections()
-        ]);
-
-        // Check if any of the fetch operations failed
-        const anyFailed = results.some(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value));
+        // In a real app, this would be an API call
+        // const response = await axios.get('/api/content');
+        // setContents(response.data);
         
-        if (anyFailed) {
-          // If API calls fail, fall back to local data as a backup
-          console.warn("Some API calls failed, using fallback data");
-          
-          // Fallback data (only used if API calls fail)
-          if (!banners.length) {
-            const fallbackBanners: Banner[] = [
-              { 
-                id: 1, 
-                title: 'Summer Collection 2025', 
-                titleAr: 'مجموعة صيف 2025',
-                image: 'https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&w=1600&q=80', 
-                active: true,
-                lastUpdated: '2025-04-01',
-                version: 1
-              },
-              { 
-                id: 2, 
-                title: 'Eid Special Offers', 
-                titleAr: 'عروض العيد الخاصة',
-                image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=1600&q=80', 
-                active: false,
-                lastUpdated: '2025-03-15',
-                version: 2
-              },
-              { 
-                id: 3, 
-                title: 'New Arrivals - Spring 2025', 
-                titleAr: 'وصل حديثًا - ربيع 2025',
-                image: 'https://images.unsplash.com/photo-1615380547903-c456276b7702?auto=format&fit=crop&w=1600&q=80', 
-                active: false,
-                lastUpdated: '2025-02-20',
-                version: 1
-              },
-            ];
-            setBanners(fallbackBanners);
-          }
-          
-          if (!pages.length) {
-            const fallbackPages: Page[] = [
-              { 
-                id: 1, 
-                title: 'About Jam3a', 
-                titleAr: 'عن جمعة',
-                slug: 'about', 
-                content: '<h1>About Jam3a</h1><p>Jam3a is a social shopping platform where people team up to get better prices on products through group buying.</p>',
-                contentAr: '<h1>عن جمعة</h1><p>جمعة هي منصة تسوق اجتماعية حيث يتعاون الناس للحصول على أسعار أفضل للمنتجات من خلال الشراء الجماعي.</p>',
-                lastUpdated: '2025-04-01',
-                publishStatus: 'published',
-                version: 3
-              },
-              { 
-                id: 2, 
-                title: 'Frequently Asked Questions', 
-                titleAr: 'الأسئلة المتكررة',
-                slug: 'faq', 
-                content: '<h1>Frequently Asked Questions</h1><p>Find answers to common questions about Jam3a.</p>',
-                contentAr: '<h1>الأسئلة المتكررة</h1><p>اعثر على إجابات للأسئلة الشائعة حول جمعة.</p>',
-                lastUpdated: '2025-04-02',
-                publishStatus: 'published',
-                version: 2
-              },
-              { 
-                id: 3, 
-                title: 'Terms & Conditions', 
-                titleAr: 'الشروط والأحكام',
-                slug: 'terms', 
-                content: '<h1>Terms & Conditions</h1><p>Please read these terms and conditions carefully before using our service.</p>',
-                contentAr: '<h1>الشروط والأحكام</h1><p>يرجى قراءة هذه الشروط والأحكام بعناية قبل استخدام خدمتنا.</p>',
-                lastUpdated: '2025-04-03',
-                publishStatus: 'published',
-                version: 4
-              },
-              { 
-                id: 4, 
-                title: 'Privacy Policy', 
-                titleAr: 'سياسة الخصوصية',
-                slug: 'privacy', 
-                content: '<h1>Privacy Policy</h1><p>Your privacy is important to us. This policy outlines how we collect and use your data.</p>',
-                contentAr: '<h1>سياسة الخصوصية</h1><p>خصوصيتك مهمة بالنسبة لنا. توضح هذه السياسة كيفية جمع واستخدام بياناتك.</p>',
-                lastUpdated: '2025-04-03',
-                publishStatus: 'published',
-                version: 2
-              },
-              { 
-                id: 5, 
-                title: 'Shipping Information', 
-                titleAr: 'معلومات الشحن',
-                slug: 'shipping', 
-                content: '<h1>Shipping Information</h1><p>Learn about our shipping policies, delivery times, and tracking information.</p>',
-                contentAr: '<h1>معلومات الشحن</h1><p>تعرف على سياسات الشحن لدينا وأوقات التسليم ومعلومات التتبع.</p>',
-                lastUpdated: '2025-04-04',
-                publishStatus: 'draft',
-                version: 1
-              },
-            ];
-            setPages(fallbackPages);
-          }
-          
-          if (!faqs.length) {
-            const fallbackFAQs: FAQ[] = [
-              { 
-                id: 1, 
-                question: 'What is Jam3a?', 
-                questionAr: 'ما هي جمعة؟',
-                answer: 'Jam3a is a social shopping platform where people team up to get better prices on products through group buying.',
-                answerAr: 'جمعة هي منصة تسوق اجتماعية حيث يتعاون الناس للحصول على أسعار أفضل للمنتجات من خلال الشراء الجماعي.',
-                category: 'General',
-                order: 1,
-                lastUpdated: '2025-03-10',
-                version: 1
-              },
-              { 
-                id: 2, 
-                question: 'How does a Jam3a deal work?', 
-                questionAr: 'كيف تعمل صفقة جمعة؟',
-                answer: 'A Jam3a starts when someone selects a product and shares it with others. Once enough people join the deal within a set time, everyone gets the discounted price.',
-                answerAr: 'تبدأ الجمعة عندما يختار شخص ما منتجًا ويشاركه مع الآخرين. بمجرد انضمام عدد كافٍ من الأشخاص إلى الصفقة خلال وقت محدد، يحصل الجميع على السعر المخفض.',
-                category: 'Deals',
-                order: 2,
-                lastUpdated: '2025-03-15',
-                version: 2
-              },
-              { 
-                id: 3, 
-                question: 'Can I start my own Jam3a?', 
-                questionAr: 'هل يمكنني بدء جمعة خاصة بي؟',
-                answer: 'Yes! You can start your own Jam3a by picking a product and inviting others to join.',
-                answerAr: 'نعم! يمكنك بدء جمعة خاصة بك عن طريق اختيار منتج ودعوة الآخرين للانضمام.',
-                category: 'Deals',
-                order: 3,
-                lastUpdated: '2025-03-20',
-                version: 1
-              },
-              { 
-                id: 4, 
-                question: 'How are payments processed?', 
-                questionAr: 'كيف تتم معالجة المدفوعات؟',
-                answer: 'We use secure payment gateways including credit/debit cards, Apple Pay, and bank transfers through our partner Moyasar.',
-                answerAr: 'نستخدم بوابات دفع آمنة بما في ذلك بطاقات الائتمان/الخصم، و Apple Pay، والتحويلات المصرفية من خلال شريكنا ميسر.',
-                category: 'Payments',
-                order: 4,
-                lastUpdated: '2025-03-25',
-                version: 3
-              },
-              { 
-                id: 5, 
-                question: 'What happens if not enough people join my Jam3a?', 
-                questionAr: 'ماذا يحدث إذا لم ينضم عدد كافٍ من الأشخاص إلى جمعتي؟',
-                answer: 'If the minimum group size isn\'t reached within the timeframe, no charges will be made and the Jam3a will be canceled.',
-                answerAr: 'إذا لم يتم الوصول إلى الحد الأدنى لحجم المجموعة خلال الإطار الزمني، فلن يتم إجراء أي رسوم وسيتم إلغاء الجمعة.',
-                category: 'Deals',
-                order: 5,
-                lastUpdated: '2025-04-01',
-                version: 2
-              },
-            ];
-            setFaqs(fallbackFAQs);
-          }
-          
-          if (!sections.length) {
-            const fallbackSections: ContentSection[] = [
-              {
-                id: 1,
-                name: 'Hero Section',
-                nameAr: 'قسم الصفحة الرئيسية',
-                identifier: 'home_hero',
-                content: '<h1>Shop Together, Save Together</h1><p>Join Jam3a and unlock exclusive group discounts on premium products.</p>',
-                contentAr: '<h1>تسوقوا معًا، وفروا معًا</h1><p>انضم إلى جمعة واحصل على خصومات جماعية حصرية على المنتجات المميزة.</p>',
-                type: 'html',
-                lastUpdated: '2025-04-01',
-                version: 2
-              },
-              {
-                id: 2,
-                name: 'How It Works Section',
-                nameAr: 'قسم كيف تعمل',
-                identifier: 'how_it_works',
-                content: JSON.stringify({
-                  title: 'How Jam3a Works',
-                  subtitle: 'Simple steps to save money through the power of group buying',
-                  steps: [
-                    {
-                      title: 'Start or Join a Jam3a',
-                      description: 'Create your own group or join an existing one for the product you want.'
-                    },
-                    {
-                      title: 'Invite Friends',
-                      description: 'Share your Jam3a link with friends and family via WhatsApp, Snapchat, or social media.'
-                    },
-                    {
-                      title: 'Fill the Group',
-                      description: 'Complete your group within the time limit to unlock the group discount.'
-                    },
-                    {
-                      title: 'Everyone Saves',
-                      description: 'Once the group is complete, everyone pays the discounted price and receives their order.'
-                    }
-                  ]
-                }),
-                contentAr: JSON.stringify({
-                  title: 'كيف تعمل جمعة',
-                  subtitle: 'خطوات بسيطة لتوفير المال من خلال قوة الشراء الجماعي',
-                  steps: [
-                    {
-                      title: 'ابدأ أو انضم إلى جمعة',
-                      description: 'أنشئ مجموعتك الخاصة أو انضم إلى مجموعة موجودة للمنتج الذي تريده.'
-                    },
-                    {
-                      title: 'ادعُ أصدقاءك',
-                      description: 'شارك رابط جمعتك مع الأصدقاء والعائلة عبر واتساب أو سناب شات أو وسائل التواصل الاجتماعي.'
-                    },
-                    {
-                      title: 'أكمل المجموعة',
-                      description: 'أكمل مجموعتك ضمن الوقت المحدد للحصول على الخصم الجماعي.'
-                    },
-                    {
-                      title: 'الجميع يوفر',
-                      description: 'بمجرد اكتمال المجموعة، يدفع الجميع السعر المخفض ويستلمون طلباتهم.'
-                    }
-                  ]
-                }),
-                type: 'html',
-                lastUpdated: '2025-03-25',
-                version: 3
-              },
-              {
-                id: 3,
-                name: 'Why Choose Us',
-                nameAr: 'لماذا تختارنا',
-                identifier: 'why_choose_us',
-                content: JSON.stringify({
-                  title: 'Why Choose Jam3a',
-                  subtitle: 'The smart way to shop premium products',
-                  features: [
-                    {
-                      title: 'Save Up to 30%',
-                      description: 'Unlock exclusive discounts through the power of group buying.'
-                    },
-                    {
-                      title: 'Authentic Products',
-                      description: 'All products are 100% authentic with manufacturer warranty.'
-                    },
-                    {
-                      title: 'Fast Delivery',
-                      description: 'Quick and reliable delivery across Saudi Arabia.'
-                    },
-                    {
-                      title: 'Secure Payments',
-                      description: 'Multiple secure payment options for your convenience.'
-                    }
-                  ]
-                }),
-                contentAr: JSON.stringify({
-                  title: 'لماذا تختار جمعة',
-                  subtitle: 'الطريقة الذكية للتسوق للمنتجات المميزة',
-                  features: [
-                    {
-                      title: 'وفر حتى 30%',
-                      description: 'احصل على خصومات حصرية من خلال قوة الشراء الجماعي.'
-                    },
-                    {
-                      title: 'منتجات أصلية',
-                      description: 'جميع المنتجات أصلية 100% مع ضمان المصنع.'
-                    },
-                    {
-                      title: 'توصيل سريع',
-                      description: 'توصيل سريع وموثوق في جميع أنحاء المملكة العربية السعودية.'
-                    },
-                    {
-                      title: 'مدفوعات آمنة',
-                      description: 'خيارات دفع آمنة متعددة لراحتك.'
-                    }
-                  ]
-                }),
-                type: 'html',
-                lastUpdated: '2025-03-20',
-                version: 2
-              },
-              {
-                id: 4,
-                name: 'Footer Content',
-                nameAr: 'محتوى التذييل',
-                identifier: 'footer',
-                content: JSON.stringify({
-                  companyName: 'Jam3a Hub Collective',
-                  tagline: 'Shop Together, Save Together',
-                  address: 'Riyadh, Saudi Arabia',
-                  email: 'support@jam3a.com',
-                  phone: '+966 50 123 4567',
-                  socialLinks: {
-                    twitter: 'https://twitter.com/jam3a',
-                    instagram: 'https://instagram.com/jam3a',
-                    facebook: 'https://facebook.com/jam3a',
-                    linkedin: 'https://linkedin.com/company/jam3a'
-                  },
-                  copyright: '© 2025 Jam3a. All rights reserved.'
-                }),
-                contentAr: JSON.stringify({
-                  companyName: 'جمعة هب كوليكتيف',
-                  tagline: 'تسوقوا معًا، وفروا معًا',
-                  address: 'الرياض، المملكة العربية السعودية',
-                  email: 'support@jam3a.com',
-                  phone: '+966 50 123 4567',
-                  socialLinks: {
-                    twitter: 'https://twitter.com/jam3a',
-                    instagram: 'https://instagram.com/jam3a',
-                    facebook: 'https://facebook.com/jam3a',
-                    linkedin: 'https://linkedin.com/company/jam3a'
-                  },
-                  copyright: '© 2025 جمعة. جميع الحقوق محفوظة.'
-                }),
-                type: 'html',
-                lastUpdated: '2025-04-02',
-                version: 1
-              },
-            ];
-            setSections(fallbackSections);
-          }
-        }
-        
-        // Fetch version history
-        const fetchVersionHistory = async () => {
-          try {
-            // In a real implementation, this would be an API call
-            // const response = await axios.get('/api/versions');
-            // setVersions(response.data);
-            
-            // Fallback version history data
-            const fallbackVersions: ContentVersion[] = [
-              {
-                id: 1,
-                contentId: 1,
-                contentType: 'page',
-                version: 1,
-                content: {
-                  title: 'About Jam3a',
-                  titleAr: 'عن جمعة',
-                  slug: 'about',
-                  content: '<h1>About Jam3a</h1><p>Jam3a is a platform for group buying.</p>',
-                  contentAr: '<h1>عن جمعة</h1><p>جمعة هي منصة للشراء الجماعي.</p>',
-                  lastUpdated: '2025-03-01',
-                  publishStatus: 'published'
-                },
-                createdAt: '2025-03-01T12:00:00Z',
-                createdBy: 'admin'
-              },
-              {
-                id: 2,
-                contentId: 1,
-                contentType: 'page',
-                version: 2,
-                content: {
-                  title: 'About Jam3a',
-                  titleAr: 'عن جمعة',
-                  slug: 'about',
-                  content: '<h1>About Jam3a</h1><p>Jam3a is a social shopping platform for group buying.</p>',
-                  contentAr: '<h1>عن جمعة</h1><p>جمعة هي منصة تسوق اجتماعية للشراء الجماعي.</p>',
-                  lastUpdated: '2025-03-15',
-                  publishStatus: 'published'
-                },
-                createdAt: '2025-03-15T14:30:00Z',
-                createdBy: 'admin',
-                notes: 'Updated description'
-              },
-              {
-                id: 3,
-                contentId: 1,
-                contentType: 'page',
-                version: 3,
-                content: {
-                  title: 'About Jam3a',
-                  titleAr: 'عن جمعة',
-                  slug: 'about',
-                  content: '<h1>About Jam3a</h1><p>Jam3a is a social shopping platform where people team up to get better prices on products through group buying.</p>',
-                  contentAr: '<h1>عن جمعة</h1><p>جمعة هي منصة تسوق اجتماعية حيث يتعاون الناس للحصول على أسعار أفضل للمنتجات من خلال الشراء الجماعي.</p>',
-                  lastUpdated: '2025-04-01',
-                  publishStatus: 'published'
-                },
-                createdAt: '2025-04-01T09:45:00Z',
-                createdBy: 'admin',
-                notes: 'Expanded description with more details'
-              }
-            ];
-            setVersions(fallbackVersions);
-            return true;
-          } catch (error) {
-            console.error("Error fetching version history:", error);
-            return false;
-          }
-        };
-        
-        await fetchVersionHistory();
+        // For demo, use mock data
+        setTimeout(() => {
+          setContents(generateMockContent());
+          setIsLoading(false);
+        }, 800);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error('Error fetching content:', error);
         toast({
-          title: "Error",
-          description: "Failed to load content. Please try again.",
-          variant: "destructive"
+          title: 'Error',
+          description: 'Failed to load content. Please try again.',
+          variant: 'destructive'
         });
-      } finally {
         setIsLoading(false);
       }
     };
-    
-    fetchData();
+
+    fetchContent();
   }, [toast]);
 
-  // Filter functions
-  const filteredBanners = banners.filter(banner => {
-    const matchesSearch = banner.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (banner.titleAr && banner.titleAr.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesActive = filters.banners.active === null || banner.active === filters.banners.active;
-    return matchesSearch && matchesActive;
+  // Update current language when global language changes
+  useEffect(() => {
+    setCurrentLanguage(language as 'en' | 'ar');
+  }, [language]);
+
+  // Generate mock content for demo
+  const generateMockContent = (): Content[] => {
+    const mockContent: Content[] = [];
+    
+    // Home page
+    mockContent.push({
+      id: '1',
+      title: 'Home Page',
+      titleAr: 'الصفحة الرئيسية',
+      slug: 'home',
+      type: CONTENT_TYPES.PAGE,
+      content: '<h1>Welcome to Jam3a</h1><p>Join our community and save on your favorite products!</p>',
+      contentAr: '<h1>مرحبًا بكم في جمعة</h1><p>انضم إلى مجتمعنا ووفر على منتجاتك المفضلة!</p>',
+      status: CONTENT_STATUS.PUBLISHED,
+      author: 'Admin',
+      featuredImage: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d',
+      seoTitle: 'Jam3a - Group Buying Platform',
+      seoDescription: 'Join Jam3a and save on your favorite products through group buying.',
+      tags: ['homepage', 'welcome'],
+      createdAt: '2023-01-15T10:00:00Z',
+      updatedAt: '2023-03-20T14:30:00Z',
+      publishedAt: '2023-03-20T15:00:00Z'
+    });
+    
+    // About page
+    mockContent.push({
+      id: '2',
+      title: 'About Us',
+      titleAr: 'من نحن',
+      slug: 'about',
+      type: CONTENT_TYPES.PAGE,
+      content: '<h1>About Jam3a</h1><p>Jam3a is a community-driven group buying platform that helps you save money on everyday products.</p>',
+      contentAr: '<h1>عن جمعة</h1><p>جمعة هي منصة شراء جماعي مدفوعة بالمجتمع تساعدك على توفير المال على المنتجات اليومية.</p>',
+      status: CONTENT_STATUS.PUBLISHED,
+      author: 'Admin',
+      seoTitle: 'About Jam3a - Our Story',
+      seoDescription: 'Learn about Jam3a\'s mission to make group buying accessible to everyone.',
+      tags: ['about', 'mission'],
+      createdAt: '2023-01-20T11:15:00Z',
+      updatedAt: '2023-02-10T09:45:00Z',
+      publishedAt: '2023-02-10T10:00:00Z'
+    });
+    
+    // Blog post 1
+    mockContent.push({
+      id: '3',
+      title: 'How Group Buying Can Save You Money',
+      titleAr: 'كيف يمكن للشراء الجماعي أن يوفر لك المال',
+      slug: 'how-group-buying-saves-money',
+      type: CONTENT_TYPES.BLOG,
+      content: '<h2>The Power of Group Buying</h2><p>Group buying allows consumers to leverage collective purchasing power to get better deals...</p>',
+      contentAr: '<h2>قوة الشراء الجماعي</h2><p>يسمح الشراء الجماعي للمستهلكين بالاستفادة من قوة الشراء الجماعية للحصول على صفقات أفضل...</p>',
+      status: CONTENT_STATUS.PUBLISHED,
+      author: 'Sarah Ahmed',
+      featuredImage: 'https://images.unsplash.com/photo-1556742111-a301076d9d18',
+      seoTitle: 'How Group Buying Saves Money | Jam3a Blog',
+      seoDescription: 'Discover how group buying can help you save up to 40% on everyday products.',
+      tags: ['group buying', 'savings', 'tips'],
+      createdAt: '2023-03-05T08:30:00Z',
+      updatedAt: '2023-03-05T14:20:00Z',
+      publishedAt: '2023-03-06T09:00:00Z'
+    });
+    
+    // Blog post 2
+    mockContent.push({
+      id: '4',
+      title: 'Top 5 Products to Buy as a Group',
+      titleAr: 'أفضل 5 منتجات للشراء كمجموعة',
+      slug: 'top-5-group-buying-products',
+      type: CONTENT_TYPES.BLOG,
+      content: '<h2>Best Products for Group Buying</h2><p>Not all products are created equal when it comes to group buying. Here are our top 5 recommendations...</p>',
+      contentAr: '<h2>أفضل المنتجات للشراء الجماعي</h2><p>ليست كل المنتجات متساوية عندما يتعلق الأمر بالشراء الجماعي. إليك أفضل 5 توصيات لدينا...</p>',
+      status: CONTENT_STATUS.PUBLISHED,
+      author: 'Mohammed Ali',
+      featuredImage: 'https://images.unsplash.com/photo-1556740758-90de374c12ad',
+      seoTitle: 'Top 5 Products for Group Buying | Jam3a Blog',
+      seoDescription: 'Discover the best products to purchase as a group for maximum savings.',
+      tags: ['group buying', 'products', 'recommendations'],
+      relatedProducts: ['1', '5', '8'],
+      createdAt: '2023-04-10T13:45:00Z',
+      updatedAt: '2023-04-12T10:30:00Z',
+      publishedAt: '2023-04-12T11:00:00Z'
+    });
+    
+    // Product description
+    mockContent.push({
+      id: '5',
+      title: 'iPhone 14 Pro Max Product Description',
+      titleAr: 'وصف منتج آيفون 14 برو ماكس',
+      slug: 'iphone-14-pro-max-description',
+      type: CONTENT_TYPES.PRODUCT_DESCRIPTION,
+      content: '<h2>iPhone 14 Pro Max</h2><p>Experience the ultimate iPhone with the powerful A16 Bionic chip, 48MP camera, and stunning Super Retina XDR display.</p>',
+      contentAr: '<h2>آيفون 14 برو ماكس</h2><p>استمتع بتجربة أفضل آيفون مع شريحة A16 Bionic القوية وكاميرا 48 ميجابكسل وشاشة Super Retina XDR المذهلة.</p>',
+      status: CONTENT_STATUS.PUBLISHED,
+      author: 'Product Team',
+      featuredImage: 'https://images.unsplash.com/photo-1663499482523-1c0c1bae9649',
+      seoTitle: 'iPhone 14 Pro Max | Jam3a Group Buy',
+      seoDescription: 'Join a group buy for the iPhone 14 Pro Max and save up to 15% on Apple\'s flagship smartphone.',
+      tags: ['iphone', 'apple', 'smartphone'],
+      relatedProducts: ['6', '7'],
+      createdAt: '2023-05-20T09:15:00Z',
+      updatedAt: '2023-05-22T16:40:00Z',
+      publishedAt: '2023-05-23T10:00:00Z'
+    });
+    
+    // Email template
+    mockContent.push({
+      id: '6',
+      title: 'Welcome Email Template',
+      titleAr: 'قالب البريد الإلكتروني للترحيب',
+      slug: 'welcome-email',
+      type: CONTENT_TYPES.EMAIL_TEMPLATE,
+      content: '<h2>Welcome to Jam3a!</h2><p>Thank you for joining our community. Here\'s what you can do next...</p>',
+      contentAr: '<h2>مرحبًا بك في جمعة!</h2><p>شكرًا لانضمامك إلى مجتمعنا. إليك ما يمكنك فعله بعد ذلك...</p>',
+      status: CONTENT_STATUS.PUBLISHED,
+      author: 'Marketing Team',
+      tags: ['email', 'welcome', 'onboarding'],
+      createdAt: '2023-06-05T11:30:00Z',
+      updatedAt: '2023-06-07T14:15:00Z',
+      publishedAt: '2023-06-08T09:00:00Z'
+    });
+    
+    // Draft blog post
+    mockContent.push({
+      id: '7',
+      title: 'Upcoming Features in Jam3a 2.0',
+      titleAr: 'الميزات القادمة في جمعة 2.0',
+      slug: 'upcoming-features-jam3a-2',
+      type: CONTENT_TYPES.BLOG,
+      content: '<h2>Exciting New Features Coming Soon</h2><p>We\'re working on some amazing new features for Jam3a 2.0. Here\'s a sneak peek...</p>',
+      contentAr: '<h2>ميزات جديدة مثيرة قادمة قريبًا</h2><p>نحن نعمل على بعض الميزات الجديدة المذهلة لـ جمعة 2.0. إليك لمحة سريعة...</p>',
+      status: CONTENT_STATUS.DRAFT,
+      author: 'Product Team',
+      tags: ['jam3a 2.0', 'features', 'roadmap'],
+      createdAt: '2023-07-15T10:20:00Z',
+      updatedAt: '2023-07-15T10:20:00Z'
+    });
+    
+    // Scheduled blog post
+    mockContent.push({
+      id: '8',
+      title: 'Jam3a Black Friday Deals Guide',
+      titleAr: 'دليل صفقات الجمعة السوداء من جمعة',
+      slug: 'black-friday-deals-guide',
+      type: CONTENT_TYPES.BLOG,
+      content: '<h2>Get Ready for Black Friday</h2><p>Black Friday is coming, and we\'ve prepared the ultimate guide to help you find the best deals...</p>',
+      contentAr: '<h2>استعد للجمعة السوداء</h2><p>الجمعة السوداء قادمة، وقد أعددنا الدليل النهائي لمساعدتك في العثور على أفضل الصفقات...</p>',
+      status: CONTENT_STATUS.SCHEDULED,
+      author: 'Marketing Team',
+      featuredImage: 'https://images.unsplash.com/photo-1607083206968-13611e3d76db',
+      seoTitle: 'Black Friday Deals Guide | Jam3a',
+      seoDescription: 'Discover the best Black Friday deals and how to join group buys for maximum savings.',
+      tags: ['black friday', 'deals', 'shopping guide'],
+      createdAt: '2023-11-01T15:45:00Z',
+      updatedAt: '2023-11-05T09:30:00Z',
+      scheduledAt: '2023-11-20T08:00:00Z'
+    });
+    
+    return mockContent;
+  };
+
+  // Filter contents based on search term, active tab, and filters
+  const filteredContents = contents.filter(content => {
+    // Search term filter
+    const matchesSearch = 
+      content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      content.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (content.tags && content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+    
+    // Tab filter
+    const matchesTab = 
+      activeTab === 'all' ||
+      (activeTab === 'pages' && content.type === CONTENT_TYPES.PAGE) ||
+      (activeTab === 'blogs' && content.type === CONTENT_TYPES.BLOG) ||
+      (activeTab === 'products' && content.type === CONTENT_TYPES.PRODUCT_DESCRIPTION) ||
+      (activeTab === 'emails' && content.type === CONTENT_TYPES.EMAIL_TEMPLATE) ||
+      (activeTab === 'published' && content.status === CONTENT_STATUS.PUBLISHED) ||
+      (activeTab === 'drafts' && content.status === CONTENT_STATUS.DRAFT) ||
+      (activeTab === 'scheduled' && content.status === CONTENT_STATUS.SCHEDULED);
+    
+    // Advanced filters
+    const matchesType = !filters.type || content.type === filters.type;
+    const matchesStatus = !filters.status || content.status === filters.status;
+    const matchesAuthor = !filters.author || content.author === filters.author;
+    const matchesTag = !filters.tag || (content.tags && content.tags.includes(filters.tag));
+    
+    // Date range filter
+    let matchesDateRange = true;
+    if (filters.dateRange[0] && filters.dateRange[1]) {
+      const contentDate = new Date(content.createdAt);
+      const startDate = new Date(filters.dateRange[0]);
+      const endDate = new Date(filters.dateRange[1]);
+      matchesDateRange = contentDate >= startDate && contentDate <= endDate;
+    }
+    
+    return matchesSearch && matchesTab && matchesType && 
+           matchesStatus && matchesAuthor && matchesTag && matchesDateRange;
   });
 
-  const filteredPages = pages.filter(page => {
-    const matchesSearch = page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (page.titleAr && page.titleAr.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         page.slug.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !filters.pages.publishStatus || page.publishStatus === filters.pages.publishStatus;
-    return matchesSearch && matchesStatus;
+  // Sort contents by updated date (newest first)
+  const sortedContents = [...filteredContents].sort((a, b) => {
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
-  const filteredFAQs = faqs.filter(faq => {
-    const matchesSearch = faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (faq.questionAr && faq.questionAr.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         faq.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (faq.answerAr && faq.answerAr.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = !filters.faqs.category || faq.category === filters.faqs.category;
-    return matchesSearch && matchesCategory;
-  });
+  // Get unique authors, types, and tags for filter dropdowns
+  const authors = Array.from(new Set(contents.map(c => c.author)));
+  const types = Object.values(CONTENT_TYPES);
+  const statuses = Object.values(CONTENT_STATUS);
+  const tags = Array.from(new Set(contents.flatMap(c => c.tags || [])));
 
-  const filteredSections = sections.filter(section => {
-    const matchesSearch = section.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (section.nameAr && section.nameAr.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         section.identifier.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !filters.sections.type || section.type === filters.sections.type;
-    return matchesSearch && matchesType;
-  });
-
-  // Banner management functions
-  const handleAddBanner = () => {
-    setEditingBanner({
-      id: Date.now(), // Temporary ID
-      title: '',
-      titleAr: '',
-      image: '',
-      active: false,
-      version: 1,
-      lastUpdated: new Date().toISOString().split('T')[0]
-    });
-  };
-
-  const handleEditBanner = (banner: Banner) => {
-    setEditingBanner({...banner});
-    setEditingLanguage('en');
-  };
-
-  const handleSaveBanner = () => {
-    if (!editingBanner) return;
-    
-    if (!editingBanner.title || !editingBanner.image) {
-      toast({
-        title: "Validation Error",
-        description: "Please provide a title and image for the banner",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if this is a new banner or editing existing one
-    const isNewBanner = !banners.some(b => b.id === editingBanner.id);
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    // Update version and last updated date
-    const updatedBanner = {
-      ...editingBanner,
-      version: isNewBanner ? 1 : (editingBanner.version || 0) + 1,
-      lastUpdated: currentDate
+  // Handle adding new content
+  const handleAddContent = (content: Omit<Content, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newContent: Content = {
+      ...content as any,
+      id: Math.random().toString(36).substring(2, 9),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     
-    if (isNewBanner) {
-      setBanners([...banners, updatedBanner]);
-    } else {
-      setBanners(banners.map(b => b.id === updatedBanner.id ? updatedBanner : b));
-      
-      // Add to version history
-      const newVersion: ContentVersion = {
-        id: Date.now(),
-        contentId: updatedBanner.id,
-        contentType: 'banner',
-        version: updatedBanner.version || 1,
-        content: { ...updatedBanner },
-        createdAt: new Date().toISOString(),
-        createdBy: 'admin',
-        notes: 'Updated banner'
-      };
-      
-      setVersions([newVersion, ...versions]);
-    }
-    
-    setEditingBanner(null);
+    setContents([...contents, newContent]);
+    setIsAddingContent(false);
     
     toast({
-      title: isNewBanner ? "Banner Added" : "Banner Updated",
-      description: `Banner "${updatedBanner.title}" has been ${isNewBanner ? 'added' : 'updated'} successfully.`,
+      title: 'Content Added',
+      description: `${content.title} has been added successfully.`,
     });
   };
 
-  const handleDeleteBanner = (id: number) => {
-    const bannerToDelete = banners.find(b => b.id === id);
-    if (!bannerToDelete) return;
-    
-    setBanners(banners.filter(b => b.id !== id));
-    
-    toast({
-      title: "Banner Deleted",
-      description: `Banner "${bannerToDelete.title}" has been deleted.`,
-    });
-  };
-
-  // Page management functions
-  const handleAddPage = () => {
-    setEditingPage({
-      id: Date.now(), // Temporary ID
-      title: '',
-      titleAr: '',
-      slug: '',
-      content: '',
-      contentAr: '',
-      lastUpdated: new Date().toISOString().split('T')[0],
-      publishStatus: 'draft',
-      version: 1
-    });
-  };
-
-  const handleEditPage = (page: Page) => {
-    setEditingPage({...page});
-    setEditingLanguage('en');
-  };
-
-  const handleSavePage = () => {
-    if (!editingPage) return;
-    
-    if (!editingPage.title || !editingPage.slug || !editingPage.content) {
-      toast({
-        title: "Validation Error",
-        description: "Please provide a title, slug, and content for the page",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if this is a new page or editing existing one
-    const isNewPage = !pages.some(p => p.id === editingPage.id);
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    // Update version and last updated date
-    const updatedPage = {
-      ...editingPage,
-      version: isNewPage ? 1 : (editingPage.version || 0) + 1,
-      lastUpdated: currentDate
+  // Handle updating content
+  const handleUpdateContent = (updatedContent: Content) => {
+    const contentWithDate = {
+      ...updatedContent,
+      updatedAt: new Date().toISOString()
     };
     
-    if (isNewPage) {
-      setPages([...pages, updatedPage]);
+    setContents(
+      contents.map((c) => (c.id === contentWithDate.id ? contentWithDate : c))
+    );
+    setEditingContent(null);
+    
+    toast({
+      title: 'Content Updated',
+      description: `${updatedContent.title} has been updated successfully.`,
+    });
+  };
+
+  // Handle deleting content
+  const handleDeleteContent = (id: string) => {
+    const contentToDelete = contents.find(c => c.id === id);
+    if (!contentToDelete) return;
+    
+    setContents(contents.filter((c) => c.id !== id));
+    
+    toast({
+      title: 'Content Deleted',
+      description: `${contentToDelete.title} has been deleted.`,
+    });
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = () => {
+    if (selectedContents.length === 0) return;
+    
+    const updatedContents = contents.filter(c => !selectedContents.includes(c.id));
+    setContents(updatedContents);
+    setSelectedContents([]);
+    
+    toast({
+      title: 'Bulk Delete Successful',
+      description: `${selectedContents.length} content items have been deleted.`,
+    });
+  };
+
+  // Handle select all
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedContents(sortedContents.map(c => c.id));
     } else {
-      setPages(pages.map(p => p.id === updatedPage.id ? updatedPage : p));
-      
-      // Add to version history
-      const newVersion: ContentVersion = {
-        id: Date.now(),
-        contentId: updatedPage.id,
-        contentType: 'page',
-        version: updatedPage.version || 1,
-        content: { ...updatedPage },
-        createdAt: new Date().toISOString(),
-        createdBy: 'admin',
-        notes: 'Updated page content'
-      };
-      
-      setVersions([newVersion, ...versions]);
+      setSelectedContents([]);
     }
-    
-    setEditingPage(null);
-    
-    toast({
-      title: isNewPage ? "Page Added" : "Page Updated",
-      description: `Page "${updatedPage.title}" has been ${isNewPage ? 'added' : 'updated'} successfully.`,
+  };
+
+  // Handle select content
+  const handleSelectContent = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedContents([...selectedContents, id]);
+    } else {
+      setSelectedContents(selectedContents.filter(contentId => contentId !== id));
+    }
+  };
+
+  // Handle filter change
+  const handleFilterChange = (key: keyof ContentFilters, value: any) => {
+    setFilters({
+      ...filters,
+      [key]: value
     });
   };
 
-  const handleDeletePage = (id: number) => {
-    const pageToDelete = pages.find(p => p.id === id);
-    if (!pageToDelete) return;
-    
-    setPages(pages.filter(p => p.id !== id));
-    
-    toast({
-      title: "Page Deleted",
-      description: `Page "${pageToDelete.title}" has been deleted.`,
+  // Handle reset filters
+  const handleResetFilters = () => {
+    setFilters({
+      type: '',
+      status: '',
+      author: '',
+      tag: '',
+      dateRange: ['', '']
     });
+    setIsFilterDialogOpen(false);
   };
 
-  // FAQ management functions
-  const handleAddFAQ = () => {
-    setEditingFAQ({
-      id: Date.now(), // Temporary ID
-      question: '',
-      questionAr: '',
-      answer: '',
-      answerAr: '',
-      category: 'General',
-      order: faqs.length + 1,
-      lastUpdated: new Date().toISOString().split('T')[0],
-      version: 1
-    });
+  // Handle apply filters
+  const handleApplyFilters = () => {
+    setIsFilterDialogOpen(false);
   };
 
-  const handleEditFAQ = (faq: FAQ) => {
-    setEditingFAQ({...faq});
-    setEditingLanguage('en');
-  };
-
-  const handleSaveFAQ = () => {
-    if (!editingFAQ) return;
+  // Handle image upload
+  const handleImageUpload = async (file: File): Promise<string> => {
+    setIsUploading(true);
+    setUploadProgress(0);
     
-    if (!editingFAQ.question || !editingFAQ.answer) {
+    try {
+      const formData = new FormData();
+      
+      if (uploadService === 'CLOUDINARY') {
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_SERVICES.CLOUDINARY.uploadPreset);
+        formData.append('folder', 'jam3a_content');
+        
+        const response = await axios.post(
+          UPLOAD_SERVICES.CLOUDINARY.uploadUrl,
+          formData,
+          {
+            onUploadProgress: (progressEvent) => {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / (progressEvent.total || 100)
+              );
+              setUploadProgress(progress);
+            }
+          }
+        );
+        
+        setIsUploading(false);
+        return response.data.secure_url;
+      } else if (uploadService === 'IMGBB') {
+        formData.append('image', file);
+        formData.append('key', UPLOAD_SERVICES.IMGBB.apiKey);
+        
+        const response = await axios.post(
+          UPLOAD_SERVICES.IMGBB.uploadUrl,
+          formData,
+          {
+            onUploadProgress: (progressEvent) => {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / (progressEvent.total || 100)
+              );
+              setUploadProgress(progress);
+            }
+          }
+        );
+        
+        setIsUploading(false);
+        return response.data.data.url;
+      }
+      
+      throw new Error('Invalid upload service');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setIsUploading(false);
+      
       toast({
-        title: "Validation Error",
-        description: "Please provide a question and answer for the FAQ",
-        variant: "destructive"
+        title: 'Upload Failed',
+        description: 'Failed to upload image. Please try again.',
+        variant: 'destructive'
       });
-      return;
-    }
-    
-    // Check if this is a new FAQ or editing existing one
-    const isNewFAQ = !faqs.some(f => f.id === editingFAQ.id);
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    // Update version and last updated date
-    const updatedFAQ = {
-      ...editingFAQ,
-      version: isNewFAQ ? 1 : (editingFAQ.version || 0) + 1,
-      lastUpdated: currentDate
-    };
-    
-    if (isNewFAQ) {
-      setFaqs([...faqs, updatedFAQ]);
-    } else {
-      setFaqs(faqs.map(f => f.id === updatedFAQ.id ? updatedFAQ : f));
       
-      // Add to version history
-      const newVersion: ContentVersion = {
-        id: Date.now(),
-        contentId: updatedFAQ.id,
-        contentType: 'faq',
-        version: updatedFAQ.version || 1,
-        content: { ...updatedFAQ },
-        createdAt: new Date().toISOString(),
-        createdBy: 'admin',
-        notes: 'Updated FAQ'
-      };
+      return '';
+    }
+  };
+
+  // Handle file input change
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
       
-      setVersions([newVersion, ...versions]);
-    }
-    
-    setEditingFAQ(null);
-    
-    toast({
-      title: isNewFAQ ? "FAQ Added" : "FAQ Updated",
-      description: `FAQ "${updatedFAQ.question}" has been ${isNewFAQ ? 'added' : 'updated'} successfully.`,
-    });
-  };
-
-  const handleDeleteFAQ = (id: number) => {
-    const faqToDelete = faqs.find(f => f.id === id);
-    if (!faqToDelete) return;
-    
-    setFaqs(faqs.filter(f => f.id !== id));
-    
-    toast({
-      title: "FAQ Deleted",
-      description: `FAQ "${faqToDelete.question}" has been deleted.`,
-    });
-  };
-
-  // Section management functions
-  const handleAddSection = () => {
-    setEditingSection({
-      id: Date.now(), // Temporary ID
-      name: '',
-      nameAr: '',
-      identifier: '',
-      content: '',
-      contentAr: '',
-      type: 'html',
-      lastUpdated: new Date().toISOString().split('T')[0],
-      version: 1
-    });
-  };
-
-  const handleEditSection = (section: ContentSection) => {
-    setEditingSection({...section});
-    setEditingLanguage('en');
-  };
-
-  const handleSaveSection = () => {
-    if (!editingSection) return;
-    
-    if (!editingSection.name || !editingSection.identifier || !editingSection.content) {
-      toast({
-        title: "Validation Error",
-        description: "Please provide a name, identifier, and content for the section",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if this is a new section or editing existing one
-    const isNewSection = !sections.some(s => s.id === editingSection.id);
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    // Update version and last updated date
-    const updatedSection = {
-      ...editingSection,
-      version: isNewSection ? 1 : (editingSection.version || 0) + 1,
-      lastUpdated: currentDate
-    };
-    
-    if (isNewSection) {
-      setSections([...sections, updatedSection]);
-    } else {
-      setSections(sections.map(s => s.id === updatedSection.id ? updatedSection : s));
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid File',
+          description: 'Please select an image file.',
+          variant: 'destructive'
+        });
+        return;
+      }
       
-      // Add to version history
-      const newVersion: ContentVersion = {
-        id: Date.now(),
-        contentId: updatedSection.id,
-        contentType: 'section',
-        version: updatedSection.version || 1,
-        content: { ...updatedSection },
-        createdAt: new Date().toISOString(),
-        createdBy: 'admin',
-        notes: 'Updated section content'
-      };
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Please select an image smaller than 5MB.',
+          variant: 'destructive'
+        });
+        return;
+      }
       
-      setVersions([newVersion, ...versions]);
+      try {
+        const imageUrl = await handleImageUpload(file);
+        
+        if (imageUrl) {
+          // If editing content, update the featured image
+          if (editingContent) {
+            setEditingContent({
+              ...editingContent,
+              featuredImage: imageUrl
+            });
+          }
+          
+          toast({
+            title: 'Upload Successful',
+            description: 'Image has been uploaded successfully.',
+          });
+        }
+      } catch (error) {
+        console.error('Error handling file:', error);
+        
+        toast({
+          title: 'Upload Failed',
+          description: 'Failed to upload image. Please try again.',
+          variant: 'destructive'
+        });
+      }
     }
-    
-    setEditingSection(null);
-    
-    toast({
-      title: isNewSection ? "Section Added" : "Section Updated",
-      description: `Section "${updatedSection.name}" has been ${isNewSection ? 'added' : 'updated'} successfully.`,
-    });
   };
 
-  const handleDeleteSection = (id: number) => {
-    const sectionToDelete = sections.find(s => s.id === id);
-    if (!sectionToDelete) return;
-    
-    setSections(sections.filter(s => s.id !== id));
-    
-    toast({
-      title: "Section Deleted",
-      description: `Section "${sectionToDelete.name}" has been deleted.`,
-    });
-  };
-
-  // Version history functions
-  const handleViewVersionHistory = (id: number, type: 'banner' | 'page' | 'faq' | 'section') => {
-    setCurrentContentId(id);
-    setCurrentContentType(type);
-    setShowVersionHistory(true);
-  };
-
-  const handleRestoreVersion = (version: ContentVersion) => {
-    if (!version.contentType || !version.content) return;
-    
-    switch (version.contentType) {
-      case 'banner':
-        setBanners(banners.map(b => b.id === version.contentId ? {
-          ...version.content as Banner,
-          lastUpdated: new Date().toISOString().split('T')[0],
-          version: (version.content as Banner).version || 1
-        } : b));
-        break;
-      case 'page':
-        setPages(pages.map(p => p.id === version.contentId ? {
-          ...version.content as Page,
-          lastUpdated: new Date().toISOString().split('T')[0],
-          version: (version.content as Page).version || 1
-        } : p));
-        break;
-      case 'faq':
-        setFaqs(faqs.map(f => f.id === version.contentId ? {
-          ...version.content as FAQ,
-          lastUpdated: new Date().toISOString().split('T')[0],
-          version: (version.content as FAQ).version || 1
-        } : f));
-        break;
-      case 'section':
-        setSections(sections.map(s => s.id === version.contentId ? {
-          ...version.content as ContentSection,
-          lastUpdated: new Date().toISOString().split('T')[0],
-          version: (version.content as ContentSection).version || 1
-        } : s));
-        break;
+  // Get content type badge
+  const getContentTypeBadge = (type: string) => {
+    switch (type) {
+      case CONTENT_TYPES.PAGE:
+        return (
+          <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+            <FileText className="mr-1 h-3 w-3" />
+            Page
+          </Badge>
+        );
+      case CONTENT_TYPES.BLOG:
+        return (
+          <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-200">
+            <FileText className="mr-1 h-3 w-3" />
+            Blog
+          </Badge>
+        );
+      case CONTENT_TYPES.PRODUCT_DESCRIPTION:
+        return (
+          <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">
+            <ShoppingBag className="mr-1 h-3 w-3" />
+            Product
+          </Badge>
+        );
+      case CONTENT_TYPES.CATEGORY_DESCRIPTION:
+        return (
+          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
+            <ShoppingBag className="mr-1 h-3 w-3" />
+            Category
+          </Badge>
+        );
+      case CONTENT_TYPES.EMAIL_TEMPLATE:
+        return (
+          <Badge variant="outline" className="bg-orange-50 text-orange-800 border-orange-200">
+            <FileText className="mr-1 h-3 w-3" />
+            Email
+          </Badge>
+        );
+      case CONTENT_TYPES.LANDING_PAGE:
+        return (
+          <Badge variant="outline" className="bg-indigo-50 text-indigo-800 border-indigo-200">
+            <Home className="mr-1 h-3 w-3" />
+            Landing
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline">
+            <FileText className="mr-1 h-3 w-3" />
+            {type}
+          </Badge>
+        );
     }
-    
-    setShowVersionHistory(false);
-    
-    toast({
-      title: "Version Restored",
-      description: `Content has been restored to version ${version.version}.`,
+  };
+
+  // Get content status badge
+  const getContentStatusBadge = (status: string) => {
+    switch (status) {
+      case CONTENT_STATUS.PUBLISHED:
+        return (
+          <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">
+            Published
+          </Badge>
+        );
+      case CONTENT_STATUS.DRAFT:
+        return (
+          <Badge variant="outline" className="bg-gray-50 text-gray-800 border-gray-200">
+            Draft
+          </Badge>
+        );
+      case CONTENT_STATUS.SCHEDULED:
+        return (
+          <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+            Scheduled
+          </Badge>
+        );
+      case CONTENT_STATUS.ARCHIVED:
+        return (
+          <Badge variant="outline" className="bg-red-50 text-red-800 border-red-200">
+            Archived
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline">
+            {status}
+          </Badge>
+        );
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
-
-  // Get filtered versions for current content
-  const filteredVersions = versions.filter(v => 
-    v.contentId === currentContentId && v.contentType === currentContentType
-  ).sort((a, b) => b.version - a.version);
-
-  // Get unique FAQ categories
-  const faqCategories = Array.from(new Set(faqs.map(faq => faq.category))).filter(Boolean);
-
-  // Quill editor modules and formats
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'align': [] }],
-      ['link', 'image'],
-      ['clean']
-    ],
-  };
-  
-  const quillFormats = [
-    'header',
-    'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
-    'align',
-    'link', 'image'
-  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Content Management</h2>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => {
-              // Simulate refreshing content from server
-              setIsLoading(true);
-              setTimeout(() => {
-                setIsLoading(false);
-                toast({
-                  title: "Content Refreshed",
-                  description: "Content has been refreshed from the server.",
-                });
-              }, 1000);
-            }} 
-            variant="outline"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Refreshing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" /> Refresh
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search content..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8"
-            />
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle>Content Management</CardTitle>
+              <CardDescription>
+                Manage your website content, blog posts, product descriptions, and more
+              </CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setContents(generateMockContent())}
+                disabled={isLoading}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => setIsAddingContent(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Content
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <Tabs defaultValue="banners" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="banners">Banners</TabsTrigger>
-          <TabsTrigger value="pages">Pages</TabsTrigger>
-          <TabsTrigger value="faqs">FAQs</TabsTrigger>
-          <TabsTrigger value="sections">Content Sections</TabsTrigger>
-        </TabsList>
-        
-        {/* Banners Tab */}
-        <TabsContent value="banners">
-          {editingBanner ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{editingBanner.id ? `Edit Banner: ${editingBanner.title}` : 'Add New Banner'}</CardTitle>
-                <CardDescription>
-                  Manage banner content and settings
-                </CardDescription>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Button 
-                    variant={editingLanguage === 'en' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('en')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    English
-                  </Button>
-                  <Button 
-                    variant={editingLanguage === 'ar' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('ar')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    العربية
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {editingLanguage === 'en' ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Title</Label>
-                        <Input
-                          id="title"
-                          value={editingBanner.title}
-                          onChange={(e) => setEditingBanner({...editingBanner, title: e.target.value})}
-                          placeholder="Enter banner title"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="link">Link (Optional)</Label>
-                        <Input
-                          id="link"
-                          value={editingBanner.link || ''}
-                          onChange={(e) => setEditingBanner({...editingBanner, link: e.target.value})}
-                          placeholder="Enter banner link URL"
-                        />
-                      </div>
-                      
-                      <ImageUploader
-                        currentImage={editingBanner.image}
-                        onImageUpload={(url) => setEditingBanner({...editingBanner, image: url})}
-                        label="Banner Image"
-                      />
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="active"
-                          checked={editingBanner.active}
-                          onCheckedChange={(checked) => setEditingBanner({...editingBanner, active: !!checked})}
-                        />
-                        <Label htmlFor="active">Active</Label>
-                      </div>
-                      
-                      {editingBanner.id && editingBanner.version && (
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>Last updated: {editingBanner.lastUpdated}</span>
-                          <span>•</span>
-                          <span>Version: {editingBanner.version}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="titleAr">Title (Arabic)</Label>
-                        <Input
-                          id="titleAr"
-                          value={editingBanner.titleAr || ''}
-                          onChange={(e) => setEditingBanner({...editingBanner, titleAr: e.target.value})}
-                          placeholder="أدخل عنوان البانر"
-                          className="text-right"
-                          dir="rtl"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setEditingBanner(null)}>Cancel</Button>
-                <Button onClick={handleSaveBanner}>Save Banner</Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <>
-              <div className="flex justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Select
-                    value={filters.banners.active === null ? '' : filters.banners.active.toString()}
-                    onValueChange={(value) => setFilters({
-                      ...filters,
-                      banners: {
-                        ...filters.banners,
-                        active: value === '' ? null : value === 'true'
-                      }
-                    })}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Banners</SelectItem>
-                      <SelectItem value="true">Active Only</SelectItem>
-                      <SelectItem value="false">Inactive Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAddBanner}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Banner
-                </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Search and filter bar */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Search content..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsFilterDialogOpen(true)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filters
+              </Button>
+            </div>
+            
+            {/* Tabs */}
+            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid grid-cols-4 md:grid-cols-8">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="pages">Pages</TabsTrigger>
+                <TabsTrigger value="blogs">Blogs</TabsTrigger>
+                <TabsTrigger value="products">Products</TabsTrigger>
+                <TabsTrigger value="emails">Emails</TabsTrigger>
+                <TabsTrigger value="published">Published</TabsTrigger>
+                <TabsTrigger value="drafts">Drafts</TabsTrigger>
+                <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
+              </TabsList>
               
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : filteredBanners.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No banners found. Add a new banner to get started.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredBanners.map((banner) => (
-                    <Card key={banner.id} className={`overflow-hidden ${!banner.active ? 'opacity-70' : ''}`}>
-                      <div className="aspect-video relative overflow-hidden">
-                        {banner.image ? (
-                          <img
-                            src={banner.image}
-                            alt={banner.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <ImagePlus className="h-12 w-12 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="absolute top-2 right-2">
-                          <Badge variant={banner.active ? 'default' : 'secondary'}>
-                            {banner.active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold text-lg mb-1">{banner.title}</h3>
-                        {banner.titleAr && (
-                          <p className="text-muted-foreground text-sm mb-2 text-right" dir="rtl">{banner.titleAr}</p>
-                        )}
-                        {banner.link && (
-                          <p className="text-sm text-muted-foreground truncate mb-2">
-                            Link: {banner.link}
-                          </p>
-                        )}
-                        <div className="flex items-center text-xs text-muted-foreground mt-2">
-                          <Clock className="h-3 w-3 mr-1" />
-                          <span>Updated: {banner.lastUpdated}</span>
-                          {banner.version && (
-                            <>
-                              <span className="mx-1">•</span>
-                              <span>v{banner.version}</span>
-                            </>
-                          )}
-                        </div>
-                      </CardContent>
-                      <CardFooter className="p-4 pt-0 flex justify-between">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewVersionHistory(banner.id, 'banner')}
-                        >
-                          <History className="h-4 w-4 mr-1" />
-                          History
-                        </Button>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleEditBanner(banner)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleDeleteBanner(banner.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </TabsContent>
-        
-        {/* Pages Tab */}
-        <TabsContent value="pages">
-          {editingPage ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{editingPage.id ? `Edit Page: ${editingPage.title}` : 'Add New Page'}</CardTitle>
-                <CardDescription>
-                  Manage page content and settings
-                </CardDescription>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Button 
-                    variant={editingLanguage === 'en' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('en')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    English
-                  </Button>
-                  <Button 
-                    variant={editingLanguage === 'ar' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('ar')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    العربية
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {editingLanguage === 'en' ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Title</Label>
-                        <Input
-                          id="title"
-                          value={editingPage.title}
-                          onChange={(e) => setEditingPage({...editingPage, title: e.target.value})}
-                          placeholder="Enter page title"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="slug">Slug</Label>
-                        <Input
-                          id="slug"
-                          value={editingPage.slug}
-                          onChange={(e) => setEditingPage({...editingPage, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                          placeholder="enter-page-slug"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="metaDescription">Meta Description (Optional)</Label>
-                      <Textarea
-                        id="metaDescription"
-                        value={editingPage.metaDescription || ''}
-                        onChange={(e) => setEditingPage({...editingPage, metaDescription: e.target.value})}
-                        placeholder="Enter meta description for SEO"
-                        rows={2}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="content">Content</Label>
-                      <div className="border rounded-md">
-                        <ReactQuill
-                          theme="snow"
-                          value={editingPage.content}
-                          onChange={(content) => setEditingPage({...editingPage, content})}
-                          modules={quillModules}
-                          formats={quillFormats}
-                          placeholder="Enter page content..."
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="publishStatus">Publish Status</Label>
-                        <Select
-                          value={editingPage.publishStatus || 'draft'}
-                          onValueChange={(value) => setEditingPage({
-                            ...editingPage, 
-                            publishStatus: value as 'published' | 'draft' | 'scheduled'
-                          })}
-                        >
-                          <SelectTrigger id="publishStatus">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="published">Published</SelectItem>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="scheduled">Scheduled</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {editingPage.publishStatus === 'scheduled' && (
-                        <div className="space-y-2">
-                          <Label htmlFor="publishDate">Publish Date</Label>
-                          <Input
-                            id="publishDate"
-                            type="date"
-                            value={editingPage.publishDate || ''}
-                            onChange={(e) => setEditingPage({...editingPage, publishDate: e.target.value})}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="featuredImage">Featured Image (Optional)</Label>
-                      <ImageUploader
-                        currentImage={editingPage.featuredImage || ''}
-                        onImageUpload={(url) => setEditingPage({...editingPage, featuredImage: url})}
-                      />
-                    </div>
-                    
-                    {editingPage.id && editingPage.version && (
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>Last updated: {editingPage.lastUpdated}</span>
-                        <span>•</span>
-                        <span>Version: {editingPage.version}</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="titleAr">Title (Arabic)</Label>
-                      <Input
-                        id="titleAr"
-                        value={editingPage.titleAr || ''}
-                        onChange={(e) => setEditingPage({...editingPage, titleAr: e.target.value})}
-                        placeholder="أدخل عنوان الصفحة"
-                        className="text-right"
-                        dir="rtl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="metaDescriptionAr">Meta Description (Arabic, Optional)</Label>
-                      <Textarea
-                        id="metaDescriptionAr"
-                        value={editingPage.metaDescriptionAr || ''}
-                        onChange={(e) => setEditingPage({...editingPage, metaDescriptionAr: e.target.value})}
-                        placeholder="أدخل وصف الميتا للـ SEO"
-                        rows={2}
-                        className="text-right"
-                        dir="rtl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="contentAr">Content (Arabic)</Label>
-                      <div className="border rounded-md" dir="rtl">
-                        <ReactQuill
-                          theme="snow"
-                          value={editingPage.contentAr || ''}
-                          onChange={(contentAr) => setEditingPage({...editingPage, contentAr})}
-                          modules={quillModules}
-                          formats={quillFormats}
-                          placeholder="أدخل محتوى الصفحة..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setEditingPage(null)}>Cancel</Button>
-                <Button onClick={handleSavePage}>Save Page</Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <>
-              <div className="flex justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Select
-                    value={filters.pages.publishStatus}
-                    onValueChange={(value) => setFilters({
-                      ...filters,
-                      pages: {
-                        ...filters.pages,
-                        publishStatus: value
-                      }
-                    })}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Pages</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAddPage}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Page
-                </Button>
-              </div>
-              
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : filteredPages.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No pages found. Add a new page to get started.
-                </div>
-              ) : (
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Slug</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead>Version</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPages.map((page) => (
-                        <TableRow key={page.id}>
-                          <TableCell className="font-medium">
-                            <div>
-                              {page.title}
-                              {page.titleAr && (
-                                <div className="text-xs text-muted-foreground mt-1 text-right" dir="rtl">
-                                  {page.titleAr}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{page.slug}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              page.publishStatus === 'published' ? 'default' :
-                              page.publishStatus === 'scheduled' ? 'secondary' : 'outline'
-                            }>
-                              {page.publishStatus || 'Draft'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{page.lastUpdated}</TableCell>
-                          <TableCell>v{page.version || 1}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewVersionHistory(page.id, 'page')}
-                              >
-                                <History className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditPage(page)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeletePage(page.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </>
-          )}
-        </TabsContent>
-        
-        {/* FAQs Tab */}
-        <TabsContent value="faqs">
-          {editingFAQ ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{editingFAQ.id ? `Edit FAQ: ${editingFAQ.question}` : 'Add New FAQ'}</CardTitle>
-                <CardDescription>
-                  Manage frequently asked questions
-                </CardDescription>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Button 
-                    variant={editingLanguage === 'en' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('en')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    English
-                  </Button>
-                  <Button 
-                    variant={editingLanguage === 'ar' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('ar')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    العربية
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {editingLanguage === 'en' ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="question">Question</Label>
-                      <Input
-                        id="question"
-                        value={editingFAQ.question}
-                        onChange={(e) => setEditingFAQ({...editingFAQ, question: e.target.value})}
-                        placeholder="Enter question"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="answer">Answer</Label>
-                      <Textarea
-                        id="answer"
-                        value={editingFAQ.answer}
-                        onChange={(e) => setEditingFAQ({...editingFAQ, answer: e.target.value})}
-                        placeholder="Enter answer"
-                        rows={4}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="category">Category</Label>
-                        <Select
-                          value={editingFAQ.category || 'General'}
-                          onValueChange={(value) => setEditingFAQ({...editingFAQ, category: value})}
-                        >
-                          <SelectTrigger id="category">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="General">General</SelectItem>
-                            <SelectItem value="Deals">Deals</SelectItem>
-                            <SelectItem value="Payments">Payments</SelectItem>
-                            <SelectItem value="Shipping">Shipping</SelectItem>
-                            <SelectItem value="Returns">Returns</SelectItem>
-                            <SelectItem value="Account">Account</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="order">Display Order</Label>
-                        <Input
-                          id="order"
-                          type="number"
-                          value={editingFAQ.order || 0}
-                          onChange={(e) => setEditingFAQ({...editingFAQ, order: parseInt(e.target.value)})}
-                          min={0}
-                        />
-                      </div>
-                    </div>
-                    
-                    {editingFAQ.id && editingFAQ.version && (
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>Last updated: {editingFAQ.lastUpdated}</span>
-                        <span>•</span>
-                        <span>Version: {editingFAQ.version}</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="questionAr">Question (Arabic)</Label>
-                      <Input
-                        id="questionAr"
-                        value={editingFAQ.questionAr || ''}
-                        onChange={(e) => setEditingFAQ({...editingFAQ, questionAr: e.target.value})}
-                        placeholder="أدخل السؤال"
-                        className="text-right"
-                        dir="rtl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="answerAr">Answer (Arabic)</Label>
-                      <Textarea
-                        id="answerAr"
-                        value={editingFAQ.answerAr || ''}
-                        onChange={(e) => setEditingFAQ({...editingFAQ, answerAr: e.target.value})}
-                        placeholder="أدخل الإجابة"
-                        rows={4}
-                        className="text-right"
-                        dir="rtl"
-                      />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setEditingFAQ(null)}>Cancel</Button>
-                <Button onClick={handleSaveFAQ}>Save FAQ</Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <>
-              <div className="flex justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Select
-                    value={filters.faqs.category}
-                    onValueChange={(value) => setFilters({
-                      ...filters,
-                      faqs: {
-                        ...filters.faqs,
-                        category: value
-                      }
-                    })}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
-                      {faqCategories.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAddFAQ}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add FAQ
-                </Button>
-              </div>
-              
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : filteredFAQs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No FAQs found. Add a new FAQ to get started.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredFAQs.map((faq) => (
-                    <Card key={faq.id}>
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg">{faq.question}</CardTitle>
-                            {faq.questionAr && (
-                              <div className="text-sm text-muted-foreground text-right" dir="rtl">
-                                {faq.questionAr}
-                              </div>
-                            )}
-                          </div>
-                          <Badge>{faq.category || 'General'}</Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="space-y-2">
-                          <p>{faq.answer}</p>
-                          {faq.answerAr && (
-                            <p className="text-muted-foreground text-right" dir="rtl">
-                              {faq.answerAr}
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex justify-between pt-2">
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3 mr-1" />
-                          <span>Updated: {faq.lastUpdated}</span>
-                          {faq.version && (
-                            <>
-                              <span className="mx-1">•</span>
-                              <span>v{faq.version}</span>
-                            </>
-                          )}
-                          <span className="mx-1">•</span>
-                          <span>Order: {faq.order || 0}</span>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewVersionHistory(faq.id, 'faq')}
-                          >
-                            <History className="h-4 w-4 mr-1" />
-                            History
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditFAQ(faq)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteFAQ(faq.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </TabsContent>
-        
-        {/* Content Sections Tab */}
-        <TabsContent value="sections">
-          {editingSection ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{editingSection.id ? `Edit Section: ${editingSection.name}` : 'Add New Section'}</CardTitle>
-                <CardDescription>
-                  Manage website content sections
-                </CardDescription>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Button 
-                    variant={editingLanguage === 'en' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('en')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    English
-                  </Button>
-                  <Button 
-                    variant={editingLanguage === 'ar' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setEditingLanguage('ar')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    العربية
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {editingLanguage === 'en' ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Section Name</Label>
-                        <Input
-                          id="name"
-                          value={editingSection.name}
-                          onChange={(e) => setEditingSection({...editingSection, name: e.target.value})}
-                          placeholder="Enter section name"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="identifier">Identifier</Label>
-                        <Input
-                          id="identifier"
-                          value={editingSection.identifier}
-                          onChange={(e) => setEditingSection({...editingSection, identifier: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
-                          placeholder="section_identifier"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="type">Content Type</Label>
-                      <Select
-                        value={editingSection.type}
-                        onValueChange={(value) => setEditingSection({
-                          ...editingSection, 
-                          type: value as 'text' | 'html' | 'image' | 'video' | 'carousel'
-                        })}
+              <TabsContent value={activeTab} className="mt-4">
+                {/* Bulk actions */}
+                {selectedContents.length > 0 && (
+                  <div className="bg-gray-50 p-2 rounded mb-4 flex items-center justify-between">
+                    <span className="text-sm">{selectedContents.length} items selected</span>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedContents([])}
                       >
-                        <SelectTrigger id="type">
-                          <SelectValue placeholder="Select content type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Plain Text</SelectItem>
-                          <SelectItem value="html">HTML</SelectItem>
-                          <SelectItem value="image">Image</SelectItem>
-                          <SelectItem value="video">Video</SelectItem>
-                          <SelectItem value="carousel">Carousel</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="content">Content</Label>
-                      {editingSection.type === 'html' ? (
-                        <div className="border rounded-md">
-                          <ReactQuill
-                            theme="snow"
-                            value={editingSection.content}
-                            onChange={(content) => setEditingSection({...editingSection, content})}
-                            modules={quillModules}
-                            formats={quillFormats}
-                            placeholder="Enter section content..."
-                          />
-                        </div>
-                      ) : editingSection.type === 'image' ? (
-                        <ImageUploader
-                          currentImage={editingSection.content}
-                          onImageUpload={(url) => setEditingSection({...editingSection, content: url})}
-                        />
-                      ) : (
-                        <Textarea
-                          id="content"
-                          value={editingSection.content}
-                          onChange={(e) => setEditingSection({...editingSection, content: e.target.value})}
-                          placeholder="Enter section content"
-                          rows={6}
-                        />
-                      )}
-                    </div>
-                    
-                    {editingSection.id && editingSection.version && (
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>Last updated: {editingSection.lastUpdated}</span>
-                        <span>•</span>
-                        <span>Version: {editingSection.version}</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nameAr">Section Name (Arabic)</Label>
-                      <Input
-                        id="nameAr"
-                        value={editingSection.nameAr || ''}
-                        onChange={(e) => setEditingSection({...editingSection, nameAr: e.target.value})}
-                        placeholder="أدخل اسم القسم"
-                        className="text-right"
-                        dir="rtl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="contentAr">Content (Arabic)</Label>
-                      {editingSection.type === 'html' ? (
-                        <div className="border rounded-md" dir="rtl">
-                          <ReactQuill
-                            theme="snow"
-                            value={editingSection.contentAr || ''}
-                            onChange={(contentAr) => setEditingSection({...editingSection, contentAr})}
-                            modules={quillModules}
-                            formats={quillFormats}
-                            placeholder="أدخل محتوى القسم..."
-                          />
-                        </div>
-                      ) : editingSection.type === 'image' ? (
-                        <ImageUploader
-                          currentImage={editingSection.contentAr || ''}
-                          onImageUpload={(url) => setEditingSection({...editingSection, contentAr: url})}
-                        />
-                      ) : (
-                        <Textarea
-                          id="contentAr"
-                          value={editingSection.contentAr || ''}
-                          onChange={(e) => setEditingSection({...editingSection, contentAr: e.target.value})}
-                          placeholder="أدخل محتوى القسم"
-                          rows={6}
-                          className="text-right"
-                          dir="rtl"
-                        />
-                      )}
+                        Clear Selection
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={handleBulkDelete}
+                      >
+                        Delete Selected
+                      </Button>
                     </div>
                   </div>
                 )}
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setEditingSection(null)}>Cancel</Button>
-                <Button onClick={handleSaveSection}>Save Section</Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <>
-              <div className="flex justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Select
-                    value={filters.sections.type}
-                    onValueChange={(value) => setFilters({
-                      ...filters,
-                      sections: {
-                        ...filters.sections,
-                        type: value
-                      }
-                    })}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
-                      <SelectItem value="text">Plain Text</SelectItem>
-                      <SelectItem value="html">HTML</SelectItem>
-                      <SelectItem value="image">Image</SelectItem>
-                      <SelectItem value="video">Video</SelectItem>
-                      <SelectItem value="carousel">Carousel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAddSection}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Section
-                </Button>
-              </div>
-              
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : filteredSections.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No content sections found. Add a new section to get started.
-                </div>
-              ) : (
-                <div className="border rounded-md">
+                
+                {/* Content table */}
+                <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Identifier</TableHead>
+                        <TableHead className="w-12">
+                          <Checkbox 
+                            checked={sortedContents.length > 0 && selectedContents.length === sortedContents.length}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead className="min-w-[200px]">Title</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead>Version</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Author</TableHead>
+                        <TableHead>Updated</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredSections.map((section) => (
-                        <TableRow key={section.id}>
-                          <TableCell className="font-medium">
-                            <div>
-                              {section.name}
-                              {section.nameAr && (
-                                <div className="text-xs text-muted-foreground mt-1 text-right" dir="rtl">
-                                  {section.nameAr}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{section.identifier}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {section.type.charAt(0).toUpperCase() + section.type.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{section.lastUpdated}</TableCell>
-                          <TableCell>v{section.version || 1}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewVersionHistory(section.id, 'section')}
-                              >
-                                <History className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditSection(section)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteSection(section.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            Loading content...
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : sortedContents.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            No content found.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        sortedContents.map((content) => (
+                          <TableRow key={content.id}>
+                            <TableCell>
+                              <Checkbox 
+                                checked={selectedContents.includes(content.id)}
+                                onCheckedChange={(checked) => 
+                                  handleSelectContent(content.id, checked === true)
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{content.title}</div>
+                              <div className="text-xs text-gray-500">{content.slug}</div>
+                              {content.tags && content.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {content.tags.slice(0, 2).map(tag => (
+                                    <Badge key={tag} variant="secondary" className="text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                  {content.tags.length > 2 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{content.tags.length - 2}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {getContentTypeBadge(content.type)}
+                            </TableCell>
+                            <TableCell>
+                              {getContentStatusBadge(content.status)}
+                            </TableCell>
+                            <TableCell>{content.author}</TableCell>
+                            <TableCell>{formatDate(content.updatedAt)}</TableCell>
+                            <TableCell>
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setViewingContent(content)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingContent(content)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteContent(content.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
-              )}
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
-      
-      {/* Version History Dialog */}
-      <Dialog open={showVersionHistory} onOpenChange={setShowVersionHistory}>
-        <DialogContent className="max-w-4xl">
+              </TabsContent>
+            </Tabs>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <div className="text-sm text-gray-500">
+            Showing {sortedContents.length} of {contents.length} content items
+          </div>
+        </CardFooter>
+      </Card>
+
+      {/* Add/Edit Content Dialog */}
+      <Dialog 
+        open={isAddingContent || !!editingContent} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAddingContent(false);
+            setEditingContent(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Version History</DialogTitle>
+            <DialogTitle>
+              {isAddingContent ? 'Add New Content' : 'Edit Content'}
+            </DialogTitle>
             <DialogDescription>
-              View and restore previous versions of this content
+              {isAddingContent 
+                ? 'Create new content for your website.' 
+                : 'Update existing content.'}
             </DialogDescription>
           </DialogHeader>
           
-          <VersionHistory 
-            versions={filteredVersions} 
-            onRestore={handleRestoreVersion} 
-            contentType={currentContentType || 'page'} 
-          />
+          <Tabs defaultValue="content" className="mt-4">
+            <TabsList>
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="seo">SEO & Meta</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="content" className="space-y-4 py-4">
+              {/* Language toggle */}
+              <div className="flex justify-end mb-4">
+                <div className="border rounded-md p-1 flex">
+                  <Button
+                    variant={currentLanguage === 'en' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setCurrentLanguage('en')}
+                    className="text-xs"
+                  >
+                    English
+                  </Button>
+                  <Button
+                    variant={currentLanguage === 'ar' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setCurrentLanguage('ar')}
+                    className="text-xs"
+                  >
+                    العربية
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Title */}
+              <div className="space-y-2">
+                <Label htmlFor="title">
+                  Title {currentLanguage === 'ar' && '(العنوان)'}
+                </Label>
+                <Input
+                  id="title"
+                  value={currentLanguage === 'en' 
+                    ? editingContent?.title || '' 
+                    : editingContent?.titleAr || ''}
+                  onChange={(e) => {
+                    if (editingContent) {
+                      if (currentLanguage === 'en') {
+                        setEditingContent({
+                          ...editingContent,
+                          title: e.target.value
+                        });
+                      } else {
+                        setEditingContent({
+                          ...editingContent,
+                          titleAr: e.target.value
+                        });
+                      }
+                    }
+                  }}
+                  dir={currentLanguage === 'ar' ? 'rtl' : 'ltr'}
+                />
+              </div>
+              
+              {/* Slug */}
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug</Label>
+                <div className="flex">
+                  <Input
+                    id="slug"
+                    value={editingContent?.slug || ''}
+                    onChange={(e) => {
+                      if (editingContent) {
+                        setEditingContent({
+                          ...editingContent,
+                          slug: e.target.value.toLowerCase().replace(/\s+/g, '-')
+                        });
+                      }
+                    }}
+                    className="rounded-r-none"
+                  />
+                  <Button
+                    variant="secondary"
+                    className="rounded-l-none"
+                    onClick={() => {
+                      if (editingContent) {
+                        const title = editingContent.title || '';
+                        const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                        setEditingContent({
+                          ...editingContent,
+                          slug
+                        });
+                      }
+                    }}
+                  >
+                    Generate
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  The URL-friendly version of the title. Example: my-page-title
+                </p>
+              </div>
+              
+              {/* Content editor */}
+              <div className="space-y-2">
+                <Label htmlFor="content">
+                  Content {currentLanguage === 'ar' && '(المحتوى)'}
+                </Label>
+                <div className="min-h-[300px] border rounded-md">
+                  {typeof window !== 'undefined' && (
+                    <ReactQuill
+                      value={currentLanguage === 'en' 
+                        ? editingContent?.content || '' 
+                        : editingContent?.contentAr || ''}
+                      onChange={(value) => {
+                        if (editingContent) {
+                          if (currentLanguage === 'en') {
+                            setEditingContent({
+                              ...editingContent,
+                              content: value
+                            });
+                          } else {
+                            setEditingContent({
+                              ...editingContent,
+                              contentAr: value
+                            });
+                          }
+                        }
+                      }}
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          [{ 'align': [] }],
+                          ['link', 'image'],
+                          ['clean']
+                        ]
+                      }}
+                      formats={[
+                        'header',
+                        'bold', 'italic', 'underline', 'strike',
+                        'list', 'bullet',
+                        'align',
+                        'link', 'image'
+                      ]}
+                      style={{ height: '300px' }}
+                      dir={currentLanguage === 'ar' ? 'rtl' : 'ltr'}
+                    />
+                  )}
+                </div>
+              </div>
+              
+              {/* Featured image */}
+              <div className="space-y-2">
+                <Label>Featured Image</Label>
+                <div className="border rounded-md p-4">
+                  {editingContent?.featuredImage ? (
+                    <div className="space-y-4">
+                      <div className="aspect-video relative bg-gray-100 rounded-md overflow-hidden">
+                        <img 
+                          src={editingContent.featuredImage} 
+                          alt="Featured" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex justify-between">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (editingContent) {
+                              setEditingContent({
+                                ...editingContent,
+                                featuredImage: undefined
+                              });
+                            }
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Replace
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 space-y-4">
+                      <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                        <Image className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">No image selected</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Upload an image to enhance your content
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Image
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileInputChange}
+                  />
+                </div>
+                {isUploading && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span>Uploading...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full" 
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="seo" className="space-y-4 py-4">
+              {/* SEO Title */}
+              <div className="space-y-2">
+                <Label htmlFor="seoTitle">SEO Title</Label>
+                <Input
+                  id="seoTitle"
+                  value={editingContent?.seoTitle || ''}
+                  onChange={(e) => {
+                    if (editingContent) {
+                      setEditingContent({
+                        ...editingContent,
+                        seoTitle: e.target.value
+                      });
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500">
+                  The title that appears in search engine results. If left empty, the regular title will be used.
+                </p>
+              </div>
+              
+              {/* SEO Description */}
+              <div className="space-y-2">
+                <Label htmlFor="seoDescription">Meta Description</Label>
+                <Textarea
+                  id="seoDescription"
+                  value={editingContent?.seoDescription || ''}
+                  onChange={(e) => {
+                    if (editingContent) {
+                      setEditingContent({
+                        ...editingContent,
+                        seoDescription: e.target.value
+                      });
+                    }
+                  }}
+                  rows={3}
+                />
+                <p className="text-xs text-gray-500">
+                  The description that appears in search engine results. Keep it under 160 characters.
+                </p>
+                <div className="text-xs text-gray-500 flex justify-end">
+                  {editingContent?.seoDescription?.length || 0}/160
+                </div>
+              </div>
+              
+              {/* Tags */}
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags</Label>
+                <div className="flex flex-wrap gap-2 p-2 border rounded-md">
+                  {editingContent?.tags?.map(tag => (
+                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <button
+                        onClick={() => {
+                          if (editingContent) {
+                            setEditingContent({
+                              ...editingContent,
+                              tags: editingContent.tags?.filter(t => t !== tag)
+                            });
+                          }
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        &times;
+                      </button>
+                    </Badge>
+                  ))}
+                  <Input
+                    id="tags"
+                    placeholder="Add a tag and press Enter"
+                    className="flex-1 min-w-[150px] border-0 p-0 h-8"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                        e.preventDefault();
+                        if (editingContent) {
+                          const newTag = e.currentTarget.value.trim();
+                          const currentTags = editingContent.tags || [];
+                          if (!currentTags.includes(newTag)) {
+                            setEditingContent({
+                              ...editingContent,
+                              tags: [...currentTags, newTag]
+                            });
+                          }
+                          e.currentTarget.value = '';
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Tags help categorize your content and improve searchability.
+                </p>
+              </div>
+              
+              {/* Related Products (only for blog and product description) */}
+              {(editingContent?.type === CONTENT_TYPES.BLOG || 
+                editingContent?.type === CONTENT_TYPES.PRODUCT_DESCRIPTION) && (
+                <div className="space-y-2">
+                  <Label htmlFor="relatedProducts">Related Products</Label>
+                  <Select
+                    value=""
+                    onValueChange={(value) => {
+                      if (editingContent && value) {
+                        const currentRelated = editingContent.relatedProducts || [];
+                        if (!currentRelated.includes(value)) {
+                          setEditingContent({
+                            ...editingContent,
+                            relatedProducts: [...currentRelated, value]
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="relatedProducts">
+                      <SelectValue placeholder="Select products" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map(product => (
+                        <SelectItem key={product.id} value={product.id.toString()}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {editingContent?.relatedProducts?.map(productId => {
+                      const product = products.find(p => p.id.toString() === productId);
+                      return (
+                        <Badge key={productId} variant="outline" className="flex items-center gap-1">
+                          {product?.name || `Product #${productId}`}
+                          <button
+                            onClick={() => {
+                              if (editingContent) {
+                                setEditingContent({
+                                  ...editingContent,
+                                  relatedProducts: editingContent.relatedProducts?.filter(id => id !== productId)
+                                });
+                              }
+                            }}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            &times;
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="settings" className="space-y-4 py-4">
+              {/* Content Type */}
+              <div className="space-y-2">
+                <Label htmlFor="contentType">Content Type</Label>
+                <Select
+                  value={editingContent?.type || ''}
+                  onValueChange={(value) => {
+                    if (editingContent) {
+                      setEditingContent({
+                        ...editingContent,
+                        type: value
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger id="contentType">
+                    <SelectValue placeholder="Select content type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {types.map(type => (
+                      <SelectItem key={type} value={type}>
+                        {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Status */}
+              <div className="space-y-2">
+                <Label htmlFor="contentStatus">Status</Label>
+                <Select
+                  value={editingContent?.status || ''}
+                  onValueChange={(value) => {
+                    if (editingContent) {
+                      setEditingContent({
+                        ...editingContent,
+                        status: value
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger id="contentStatus">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Author */}
+              <div className="space-y-2">
+                <Label htmlFor="author">Author</Label>
+                <Select
+                  value={editingContent?.author || ''}
+                  onValueChange={(value) => {
+                    if (editingContent) {
+                      setEditingContent({
+                        ...editingContent,
+                        author: value
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger id="author">
+                    <SelectValue placeholder="Select author" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {authors.map(author => (
+                      <SelectItem key={author} value={author}>
+                        {author}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Add New Author...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Scheduled Date (only if status is scheduled) */}
+              {editingContent?.status === CONTENT_STATUS.SCHEDULED && (
+                <div className="space-y-2">
+                  <Label htmlFor="scheduledAt">Scheduled Date</Label>
+                  <Input
+                    id="scheduledAt"
+                    type="datetime-local"
+                    value={editingContent?.scheduledAt?.slice(0, 16) || ''}
+                    onChange={(e) => {
+                      if (editingContent) {
+                        setEditingContent({
+                          ...editingContent,
+                          scheduledAt: e.target.value
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              
+              {/* Upload Service */}
+              <div className="space-y-2">
+                <Label htmlFor="uploadService">Image Upload Service</Label>
+                <Select
+                  value={uploadService}
+                  onValueChange={setUploadService}
+                >
+                  <SelectTrigger id="uploadService">
+                    <SelectValue placeholder="Select upload service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CLOUDINARY">Cloudinary</SelectItem>
+                    <SelectItem value="IMGBB">ImgBB</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TabsContent>
+          </Tabs>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowVersionHistory(false)}>Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddingContent(false);
+                setEditingContent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (isAddingContent && editingContent) {
+                  handleAddContent(editingContent);
+                } else if (editingContent) {
+                  handleUpdateContent(editingContent);
+                }
+              }}
+              disabled={!editingContent?.title || !editingContent?.slug}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {isAddingContent ? 'Create' : 'Update'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Content Dialog */}
+      <Dialog 
+        open={!!viewingContent} 
+        onOpenChange={(open) => !open && setViewingContent(null)}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {viewingContent?.title}
+              {viewingContent && getContentStatusBadge(viewingContent.status)}
+            </DialogTitle>
+            <DialogDescription>
+              {viewingContent?.slug} • Last updated: {viewingContent && formatDate(viewingContent.updatedAt)}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Tabs defaultValue="preview" className="mt-4">
+            <TabsList>
+              <TabsTrigger value="preview">Preview</TabsTrigger>
+              <TabsTrigger value="details">Details</TabsTrigger>
+              {viewingContent?.contentAr && (
+                <TabsTrigger value="arabic">Arabic</TabsTrigger>
+              )}
+            </TabsList>
+            
+            <TabsContent value="preview" className="py-4">
+              {viewingContent?.featuredImage && (
+                <div className="aspect-video relative bg-gray-100 rounded-md overflow-hidden mb-4">
+                  <img 
+                    src={viewingContent.featuredImage} 
+                    alt="Featured" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
+              <div 
+                className="prose max-w-none"
+                dangerouslySetInnerHTML={{ __html: viewingContent?.content || '' }}
+              />
+            </TabsContent>
+            
+            <TabsContent value="details" className="space-y-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium">Content Type</h3>
+                  <p className="text-sm text-gray-500">
+                    {viewingContent?.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">Author</h3>
+                  <p className="text-sm text-gray-500">{viewingContent?.author}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">Created</h3>
+                  <p className="text-sm text-gray-500">
+                    {viewingContent && formatDate(viewingContent.createdAt)}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">Last Updated</h3>
+                  <p className="text-sm text-gray-500">
+                    {viewingContent && formatDate(viewingContent.updatedAt)}
+                  </p>
+                </div>
+                {viewingContent?.publishedAt && (
+                  <div>
+                    <h3 className="text-sm font-medium">Published</h3>
+                    <p className="text-sm text-gray-500">
+                      {formatDate(viewingContent.publishedAt)}
+                    </p>
+                  </div>
+                )}
+                {viewingContent?.scheduledAt && (
+                  <div>
+                    <h3 className="text-sm font-medium">Scheduled</h3>
+                    <p className="text-sm text-gray-500">
+                      {formatDate(viewingContent.scheduledAt)}
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              {viewingContent?.tags && viewingContent.tags.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingContent.tags.map(tag => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {viewingContent?.relatedProducts && viewingContent.relatedProducts.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Related Products</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingContent.relatedProducts.map(productId => {
+                      const product = products.find(p => p.id.toString() === productId);
+                      return (
+                        <Badge key={productId} variant="outline">
+                          {product?.name || `Product #${productId}`}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {viewingContent?.seoTitle && (
+                <div>
+                  <h3 className="text-sm font-medium">SEO Title</h3>
+                  <p className="text-sm text-gray-500">{viewingContent.seoTitle}</p>
+                </div>
+              )}
+              
+              {viewingContent?.seoDescription && (
+                <div>
+                  <h3 className="text-sm font-medium">Meta Description</h3>
+                  <p className="text-sm text-gray-500">{viewingContent.seoDescription}</p>
+                </div>
+              )}
+            </TabsContent>
+            
+            {viewingContent?.contentAr && (
+              <TabsContent value="arabic" className="py-4">
+                <div className="text-right" dir="rtl">
+                  <h2 className="text-xl font-bold mb-4">{viewingContent.titleAr}</h2>
+                  <div 
+                    className="prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: viewingContent.contentAr }}
+                  />
+                </div>
+              </TabsContent>
+            )}
+          </Tabs>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setViewingContent(null)}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingContent(viewingContent);
+                setViewingContent(null);
+              }}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Filter Dialog */}
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filter Content</DialogTitle>
+            <DialogDescription>
+              Refine the content list with filters.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="type-filter">Content Type</Label>
+              <Select 
+                value={filters.type} 
+                onValueChange={(value) => handleFilterChange('type', value)}
+              >
+                <SelectTrigger id="type-filter">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Types</SelectItem>
+                  {types.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="status-filter">Status</Label>
+              <Select 
+                value={filters.status} 
+                onValueChange={(value) => handleFilterChange('status', value)}
+              >
+                <SelectTrigger id="status-filter">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Statuses</SelectItem>
+                  {statuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="author-filter">Author</Label>
+              <Select 
+                value={filters.author} 
+                onValueChange={(value) => handleFilterChange('author', value)}
+              >
+                <SelectTrigger id="author-filter">
+                  <SelectValue placeholder="All Authors" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Authors</SelectItem>
+                  {authors.map((author) => (
+                    <SelectItem key={author} value={author}>
+                      {author}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="tag-filter">Tag</Label>
+              <Select 
+                value={filters.tag} 
+                onValueChange={(value) => handleFilterChange('tag', value)}
+              >
+                <SelectTrigger id="tag-filter">
+                  <SelectValue placeholder="All Tags" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Tags</SelectItem>
+                  {tags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Date Range</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="date-from" className="text-xs">From</Label>
+                  <Input
+                    id="date-from"
+                    type="date"
+                    value={filters.dateRange[0]}
+                    onChange={(e) => handleFilterChange('dateRange', [
+                      e.target.value, 
+                      filters.dateRange[1]
+                    ])}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="date-to" className="text-xs">To</Label>
+                  <Input
+                    id="date-to"
+                    type="date"
+                    value={filters.dateRange[1]}
+                    onChange={(e) => handleFilterChange('dateRange', [
+                      filters.dateRange[0], 
+                      e.target.value
+                    ])}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleResetFilters}>
+              Reset Filters
+            </Button>
+            <Button onClick={handleApplyFilters}>
+              Apply Filters
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

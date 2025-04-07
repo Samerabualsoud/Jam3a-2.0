@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useProductContext } from '@/contexts/ProductContext';
+import { useProducts } from '@/contexts/ProductContext';
 import BilingualProductListing from './BilingualProductListing';
 import { useLanguage } from '@/components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 const StartJoinJam3a = () => {
-  const { products, activeJam3aDeals } = useProductContext();
+  const { products, activeJam3aDeals } = useProducts();
   const { language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();

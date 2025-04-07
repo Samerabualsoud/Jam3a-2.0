@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
-import { useProductContext } from "@/contexts/ProductContext";
+import { useProducts } from "@/contexts/ProductContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -107,7 +107,7 @@ const EnhancedProductsManager = () => {
   const { toast } = useToast();
   
   // Use the product context for direct sync with website
-  const { products, setProducts, refreshProducts, syncStatus, isLoading } = useProductContext();
+  const { products, setProducts, refreshProducts, syncStatus, isLoading } = useProducts();
 
   // Initialize with current date for new products
   useEffect(() => {
@@ -198,41 +198,54 @@ const EnhancedProductsManager = () => {
       ...product,
       id: 0, // Will be assigned a new ID when added
       name: `${product.name} (Copy)`,
-      nameAr: product.nameAr ? `${product.nameAr} (نسخة)` : undefined
+      sku: product.sku ? `${product.sku}-COPY` : undefined
     });
   };
 
-  const handleCreateDuplicate = (duplicatedProduct: Product) => {
-    handleAddProduct(duplicatedProduct);
-    setIsDuplicatingProduct(null);
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedProducts(filteredProducts.map(p => p.id));
+    } else {
+      setSelectedProducts([]);
+    }
   };
 
-  const handleBulkExport = () => {
-    // Prepare products for export
-    const productsToExport = selectedProducts.length > 0
-      ? products.filter(p => selectedProducts.includes(p.id))
-      : products;
-    
-    // Convert to JSON
-    const jsonData = JSON.stringify(productsToExport, null, 2);
-    
-    // Create a blob and download link
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `products_export_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // Clean up
-    URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    toast({
-      title: "Export Successful",
-      description: `${productsToExport.length} products have been exported.`,
+  const handleSelectProduct = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedProducts([...selectedProducts, id]);
+    } else {
+      setSelectedProducts(selectedProducts.filter(productId => productId !== id));
+    }
+  };
+
+  const handleSort = (key: keyof Product) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const handleFilterChange = (key: keyof ProductFilters, value: any) => {
+    setFilters({
+      ...filters,
+      [key]: value
     });
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      category: '',
+      priceRange: [0, 10000],
+      featured: null,
+      status: '',
+      inStock: null
+    });
+    setIsFilterDialogOpen(false);
+  };
+
+  const handleApplyFilters = () => {
+    setIsFilterDialogOpen(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,7 +258,7 @@ const EnhancedProductsManager = () => {
     }
   };
 
-  const handleBulkImport = async () => {
+  const handleImport = async () => {
     if (!bulkOperation.file) {
       setBulkOperation({
         ...bulkOperation,
@@ -253,553 +266,643 @@ const EnhancedProductsManager = () => {
       });
       return;
     }
-    
+
     setBulkOperation({
       ...bulkOperation,
       isImporting: true,
       progress: 0,
       error: ""
     });
-    
+
     try {
-      // Read the file
+      // Simulate file reading and processing
       const reader = new FileReader();
       
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
-          const result = e.target?.result as string;
-          const importedProducts = JSON.parse(result) as Product[];
+          const content = e.target?.result as string;
+          const importedProducts = JSON.parse(content);
           
-          // Validate the imported data
+          // Validate imported data
           if (!Array.isArray(importedProducts)) {
             throw new Error("Invalid format: Expected an array of products");
           }
           
-          // Assign new IDs to avoid conflicts
-          const highestId = Math.max(0, ...products.map(p => p.id));
-          const productsWithNewIds = importedProducts.map((p, index) => ({
+          // Simulate progress
+          for (let i = 0; i <= 100; i += 10) {
+            setBulkOperation(prev => ({
+              ...prev,
+              progress: i
+            }));
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          // Process and add products
+          const currentDate = new Date().toISOString().split('T')[0];
+          const nextId = Math.max(0, ...products.map(p => p.id)) + 1;
+          
+          const processedProducts = importedProducts.map((p: any, index: number) => ({
             ...p,
-            id: highestId + index + 1
+            id: nextId + index,
+            dateAdded: currentDate,
+            lastUpdated: currentDate,
+            status: p.status || 'active'
           }));
           
-          // Update the products
-          setProducts([...products, ...productsWithNewIds]);
+          setProducts([...products, ...processedProducts]);
           
           setBulkOperation({
             isImporting: false,
             isExporting: false,
             file: null,
-            progress: 100,
+            progress: 0,
             error: ""
           });
           
           toast({
             title: "Import Successful",
-            description: `${productsWithNewIds.length} products have been imported.`,
+            description: `${processedProducts.length} products have been imported.`,
           });
         } catch (error) {
-          console.error("Import error:", error);
           setBulkOperation({
-            ...bulkOperation,
             isImporting: false,
+            isExporting: false,
+            file: null,
             progress: 0,
-            error: "Failed to parse the import file. Please ensure it's a valid JSON file."
+            error: error instanceof Error ? error.message : "Failed to import products"
           });
         }
-      };
-      
-      reader.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = Math.round((e.loaded / e.total) * 100);
-          setBulkOperation({
-            ...bulkOperation,
-            progress: percentComplete
-          });
-        }
-      };
-      
-      reader.onerror = () => {
-        setBulkOperation({
-          ...bulkOperation,
-          isImporting: false,
-          progress: 0,
-          error: "Error reading the file. Please try again."
-        });
       };
       
       reader.readAsText(bulkOperation.file);
     } catch (error) {
-      console.error("Import error:", error);
       setBulkOperation({
-        ...bulkOperation,
         isImporting: false,
+        isExporting: false,
+        file: null,
         progress: 0,
-        error: "An unexpected error occurred during import."
+        error: error instanceof Error ? error.message : "Failed to import products"
       });
     }
   };
 
-  const handleSort = (key: keyof Product) => {
-    const direction = sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
-    setSortConfig({ key, direction });
+  const handleExport = async () => {
+    setBulkOperation({
+      ...bulkOperation,
+      isExporting: true,
+      progress: 0,
+      error: ""
+    });
+
+    try {
+      // Determine which products to export
+      const productsToExport = selectedProducts.length > 0
+        ? products.filter(p => selectedProducts.includes(p.id))
+        : products;
+      
+      // Simulate progress
+      for (let i = 0; i <= 100; i += 20) {
+        setBulkOperation(prev => ({
+          ...prev,
+          progress: i
+        }));
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Create export file
+      const exportData = JSON.stringify(productsToExport, null, 2);
+      const blob = new Blob([exportData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `products-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      setBulkOperation({
+        isImporting: false,
+        isExporting: false,
+        file: null,
+        progress: 0,
+        error: ""
+      });
+      
+      toast({
+        title: "Export Successful",
+        description: `${productsToExport.length} products have been exported.`,
+      });
+    } catch (error) {
+      setBulkOperation({
+        isImporting: false,
+        isExporting: false,
+        file: null,
+        progress: 0,
+        error: error instanceof Error ? error.message : "Failed to export products"
+      });
+    }
   };
 
-  const sortedProducts = [...products].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
-
-  const applyFilters = (product: Product) => {
+  // Filter products based on search term and filters
+  const filteredProducts = products.filter(product => {
     // Search term filter
     const matchesSearch = 
-      !searchTerm || 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Category filter
+    // Tab filter
+    const matchesTab = 
+      activeTab === "all" ||
+      (activeTab === "featured" && product.featured) ||
+      (activeTab === "active" && product.status === "active") ||
+      (activeTab === "inactive" && product.status === "inactive") ||
+      (activeTab === "draft" && product.status === "draft");
+    
+    // Advanced filters
     const matchesCategory = !filters.category || product.category === filters.category;
-    
-    // Price range filter
     const matchesPriceRange = 
       product.price >= filters.priceRange[0] && 
       product.price <= filters.priceRange[1];
-    
-    // Featured filter
     const matchesFeatured = 
       filters.featured === null || 
       product.featured === filters.featured;
-    
-    // Status filter
-    const matchesStatus = !filters.status || product.status === filters.status;
-    
-    // In stock filter
+    const matchesStatus = 
+      !filters.status || 
+      product.status === filters.status;
     const matchesStock = 
       filters.inStock === null || 
       (filters.inStock ? product.stock > 0 : product.stock === 0);
     
-    // Tab filter
-    const matchesTab = 
-      activeTab === "all" || 
-      (activeTab === "featured" && product.featured) ||
-      (activeTab === "active" && product.status === "active") ||
-      (activeTab === "inactive" && product.status === "inactive") ||
-      (activeTab === "draft" && product.status === "draft") ||
-      (activeTab === "out-of-stock" && product.stock === 0);
-    
-    return matchesSearch && matchesCategory && matchesPriceRange && 
-           matchesFeatured && matchesStatus && matchesStock && matchesTab;
-  };
+    return matchesSearch && matchesTab && matchesCategory && 
+           matchesPriceRange && matchesFeatured && 
+           matchesStatus && matchesStock;
+  });
 
-  const filteredProducts = sortedProducts.filter(applyFilters);
+  // Sort filtered products
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+    
+    if (aValue === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
+    if (bValue === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
+    
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   // Get unique categories for filter dropdown
-  const categories = Array.from(new Set(products.map(p => p.category))).sort();
-
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedProducts(filteredProducts.map(p => p.id));
-    } else {
-      setSelectedProducts([]);
-    }
-  };
-
-  const handleSelectProduct = (id: number) => {
-    if (selectedProducts.includes(id)) {
-      setSelectedProducts(selectedProducts.filter(productId => productId !== id));
-    } else {
-      setSelectedProducts([...selectedProducts, id]);
-    }
-  };
-
-  const handleRefresh = () => {
-    refreshProducts();
-    toast({
-      title: "Refreshing Products",
-      description: "Fetching the latest product data from the server...",
-    });
-  };
+  const categories = Array.from(new Set(products.map(p => p.category)));
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Products Management</h2>
-          <p className="text-muted-foreground">
-            Manage your products, inventory, and pricing
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4" /> Refresh
-          </Button>
-          <Button onClick={() => setIsAddingProduct(true)} size="sm">
-            <Plus className="mr-2 h-4 w-4" /> Add Product
-          </Button>
-        </div>
-      </div>
-
-      {(isAddingProduct || editingProduct || isDuplicatingProduct) ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {editingProduct ? "Edit Product" : isDuplicatingProduct ? "Duplicate Product" : "Add New Product"}
-            </CardTitle>
-            <CardDescription>
-              {editingProduct 
-                ? "Update the product details below" 
-                : isDuplicatingProduct 
-                  ? "Modify the duplicated product details as needed"
-                  : "Fill in the product details below"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProductForm 
-              initialData={editingProduct || isDuplicatingProduct || {}} 
-              onSubmit={
-                editingProduct 
-                  ? handleUpdateProduct 
-                  : isDuplicatingProduct 
-                    ? handleCreateDuplicate
-                    : handleAddProduct
-              }
-              onCancel={() => {
-                setIsAddingProduct(false);
-                setEditingProduct(null);
-                setIsDuplicatingProduct(null);
-              }}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle>Products Management</CardTitle>
+              <CardDescription>
+                Manage your product catalog, inventory, and pricing
+              </CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refreshProducts()}
+                disabled={isLoading}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => setIsAddingProduct(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Sync status alert */}
+            {syncStatus && (
+              <Alert className={`mb-4 ${
+                syncStatus.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' :
+                syncStatus.type === 'error' ? 'bg-red-50 text-red-800 border-red-200' :
+                syncStatus.type === 'warning' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                'bg-blue-50 text-blue-800 border-blue-200'
+              }`}>
+                <AlertDescription>
+                  {syncStatus.message}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {/* Search and filter bar */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Search products..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsFilterDialogOpen(true)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filters
+              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={bulkOperation.isExporting || bulkOperation.isImporting}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => document.getElementById('import-file')?.click()}
+                  disabled={bulkOperation.isExporting || bulkOperation.isImporting}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import
+                </Button>
+                <input
+                  id="import-file"
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </div>
+            
+            {/* Bulk operation progress */}
+            {(bulkOperation.isImporting || bulkOperation.isExporting) && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{bulkOperation.isImporting ? 'Importing...' : 'Exporting...'}</span>
+                  <span>{bulkOperation.progress}%</span>
+                </div>
+                <Progress value={bulkOperation.progress} />
+              </div>
+            )}
+            
+            {/* Bulk operation error */}
+            {bulkOperation.error && (
+              <Alert className="bg-red-50 text-red-800 border-red-200">
+                <AlertDescription>{bulkOperation.error}</AlertDescription>
+              </Alert>
+            )}
+            
+            {/* File selected for import */}
+            {bulkOperation.file && !bulkOperation.isImporting && (
+              <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                <span className="text-sm">{bulkOperation.file.name}</span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setBulkOperation({...bulkOperation, file: null})}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm"
+                    onClick={handleImport}
+                  >
+                    Import Now
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Tabs */}
+            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="all">All Products</TabsTrigger>
                 <TabsTrigger value="featured">Featured</TabsTrigger>
                 <TabsTrigger value="active">Active</TabsTrigger>
                 <TabsTrigger value="inactive">Inactive</TabsTrigger>
                 <TabsTrigger value="draft">Draft</TabsTrigger>
-                <TabsTrigger value="out-of-stock">Out of Stock</TabsTrigger>
               </TabsList>
               
-              <div className="flex flex-wrap gap-2">
-                <div className="flex w-full sm:w-auto items-center space-x-2">
-                  <Input
-                    placeholder="Search products..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-auto min-w-[200px]"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => setIsFilterDialogOpen(true)}
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <TabsContent value={activeTab} className="m-0">
-              <Card>
-                <CardContent className="p-0">
-                  {isLoading ? (
-                    <div className="flex flex-col items-center justify-center p-8">
-                      <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">Loading products...</p>
+              <TabsContent value={activeTab} className="mt-4">
+                {/* Bulk actions */}
+                {selectedProducts.length > 0 && (
+                  <div className="bg-gray-50 p-2 rounded mb-4 flex items-center justify-between">
+                    <span className="text-sm">{selectedProducts.length} products selected</span>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedProducts([])}
+                      >
+                        Clear Selection
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={handleBulkDelete}
+                      >
+                        Delete Selected
+                      </Button>
                     </div>
-                  ) : (
-                    <>
-                      {selectedProducts.length > 0 && (
-                        <div className="bg-muted p-2 flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''} selected
-                          </span>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={handleBulkExport}
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              Export Selected
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={handleBulkDelete}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete Selected
-                            </Button>
+                  </div>
+                )}
+                
+                {/* Products table */}
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox 
+                            checked={filteredProducts.length > 0 && selectedProducts.length === filteredProducts.length}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead className="w-12">ID</TableHead>
+                        <TableHead className="w-12">Image</TableHead>
+                        <TableHead className="min-w-[150px]">
+                          <div className="flex items-center cursor-pointer" onClick={() => handleSort('name')}>
+                            Name
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
                           </div>
-                        </div>
-                      )}
-                      
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-12">
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center cursor-pointer" onClick={() => handleSort('category')}>
+                            Category
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center cursor-pointer" onClick={() => handleSort('price')}>
+                            Price
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center cursor-pointer" onClick={() => handleSort('stock')}>
+                            Stock
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                          </div>
+                        </TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedProducts.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="h-24 text-center">
+                            No products found.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        sortedProducts.map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell>
                               <Checkbox 
-                                checked={
-                                  filteredProducts.length > 0 && 
-                                  selectedProducts.length === filteredProducts.length
+                                checked={selectedProducts.includes(product.id)}
+                                onCheckedChange={(checked) => 
+                                  handleSelectProduct(product.id, checked === true)
                                 }
-                                onCheckedChange={handleSelectAll}
-                                aria-label="Select all products"
                               />
-                            </TableHead>
-                            <TableHead className="w-12">Image</TableHead>
-                            <TableHead>
-                              <div 
-                                className="flex items-center cursor-pointer"
-                                onClick={() => handleSort('name')}
+                            </TableCell>
+                            <TableCell>{product.id}</TableCell>
+                            <TableCell>
+                              {product.image ? (
+                                <div 
+                                  className="h-10 w-10 rounded bg-gray-100 cursor-pointer"
+                                  style={{ 
+                                    backgroundImage: `url(${product.image})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center'
+                                  }}
+                                  onClick={() => setViewingImage(product.image || null)}
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
+                                  <Image className="h-5 w-5 text-gray-400" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{product.name}</div>
+                              {product.sku && (
+                                <div className="text-xs text-gray-500">SKU: {product.sku}</div>
+                              )}
+                              {product.featured && (
+                                <Badge variant="outline" className="mt-1 bg-yellow-50 text-yellow-800 border-yellow-200">
+                                  Featured
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{product.category}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">${product.price.toFixed(2)}</div>
+                              {product.originalPrice && (
+                                <div className="text-xs text-gray-500 line-through">
+                                  ${product.originalPrice.toFixed(2)}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={product.stock > 0 ? "outline" : "secondary"}
+                                className={product.stock > 0 ? 
+                                  "bg-green-50 text-green-800 border-green-200" : 
+                                  "bg-red-50 text-red-800 border-red-200"
+                                }
                               >
-                                Name
-                                <ArrowUpDown className="ml-2 h-4 w-4" />
-                              </div>
-                            </TableHead>
-                            <TableHead>
-                              <div 
-                                className="flex items-center cursor-pointer"
-                                onClick={() => handleSort('category')}
+                                {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant="outline"
+                                className={
+                                  product.status === "active" ? "bg-green-50 text-green-800 border-green-200" :
+                                  product.status === "inactive" ? "bg-gray-50 text-gray-800 border-gray-200" :
+                                  "bg-blue-50 text-blue-800 border-blue-200"
+                                }
                               >
-                                Category
-                                <ArrowUpDown className="ml-2 h-4 w-4" />
+                                {product.status || "active"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDuplicateProduct(product)}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingProduct(product)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
-                            </TableHead>
-                            <TableHead>
-                              <div 
-                                className="flex items-center cursor-pointer"
-                                onClick={() => handleSort('price')}
-                              >
-                                Price
-                                <ArrowUpDown className="ml-2 h-4 w-4" />
-                              </div>
-                            </TableHead>
-                            <TableHead>
-                              <div 
-                                className="flex items-center cursor-pointer"
-                                onClick={() => handleSort('stock')}
-                              >
-                                Stock
-                                <ArrowUpDown className="ml-2 h-4 w-4" />
-                              </div>
-                            </TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredProducts.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                                No products found. Try a different search or filter.
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            filteredProducts.map((product) => (
-                              <TableRow key={product.id}>
-                                <TableCell>
-                                  <Checkbox 
-                                    checked={selectedProducts.includes(product.id)}
-                                    onCheckedChange={() => handleSelectProduct(product.id)}
-                                    aria-label={`Select ${product.name}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  {product.image ? (
-                                    <div 
-                                      className="relative h-10 w-10 rounded-md overflow-hidden cursor-pointer"
-                                      onClick={() => setViewingImage(product.image || null)}
-                                    >
-                                      <img 
-                                        src={product.image} 
-                                        alt={product.name}
-                                        className="h-full w-full object-cover"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                                      <Image className="h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                  <div className="flex flex-col">
-                                    <span>{product.name}</span>
-                                    {product.featured && (
-                                      <Badge variant="outline" className="w-fit mt-1">Featured</Badge>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{product.category}</TableCell>
-                                <TableCell>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">${product.price.toFixed(2)}</span>
-                                    {product.discount && product.discount > 0 && (
-                                      <span className="text-sm text-muted-foreground line-through">
-                                        ${(product.price / (1 - product.discount / 100)).toFixed(2)}
-                                      </span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{product.stock}</TableCell>
-                                <TableCell>
-                                  <Badge variant={
-                                    product.status === 'active' 
-                                      ? "default" 
-                                      : product.status === 'inactive' 
-                                        ? "secondary" 
-                                        : "outline"
-                                  }>
-                                    {product.status || 'active'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => setEditingProduct(product)}
-                                      title="Edit product"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDuplicateProduct(product)}
-                                      title="Duplicate product"
-                                    >
-                                      <Copy className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDeleteProduct(product.id)}
-                                      title="Delete product"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-between border-t p-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {filteredProducts.length} of {products.length} products
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleBulkExport}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Export All
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => document.getElementById('import-file')?.click()}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Import
-                    </Button>
-                    <input 
-                      type="file" 
-                      id="import-file" 
-                      className="hidden" 
-                      accept=".json"
-                      onChange={handleFileChange}
-                    />
-                  </div>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </>
-      )}
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <div className="text-sm text-gray-500">
+            Showing {filteredProducts.length} of {products.length} products
+          </div>
+        </CardFooter>
+      </Card>
 
-      {/* Image Preview Dialog */}
-      <Dialog open={!!viewingImage} onOpenChange={(open) => !open && setViewingImage(null)}>
-        <DialogContent className="sm:max-w-md">
+      {/* Add Product Dialog */}
+      <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Product Image</DialogTitle>
+            <DialogTitle>Add New Product</DialogTitle>
             <DialogDescription>
-              Full size product image preview
+              Add a new product to your catalog. Fill in the details below.
             </DialogDescription>
           </DialogHeader>
+          <ProductForm 
+            onSubmit={handleAddProduct} 
+            onCancel={() => setIsAddingProduct(false)}
+            categories={categories}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Update the product details below.
+            </DialogDescription>
+          </DialogHeader>
+          {editingProduct && (
+            <ProductForm 
+              product={editingProduct}
+              onSubmit={handleUpdateProduct} 
+              onCancel={() => setEditingProduct(null)}
+              categories={categories}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Product Dialog */}
+      <Dialog open={!!isDuplicatingProduct} onOpenChange={(open) => !open && setIsDuplicatingProduct(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Duplicate Product</DialogTitle>
+            <DialogDescription>
+              Create a copy of this product with modified details.
+            </DialogDescription>
+          </DialogHeader>
+          {isDuplicatingProduct && (
+            <ProductForm 
+              product={isDuplicatingProduct}
+              onSubmit={handleAddProduct} 
+              onCancel={() => setIsDuplicatingProduct(null)}
+              categories={categories}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Image Dialog */}
+      <Dialog open={!!viewingImage} onOpenChange={(open) => !open && setViewingImage(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Product Image</DialogTitle>
+          </DialogHeader>
           {viewingImage && (
-            <div className="flex items-center justify-center p-2">
+            <div className="flex justify-center">
               <img 
                 src={viewingImage} 
-                alt="Product preview" 
-                className="max-h-[60vh] max-w-full object-contain rounded-md"
+                alt="Product" 
+                className="max-h-[70vh] object-contain"
               />
             </div>
           )}
-          <DialogFooter className="sm:justify-center">
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Close
-              </Button>
-            </DialogClose>
-            <Button 
-              type="button" 
-              variant="outline"
-              onClick={() => {
-                if (viewingImage) {
-                  window.open(viewingImage, '_blank');
-                }
-              }}
-            >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Open Original
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewingImage(null)}>
+              Close
             </Button>
+            {viewingImage && (
+              <Button 
+                variant="default" 
+                onClick={() => window.open(viewingImage, '_blank')}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Open Original
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Filter Dialog */}
       <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Filter Products</DialogTitle>
             <DialogDescription>
-              Refine the product list using the filters below
+              Refine the product list with filters.
             </DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="category-filter">Category</Label>
               <Select 
                 value={filters.category} 
-                onValueChange={(value) => setFilters({...filters, category: value})}
+                onValueChange={(value) => handleFilterChange('category', value)}
               >
                 <SelectTrigger id="category-filter">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Categories</SelectItem>
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
@@ -810,36 +913,55 @@ const EnhancedProductsManager = () => {
             
             <div className="space-y-2">
               <Label>Price Range</Label>
-              <div className="flex items-center space-x-2">
-                <Input 
-                  type="number" 
-                  placeholder="Min" 
-                  value={filters.priceRange[0]} 
-                  onChange={(e) => setFilters({
-                    ...filters, 
-                    priceRange: [Number(e.target.value), filters.priceRange[1]]
-                  })}
-                  min={0}
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  value={filters.priceRange[0]}
+                  onChange={(e) => handleFilterChange('priceRange', [
+                    parseInt(e.target.value) || 0, 
+                    filters.priceRange[1]
+                  ])}
+                  placeholder="Min"
                 />
                 <span>to</span>
-                <Input 
-                  type="number" 
-                  placeholder="Max" 
-                  value={filters.priceRange[1]} 
-                  onChange={(e) => setFilters({
-                    ...filters, 
-                    priceRange: [filters.priceRange[0], Number(e.target.value)]
-                  })}
-                  min={0}
+                <Input
+                  type="number"
+                  min="0"
+                  value={filters.priceRange[1]}
+                  onChange={(e) => handleFilterChange('priceRange', [
+                    filters.priceRange[0], 
+                    parseInt(e.target.value) || 10000
+                  ])}
+                  placeholder="Max"
                 />
               </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="featured-filter">Featured</Label>
+              <Select 
+                value={filters.featured === null ? "" : filters.featured.toString()} 
+                onValueChange={(value) => handleFilterChange('featured', 
+                  value === "" ? null : value === "true"
+                )}
+              >
+                <SelectTrigger id="featured-filter">
+                  <SelectValue placeholder="All Products" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Products</SelectItem>
+                  <SelectItem value="true">Featured Only</SelectItem>
+                  <SelectItem value="false">Non-Featured Only</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="status-filter">Status</Label>
               <Select 
                 value={filters.status} 
-                onValueChange={(value) => setFilters({...filters, status: value})}
+                onValueChange={(value) => handleFilterChange('status', value)}
               >
                 <SelectTrigger id="status-filter">
                   <SelectValue placeholder="All Statuses" />
@@ -854,168 +976,30 @@ const EnhancedProductsManager = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>Featured</Label>
+              <Label htmlFor="stock-filter">Stock</Label>
               <Select 
-                value={filters.featured === null ? "" : filters.featured ? "yes" : "no"} 
-                onValueChange={(value) => setFilters({
-                  ...filters, 
-                  featured: value === "" ? null : value === "yes"
-                })}
+                value={filters.inStock === null ? "" : filters.inStock.toString()} 
+                onValueChange={(value) => handleFilterChange('inStock', 
+                  value === "" ? null : value === "true"
+                )}
               >
-                <SelectTrigger>
+                <SelectTrigger id="stock-filter">
                   <SelectValue placeholder="All Products" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Products</SelectItem>
-                  <SelectItem value="yes">Featured Only</SelectItem>
-                  <SelectItem value="no">Non-Featured Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Stock Status</Label>
-              <Select 
-                value={filters.inStock === null ? "" : filters.inStock ? "in" : "out"} 
-                onValueChange={(value) => setFilters({
-                  ...filters, 
-                  inStock: value === "" ? null : value === "in"
-                })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Products" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Products</SelectItem>
-                  <SelectItem value="in">In Stock</SelectItem>
-                  <SelectItem value="out">Out of Stock</SelectItem>
+                  <SelectItem value="true">In Stock</SelectItem>
+                  <SelectItem value="false">Out of Stock</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setFilters({
-                category: '',
-                priceRange: [0, 10000],
-                featured: null,
-                status: '',
-                inStock: null
-              })}
-            >
+            <Button variant="outline" onClick={handleResetFilters}>
               Reset Filters
             </Button>
-            <Button onClick={() => setIsFilterDialogOpen(false)}>
+            <Button onClick={handleApplyFilters}>
               Apply Filters
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import Dialog */}
-      <Dialog 
-        open={bulkOperation.isImporting || (bulkOperation.file !== null)} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setBulkOperation({
-              isImporting: false,
-              isExporting: false,
-              file: null,
-              progress: 0,
-              error: ""
-            });
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Products</DialogTitle>
-            <DialogDescription>
-              Upload a JSON file containing product data
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-2">
-            {bulkOperation.file ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Selected File:</span>
-                  <span>{bulkOperation.file.name}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Size:</span>
-                  <span>{(bulkOperation.file.size / 1024).toFixed(2)} KB</span>
-                </div>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed rounded-md p-6 text-center">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="mb-2">Drag and drop a JSON file here, or click to browse</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => document.getElementById('import-dialog-file')?.click()}
-                >
-                  Select File
-                </Button>
-                <input 
-                  type="file" 
-                  id="import-dialog-file" 
-                  className="hidden" 
-                  accept=".json"
-                  onChange={handleFileChange}
-                />
-              </div>
-            )}
-            
-            {bulkOperation.isImporting && (
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Importing...</span>
-                  <span>{bulkOperation.progress}%</span>
-                </div>
-                <Progress value={bulkOperation.progress} />
-              </div>
-            )}
-            
-            {bulkOperation.error && (
-              <Alert variant="destructive">
-                <AlertDescription>{bulkOperation.error}</AlertDescription>
-              </Alert>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setBulkOperation({
-                  isImporting: false,
-                  isExporting: false,
-                  file: null,
-                  progress: 0,
-                  error: ""
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleBulkImport}
-              disabled={!bulkOperation.file || bulkOperation.isImporting}
-            >
-              {bulkOperation.isImporting ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import
-                </>
-              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useProductContext } from '@/contexts/ProductContext';
+import { useProducts } from '@/contexts/ProductContext';
 import BilingualProductListing from './BilingualProductListing';
 import { useLanguage } from '@/components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const FeaturedProducts = () => {
-  const { featuredProducts } = useProductContext();
+  const { featuredProducts } = useProducts();
   const { language } = useLanguage();
   
   return (
