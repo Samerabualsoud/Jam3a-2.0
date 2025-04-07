@@ -675,3 +675,6 @@ export const useProductContext = () => {
   
   return context;
 };
+
+// Export an alias for useProductContext as useProducts to maintain compatibility
+export const useProducts = useProductContext;
