@@ -183,8 +183,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setError(null);
     
     try {
-      // Call the auth service register method
-      const response = await authService.register(name, email, password);
+      // Call the auth service register method with properly formatted object
+      const response = await authService.register({
+        name,
+        email,
+        password,
+        passwordConfirmation: password // Since we already validated they match in the form
+      });
       
       // Save token to localStorage
       localStorage.setItem('jam3a_token', response.token);
