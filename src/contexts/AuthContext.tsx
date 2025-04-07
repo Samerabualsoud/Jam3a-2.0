@@ -135,8 +135,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setError(null);
     
     try {
-      // Call the auth service login method
-      const response = await authService.login(email, password);
+      // Call the auth service login method with properly formatted object
+      const response = await authService.login({
+        email,
+        password
+      });
       
       // Save token to localStorage
       localStorage.setItem('jam3a_token', response.token);
