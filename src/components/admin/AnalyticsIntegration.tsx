@@ -135,21 +135,30 @@ const AnalyticsIntegration: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Try to get from API
+      // Try to get from API - use direct path instead of relative path
       try {
-        const response = await apiService.get('/analytics/config');
+        // Use direct path to analytics config endpoint
+        const configEndpoint = `${API_BASE_URL}/analytics/config`;
+        console.log('Fetching analytics config from:', configEndpoint);
+        
+        const response = await fetch(configEndpoint);
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+        
+        const data = await response.json();
         
         // Update form values
         form.reset({
-          trackingId: response.trackingId || '',
-          ipAnonymization: response.ipAnonymization !== false,
-          trackPageViews: response.trackPageViews !== false,
-          trackEvents: response.trackEvents !== false,
-          active: response.active !== false
+          trackingId: data.trackingId || '',
+          ipAnonymization: data.ipAnonymization !== false,
+          trackPageViews: data.trackPageViews !== false,
+          trackEvents: data.trackEvents !== false,
+          active: data.active !== false
         });
         
         // Store in localStorage for fallback
-        localStorage.setItem('analyticsConfig', JSON.stringify(response));
+        localStorage.setItem('analyticsConfig', JSON.stringify(data));
       } catch (apiError) {
         console.warn('API error, falling back to localStorage or defaults:', apiError);
         
@@ -165,14 +174,32 @@ const AnalyticsIntegration: React.FC = () => {
               trackEvents: config.trackEvents !== false,
               active: config.active !== false
             });
+            
+            toast({
+              title: 'Using cached configuration',
+              description: 'Could not connect to server. Using locally saved configuration.',
+              variant: 'warning',
+            });
           } catch (parseError) {
             console.error('Error parsing stored analytics configuration:', parseError);
             // Fall back to defaults
             form.reset(DEFAULT_ANALYTICS_CONFIG);
+            
+            toast({
+              title: 'Using default configuration',
+              description: 'Could not load configuration. Using default values.',
+              variant: 'warning',
+            });
           }
         } else {
           // No stored config, use defaults
           form.reset(DEFAULT_ANALYTICS_CONFIG);
+          
+          toast({
+            title: 'Using default configuration',
+            description: 'Could not load configuration. Using default values.',
+            variant: 'warning',
+          });
         }
       }
     } catch (err) {
@@ -191,12 +218,21 @@ const AnalyticsIntegration: React.FC = () => {
       setError(null);
       
       try {
-        const response = await apiService.get('/analytics/data');
+        // Use direct path to analytics data endpoint
+        const dataEndpoint = `${API_BASE_URL}/analytics/data`;
+        console.log('Fetching analytics data from:', dataEndpoint);
         
-        if (response) {
+        const response = await fetch(dataEndpoint);
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data) {
           // Handle different response formats
-          const data = response.data ? response.data : response;
-          setAnalyticsData(data);
+          const analyticsData = data.data ? data.data : data;
+          setAnalyticsData(analyticsData);
           setLastUpdated(new Date());
         } else {
           throw new Error('Invalid response format');
@@ -206,6 +242,12 @@ const AnalyticsIntegration: React.FC = () => {
         // Use mock data when API fails
         setAnalyticsData(MOCK_ANALYTICS_DATA);
         setLastUpdated(new Date());
+        
+        toast({
+          title: 'Using sample data',
+          description: 'Could not connect to analytics server. Showing sample data.',
+          variant: 'warning',
+        });
       }
     } catch (err) {
       console.error('Error in analytics data flow:', err);
@@ -225,24 +267,20 @@ const AnalyticsIntegration: React.FC = () => {
       setError(null);
       
       try {
-        // Try POST first
-        await apiService.post('/analytics/config', values);
+        // Use direct path to analytics config endpoint
+        const configEndpoint = `${API_BASE_URL}/analytics/config`;
+        console.log('Saving analytics config to:', configEndpoint);
         
-        toast({
-          title: 'Configuration saved',
-          description: 'Google Analytics configuration has been updated successfully.',
-          variant: 'default',
+        // Try POST first
+        const postResponse = await fetch(configEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(values),
         });
         
-        // Store in localStorage for fallback
-        localStorage.setItem('analyticsConfig', JSON.stringify(values));
-      } catch (postError) {
-        console.warn('POST failed, trying PUT:', postError);
-        
-        try {
-          // Try PUT if POST fails
-          await apiService.put('/analytics/config', values);
-          
+        if (postResponse.ok) {
           toast({
             title: 'Configuration saved',
             description: 'Google Analytics configuration has been updated successfully.',
@@ -251,6 +289,35 @@ const AnalyticsIntegration: React.FC = () => {
           
           // Store in localStorage for fallback
           localStorage.setItem('analyticsConfig', JSON.stringify(values));
+        } else {
+          throw new Error(`POST failed with status ${postResponse.status}`);
+        }
+      } catch (postError) {
+        console.warn('POST failed, trying PUT:', postError);
+        
+        try {
+          // Try PUT if POST fails
+          const configEndpoint = `${API_BASE_URL}/analytics/config`;
+          const putResponse = await fetch(configEndpoint, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(values),
+          });
+          
+          if (putResponse.ok) {
+            toast({
+              title: 'Configuration saved',
+              description: 'Google Analytics configuration has been updated successfully.',
+              variant: 'default',
+            });
+            
+            // Store in localStorage for fallback
+            localStorage.setItem('analyticsConfig', JSON.stringify(values));
+          } else {
+            throw new Error(`PUT failed with status ${putResponse.status}`);
+          }
         } catch (putError) {
           console.error('Both POST and PUT failed:', putError);
           
@@ -280,337 +347,150 @@ const AnalyticsIntegration: React.FC = () => {
 
   // Refresh analytics data
   const handleRefresh = async () => {
-    try {
-      setIsRefreshing(true);
-      setError(null);
-      
-      try {
-        // Try to refresh data from API
-        await apiService.post('/analytics/refresh');
-      } catch (refreshError) {
-        console.warn('Refresh API not available:', refreshError);
-        // Continue to fetch data even if refresh fails
-      }
-      
-      // Then fetch the updated data
-      await fetchAnalyticsData();
-      
-      toast({
-        title: 'Data refreshed',
-        description: 'Analytics data has been refreshed successfully.',
-        variant: 'default',
-      });
-    } catch (err) {
-      console.error('Error refreshing analytics data:', err);
-      setError('Failed to refresh analytics data. Please try again.');
-      
-      toast({
-        title: 'Error',
-        description: 'Failed to refresh analytics data.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // Render analytics data
-  const renderAnalyticsData = () => {
-    if (!analyticsData) {
-      return (
-        <div className="flex flex-col items-center justify-center p-8">
-          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-muted-foreground text-center">No analytics data available. Configure Google Analytics and refresh data.</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Page Views */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Page Views</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {analyticsData.pageViews && Array.isArray(analyticsData.pageViews.data) && analyticsData.pageViews.data.length > 0 ? (
-              <>
-                <div className="text-3xl font-bold mb-2">{analyticsData.pageViews.total.toLocaleString()}</div>
-                <div className="text-sm text-muted-foreground">
-                  {analyticsData.pageViews.change > 0 ? '+' : ''}{analyticsData.pageViews.change}% from last period
-                </div>
-                <div className="h-[200px] mt-4">
-                  {/* Chart would go here */}
-                  <div className="flex flex-col space-y-2">
-                    {analyticsData.pageViews.data.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span>{item.date}</span>
-                        <span>{item.views} views</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="text-muted-foreground">No page view data available</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Users */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {analyticsData.users && Array.isArray(analyticsData.users.data) && analyticsData.users.data.length > 0 ? (
-              <>
-                <div className="text-3xl font-bold mb-2">{analyticsData.users.total.toLocaleString()}</div>
-                <div className="text-sm text-muted-foreground">
-                  {analyticsData.users.change > 0 ? '+' : ''}{analyticsData.users.change}% from last period
-                </div>
-                <div className="h-[200px] mt-4">
-                  {/* Chart would go here */}
-                  <div className="flex flex-col space-y-2">
-                    {analyticsData.users.data.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span>{item.date}</span>
-                        <span>{item.users} users</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="text-muted-foreground">No user data available</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Top Pages */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Pages</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {analyticsData.topPages && Array.isArray(analyticsData.topPages) && analyticsData.topPages.length > 0 ? (
-              <div className="space-y-4">
-                {analyticsData.topPages.map((page, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <div className="truncate max-w-[200px]">
-                      <div className="font-medium">{page.title || page.path}</div>
-                      <div className="text-sm text-muted-foreground">{page.path}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{page.views.toLocaleString()}</div>
-                      <div className="text-sm text-muted-foreground">views</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No top pages data available</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Devices */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Devices</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {analyticsData.devices ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold">{analyticsData.devices.mobile}%</div>
-                    <div className="text-sm text-muted-foreground">Mobile</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{analyticsData.devices.desktop}%</div>
-                    <div className="text-sm text-muted-foreground">Desktop</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{analyticsData.devices.tablet}%</div>
-                    <div className="text-sm text-muted-foreground">Tablet</div>
-                  </div>
-                </div>
-                <div className="h-[100px]">
-                  {/* Chart would go here */}
-                  <div className="w-full h-8 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="flex h-full">
-                      <div className="bg-blue-500 h-full" style={{ width: `${analyticsData.devices.mobile}%` }}></div>
-                      <div className="bg-green-500 h-full" style={{ width: `${analyticsData.devices.desktop}%` }}></div>
-                      <div className="bg-yellow-500 h-full" style={{ width: `${analyticsData.devices.tablet}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No device data available</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
+    await fetchAnalyticsData();
+    
+    toast({
+      title: 'Analytics refreshed',
+      description: 'Analytics data has been refreshed.',
+      variant: 'default',
+    });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold tracking-tight">Google Analytics Integration</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Refreshing...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Data
-            </>
-          )}
-        </Button>
-      </div>
-      
-      <Tabs defaultValue="configuration">
-        <TabsList>
-          <TabsTrigger value="configuration">Configuration</TabsTrigger>
-          <TabsTrigger value="data">Analytics Data</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="configuration" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Google Analytics Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-4 flex items-start">
-                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                  <div>{error}</div>
-                </div>
-              )}
-              
+      <Card>
+        <CardHeader>
+          <CardTitle>Google Analytics Integration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="configuration">
+            <TabsList className="mb-4">
+              <TabsTrigger value="configuration">Configuration</TabsTrigger>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="configuration">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {error && (
+                    <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-destructive mb-4">
+                      <AlertCircle size={16} />
+                      <p className="text-sm">{error}</p>
+                    </div>
+                  )}
+                  
                   <FormField
                     control={form.control}
                     name="trackingId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tracking ID</FormLabel>
+                        <FormLabel>Google Analytics Tracking ID</FormLabel>
                         <FormControl>
                           <Input placeholder="G-XXXXXXXXXX" {...field} />
                         </FormControl>
                         <FormDescription>
-                          Enter your Google Analytics tracking ID (e.g., G-XXXXXXXXXX)
+                          Enter your Google Analytics 4 measurement ID (starts with G-)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="active"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Enable Analytics
-                          </FormLabel>
-                          <FormDescription>
-                            Turn analytics tracking on or off
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="active"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Enable Analytics
+                            </FormLabel>
+                            <FormDescription>
+                              Turn Google Analytics tracking on or off
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="ipAnonymization"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              IP Anonymization
+                            </FormLabel>
+                            <FormDescription>
+                              Anonymize user IP addresses for privacy
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="trackPageViews"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Track Page Views
+                            </FormLabel>
+                            <FormDescription>
+                              Automatically track page views
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="trackEvents"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Track Events
+                            </FormLabel>
+                            <FormDescription>
+                              Track user interactions and events
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="ipAnonymization"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            IP Anonymization
-                          </FormLabel>
-                          <FormDescription>
-                            Anonymize IP addresses for privacy compliance
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="trackPageViews"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Track Page Views
-                          </FormLabel>
-                          <FormDescription>
-                            Automatically track page views
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="trackEvents"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Track Events
-                          </FormLabel>
-                          <FormDescription>
-                            Track user interactions and events
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button type="submit" disabled={isLoading}>
+                  <Button type="submit" disabled={isLoading} className="w-full">
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -625,33 +505,184 @@ const AnalyticsIntegration: React.FC = () => {
                   </Button>
                 </form>
               </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="data" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analytics Overview</CardTitle>
-              {lastUpdated && (
-                <div className="text-sm text-muted-foreground">
-                  Last updated: {lastUpdated.toLocaleString()}
+            </TabsContent>
+            
+            <TabsContent value="dashboard">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-medium">Analytics Dashboard</h3>
+                    {lastUpdated && (
+                      <p className="text-sm text-muted-foreground">
+                        Last updated: {lastUpdated.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                  >
+                    {isRefreshing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Refresh Data
+                      </>
+                    )}
+                  </Button>
                 </div>
-              )}
-            </CardHeader>
-            <CardContent>
-              {isRefreshing ? (
-                <div className="flex flex-col items-center justify-center p-8">
-                  <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                  <p className="text-muted-foreground">Refreshing analytics data...</p>
-                </div>
-              ) : (
-                renderAnalyticsData()
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                
+                {error && (
+                  <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-destructive">
+                    <AlertCircle size={16} />
+                    <p className="text-sm">{error}</p>
+                  </div>
+                )}
+                
+                {analyticsData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          Page Views
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {analyticsData.pageViews?.total?.toLocaleString() || '0'}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {analyticsData.pageViews?.change > 0 ? '+' : ''}
+                          {analyticsData.pageViews?.change?.toFixed(1) || '0'}% from last period
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          Users
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {analyticsData.users?.total?.toLocaleString() || '0'}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {analyticsData.users?.change > 0 ? '+' : ''}
+                          {analyticsData.users?.change?.toFixed(1) || '0'}% from last period
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          Conversion Rate
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {analyticsData.conversions?.rate?.toFixed(1) || '0'}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {analyticsData.conversions?.change > 0 ? '+' : ''}
+                          {analyticsData.conversions?.change?.toFixed(1) || '0'}% from last period
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          Conversions
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {analyticsData.conversions?.total?.toLocaleString() || '0'}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Total completed actions
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                
+                {analyticsData && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm font-medium">
+                          Top Pages
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {analyticsData.topPages?.map((page, index) => (
+                            <div key={index} className="flex justify-between items-center">
+                              <div className="truncate max-w-[70%]">
+                                <span className="text-xs font-medium">{page.title || 'Unknown'}</span>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {page.path}
+                                </p>
+                              </div>
+                              <span className="text-xs font-medium">
+                                {page.views?.toLocaleString() || '0'} views
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm font-medium">
+                          Device Breakdown
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium">Mobile</span>
+                            <span className="text-xs font-medium">
+                              {analyticsData.devices?.mobile || '0'}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium">Desktop</span>
+                            <span className="text-xs font-medium">
+                              {analyticsData.devices?.desktop || '0'}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium">Tablet</span>
+                            <span className="text-xs font-medium">
+                              {analyticsData.devices?.tablet || '0'}%
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
