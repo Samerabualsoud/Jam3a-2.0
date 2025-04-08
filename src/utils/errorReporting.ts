@@ -1,6 +1,8 @@
 // Client-side error reporting utility
 // This file provides comprehensive error tracking and reporting
 
+import React from 'react'; // Add explicit React import
+
 // Configuration
 const ERROR_REPORTING_CONFIG = {
   // Whether to enable error reporting
@@ -21,7 +23,7 @@ const errorLog = [];
 
 // Initialize error reporting
 export function initErrorReporting() {
-  if (!ERROR_REPORTING_CONFIG.enabled) return;
+  if (typeof window === 'undefined' || !ERROR_REPORTING_CONFIG.enabled) return;
   
   // Set up global error handler
   window.addEventListener('error', handleGlobalError);
@@ -74,7 +76,7 @@ function handlePromiseRejection(event) {
 
 // Log errors to our system
 function logError(error) {
-  if (errorCount >= ERROR_REPORTING_CONFIG.maxErrors) return;
+  if (typeof window === 'undefined' || errorCount >= ERROR_REPORTING_CONFIG.maxErrors) return;
   
   errorCount++;
   
@@ -107,6 +109,8 @@ function logError(error) {
 
 // Show error notification in UI
 function showErrorNotification(error) {
+  if (typeof document === 'undefined') return;
+  
   // Check if we have a notification container
   let container = document.getElementById('error-notification-container');
   
@@ -177,6 +181,8 @@ function showErrorNotification(error) {
 
 // Set up React error boundary fallback
 function setupReactErrorFallback() {
+  if (typeof window === 'undefined') return;
+  
   // This will be used by our React error boundary component
   window.reportReactError = (error, info) => {
     logError({
@@ -200,12 +206,22 @@ export function clearErrorLog() {
   errorCount = 0;
   
   try {
-    sessionStorage.removeItem('jam3a_error_log');
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('jam3a_error_log');
+    }
   } catch (e) {
     // Ignore storage errors
   }
   
   console.log('Error log cleared');
+}
+
+// Add type definitions for window object
+declare global {
+  interface Window {
+    reportReactError: (error: Error, info: React.ErrorInfo) => void;
+    markAppAsLoaded: () => void;
+  }
 }
 
 // Export default for easy importing

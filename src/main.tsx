@@ -1,50 +1,31 @@
 import React from 'react'
-import { createRoot } from 'react-dom/client'
+import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// Ensure the root element exists
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  const newRoot = document.createElement('div');
-  newRoot.id = 'root';
-  document.body.appendChild(newRoot);
-  console.log('Created new root element');
+// Ensure React is defined globally for any components that might use it
+window.React = React;
+
+// Initialize performance monitoring if available
+import performanceMonitoring from './utils/performanceMonitoring'
+if (typeof window !== 'undefined') {
+  performanceMonitoring.initPerformanceMonitoring();
 }
 
-// Add a delay to ensure DOM is fully loaded
-setTimeout(() => {
-  try {
-    // Create root and render app
-    const root = createRoot(document.getElementById("root")!);
-    root.render(
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>
-    );
-    
-    // Mark application as loaded for the fallback system
-    if (typeof window.markAppAsLoaded === 'function') {
-      window.markAppAsLoaded();
-    }
-    
-    console.log('Application rendered successfully');
-  } catch (error) {
-    console.error('Failed to render application:', error);
-    
-    // Show error message to user
-    const errorContainer = document.getElementById('error-container');
-    const errorMessage = document.getElementById('error-message');
-    const appLoading = document.getElementById('app-loading');
-    
-    if (errorContainer && errorMessage) {
-      if (appLoading) {
-        appLoading.style.display = 'none';
-      }
-      errorContainer.style.display = 'block';
-      errorMessage.textContent = error instanceof Error 
-        ? `Error rendering application: ${error.message}` 
-        : 'An unknown error occurred while rendering the application.';
-    }
-  }
-}, 100); // Small delay to ensure DOM is ready
+// Initialize service worker if available
+import serviceWorker from './utils/serviceWorker'
+if (typeof window !== 'undefined') {
+  serviceWorker.initServiceWorker();
+}
+
+// Initialize error reporting if available
+import errorReporting from './utils/errorReporting'
+if (typeof window !== 'undefined') {
+  errorReporting.init();
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
