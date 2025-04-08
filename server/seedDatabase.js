@@ -309,7 +309,7 @@ const generateDeals = (categoryIds, productIds) => {
 
 // Sample analytics config
 const analyticsConfig = {
-  trackingId: 'G-EXAMPLE123',
+  trackingId: 'G-G3N8DYCLBM',
   ipAnonymization: true,
   trackPageViews: true,
   trackEvents: true,
