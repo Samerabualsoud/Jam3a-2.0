@@ -1,9 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'copy-test-html',
+      closeBundle() {
+        // Ensure test.html is copied to the root of the dist directory
+        if (fs.existsSync('public/test.html')) {
+          fs.copyFileSync('public/test.html', 'dist/test.html')
+          console.log('Successfully copied test.html to dist directory')
+        }
+      }
+    }
+  ],
   root: '.', // Explicitly set the root directory
   base: '/', // Changed from './' to '/' for proper SPA routing in production
   build: {
