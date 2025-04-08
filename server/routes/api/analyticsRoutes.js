@@ -19,7 +19,7 @@ const getAnalyticsConfigFromFile = () => {
       return JSON.parse(rawData);
     }
     return {
-      trackingId: 'G-EXAMPLE123',
+      trackingId: 'G-G3N8DYCLBM',
       ipAnonymization: true,
       trackPageViews: true,
       trackEvents: true,
@@ -31,7 +31,7 @@ const getAnalyticsConfigFromFile = () => {
   } catch (error) {
     console.error('Error reading analytics config from file:', error);
     return {
-      trackingId: 'G-EXAMPLE123',
+      trackingId: 'G-G3N8DYCLBM',
       ipAnonymization: true,
       trackPageViews: true,
       trackEvents: true,
@@ -53,7 +53,7 @@ router.get('/config', async (req, res) => {
       // If no config exists, create a default one
       if (!config) {
         config = await AnalyticsConfig.create({
-          trackingId: 'G-EXAMPLE123',
+          trackingId: 'G-G3N8DYCLBM',
           ipAnonymization: true,
           trackPageViews: true,
           trackEvents: true,

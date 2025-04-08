@@ -96,7 +96,7 @@ const MOCK_ANALYTICS_DATA = {
 
 // Default analytics config for when API fails
 const DEFAULT_ANALYTICS_CONFIG = {
-  trackingId: 'G-EXAMPLE123',
+  trackingId: 'G-G3N8DYCLBM',
   ipAnonymization: true,
   trackPageViews: true,
   trackEvents: true,
