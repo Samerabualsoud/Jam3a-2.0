@@ -22,5 +22,9 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    // Add allowedHosts configuration to fix CORS issues
+    allowedHosts: ['jam3a.me', 'www.jam3a.me', 'localhost'],
+    // Enable CORS for all origins
+    cors: true
   },
 })
