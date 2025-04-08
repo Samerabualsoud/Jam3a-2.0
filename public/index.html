@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jam3a 2.0</title>
+  
+  <!-- Preload React to ensure it loads before other scripts -->
+  <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script">
+  <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script">
+  
+  <!-- Load React directly from CDN before any other scripts -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Script to ensure React is globally available -->
+  <script>
+    // Make sure React is globally available
+    window.React = window.React || React;
+    window.ReactDOM = window.ReactDOM || ReactDOM;
+    
+    // Create a global check function
+    window.checkReactLoaded = function() {
+      return typeof React !== 'undefined' && typeof ReactDOM !== 'undefined';
+    };
+    
+    // Log React availability
+    console.log('React available in head:', window.checkReactLoaded());
+  </script>
+  
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-G3N8DYCLBM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-G3N8DYCLBM');
+  </script>
+</head>
+<body>
+  <div id="root">
+    <!-- Loading indicator that will be replaced when React loads -->
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+      <h2>Loading Jam3a 2.0...</h2>
+      <p>If this message persists, please check the console for errors.</p>
+    </div>
+  </div>
+
+  <!-- Script to check if React loaded properly and handle errors -->
+  <script>
+    // Function to check if React is available
+    function ensureReactIsAvailable() {
+      if (!window.checkReactLoaded()) {
+        console.error('React is not available! Attempting to reload React from CDN...');
+        
+        // Try to load React again
+        var reactScript = document.createElement('script');
+        reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+        reactScript.onload = function() {
+          var reactDOMScript = document.createElement('script');
+          reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+          reactDOMScript.onload = function() {
+            window.React = window.React || React;
+            window.ReactDOM = window.ReactDOM || ReactDOM;
+            console.log('React reloaded successfully!');
+            
+            // Now try to load the application scripts again
+            loadApplicationScripts();
+          };
+          document.head.appendChild(reactDOMScript);
+        };
+        document.head.appendChild(reactScript);
+      } else {
+        console.log('React is available, proceeding with application load.');
+        loadApplicationScripts();
+      }
+    }
+    
+    // Function to load application scripts
+    function loadApplicationScripts() {
+      // Find all script tags with the app-script class
+      var scripts = document.querySelectorAll('script.app-script');
+      
+      // If no app scripts are found, try to find them by looking for specific patterns
+      if (scripts.length === 0) {
+        var allScripts = document.querySelectorAll('script[src]');
+        allScripts.forEach(function(script) {
+          if (script.src.includes('index-') || script.src.includes('main.') || script.src.includes('app.')) {
+            script.className = 'app-script';
+            scripts = document.querySelectorAll('script.app-script');
+          }
+        });
+      }
+      
+      // If still no scripts found, show error
+      if (scripts.length === 0) {
+        showErrorMessage('Could not find application scripts. Please check your deployment.');
+        return;
+      }
+      
+      // Reload each script to ensure they run after React is available
+      scripts.forEach(function(script) {
+        var newScript = document.createElement('script');
+        newScript.src = script.src;
+        newScript.className = 'reloaded-app-script';
+        newScript.onerror = function() {
+          showErrorMessage('Failed to load application script: ' + script.src);
+        };
+        document.body.appendChild(newScript);
+        
+        // Remove the original script to prevent duplicate execution
+        script.parentNode.removeChild(script);
+      });
+    }
+    
+    // Function to show error message
+    function showErrorMessage(message) {
+      console.error(message);
+      var rootElement = document.getElementById('root');
+      rootElement.innerHTML = `
+        <div style="padding: 20px; margin: 20px; background-color: #fee2e2; color: #b91c1c; border-radius: 4px; text-align: center;">
+          <h2>Application Error</h2>
+          <p>${message}</p>
+          <p>Please try refreshing the page or contact support if the issue persists.</p>
+          <button onclick="window.location.reload()" style="padding: 8px 16px; background: #b91c1c; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">Reload Page</button>
+        </div>
+      `;
+    }
+    
+    // Check React availability after a short delay to ensure all scripts have had a chance to load
+    setTimeout(function() {
+      ensureReactIsAvailable();
+    }, 500);
+    
+    // Add a fallback for when everything else fails
+    window.addEventListener('error', function(event) {
+      if (event.message && event.message.includes('React is not defined')) {
+        console.error('Caught React not defined error, attempting recovery...');
+        ensureReactIsAvailable();
+      }
+    });
+  </script>
+  
+  <!-- Fallback content if JavaScript is disabled -->
+  <noscript>
+    <div style="padding: 20px; margin: 20px; background-color: #fee2e2; color: #b91c1c; border-radius: 4px; text-align: center;">
+      <h2>JavaScript Required</h2>
+      <p>This application requires JavaScript to be enabled. Please enable JavaScript in your browser settings and reload the page.</p>
+    </div>
+  </noscript>
+</body>
+</html>
