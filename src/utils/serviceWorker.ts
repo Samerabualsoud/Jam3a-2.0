@@ -3,9 +3,11 @@
  * Implements offline capabilities and caching strategies
  */
 
+import React from 'react'; // Add explicit React import
+
 // Check if service workers are supported
 export const isServiceWorkerSupported = (): boolean => {
-  return 'serviceWorker' in navigator;
+  return typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
 };
 
 // Register service worker
@@ -47,6 +49,8 @@ export const unregisterServiceWorker = async (): Promise<boolean> => {
 
 // Check if app is installed (PWA)
 export const isAppInstalled = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  
   return window.matchMedia('(display-mode: standalone)').matches || 
          (window.navigator as any).standalone === true;
 };
@@ -76,7 +80,9 @@ export const initServiceWorker = async (): Promise<void> => {
           console.log('New content is available, please refresh.');
           
           // Dispatch event for the app to show update notification
-          window.dispatchEvent(new CustomEvent('serviceWorkerUpdated'));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('serviceWorkerUpdated'));
+          }
         } else {
           // Content is cached for offline use
           console.log('Content is cached for offline use.');
@@ -105,7 +111,7 @@ export const updateServiceWorker = async (): Promise<void> => {
 
 // Check if app is online
 export const isOnline = (): boolean => {
-  return navigator.onLine;
+  return typeof navigator !== 'undefined' && navigator.onLine;
 };
 
 // Add online/offline event listeners
@@ -113,6 +119,10 @@ export const addConnectivityListeners = (
   onOnline: () => void,
   onOffline: () => void
 ): () => void => {
+  if (typeof window === 'undefined') {
+    return () => {}; // Return empty cleanup function for SSR
+  }
+  
   window.addEventListener('online', onOnline);
   window.addEventListener('offline', onOffline);
 

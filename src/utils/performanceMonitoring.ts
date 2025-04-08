@@ -3,6 +3,8 @@
  * Implements performance metrics tracking and reporting
  */
 
+import React from 'react'; // Add explicit React import
+
 // Performance metrics interface
 interface PerformanceMetrics {
   // Navigation timing metrics
@@ -48,9 +50,13 @@ export const initPerformanceMonitoring = (): void => {
 
 // Register performance observers for modern metrics
 const registerPerformanceObservers = (): void => {
+  if (typeof window === 'undefined' || typeof PerformanceObserver === 'undefined') {
+    return;
+  }
+  
   try {
     // Largest Contentful Paint
-    if ('PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes.includes('largest-contentful-paint')) {
+    if (PerformanceObserver.supportedEntryTypes.includes('largest-contentful-paint')) {
       const lcpObserver = new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         const lastEntry = entries[entries.length - 1];
@@ -61,7 +67,7 @@ const registerPerformanceObservers = (): void => {
     }
     
     // First Input Delay
-    if ('PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes.includes('first-input')) {
+    if (PerformanceObserver.supportedEntryTypes.includes('first-input')) {
       const fidObserver = new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         const firstInput = entries[0];
@@ -72,7 +78,7 @@ const registerPerformanceObservers = (): void => {
     }
     
     // Cumulative Layout Shift
-    if ('PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes.includes('layout-shift')) {
+    if (PerformanceObserver.supportedEntryTypes.includes('layout-shift')) {
       let cumulativeLayoutShift = 0;
       const clsObserver = new PerformanceObserver((entryList) => {
         for (const entry of entryList.getEntries()) {
@@ -87,7 +93,7 @@ const registerPerformanceObservers = (): void => {
     }
     
     // Resource timing for API calls and assets
-    if ('PerformanceObserver' in window && PerformanceObserver.supportedEntryTypes.includes('resource')) {
+    if (PerformanceObserver.supportedEntryTypes.includes('resource')) {
       const resourceObserver = new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         window.__jamPerf = window.__jamPerf || {};
@@ -173,6 +179,8 @@ export const collectPerformanceMetrics = (): PerformanceMetrics => {
 
 // Log performance metrics to console
 export const logPerformanceMetrics = (metrics: PerformanceMetrics): void => {
+  if (typeof console === 'undefined') return;
+  
   console.group('Performance Metrics');
   console.log('Load Time:', metrics.loadTime ? `${metrics.loadTime.toFixed(0)}ms` : 'N/A');
   console.log('DOM Content Loaded:', metrics.domContentLoaded ? `${metrics.domContentLoaded.toFixed(0)}ms` : 'N/A');
@@ -203,7 +211,7 @@ export const logPerformanceMetrics = (metrics: PerformanceMetrics): void => {
 
 // Send metrics to Google Analytics
 export const sendMetricsToAnalytics = (metrics: PerformanceMetrics): void => {
-  if (typeof window.gtag !== 'function') {
+  if (typeof window === 'undefined' || typeof window.gtag !== 'function') {
     return;
   }
   
@@ -251,6 +259,10 @@ export const sendMetricsToAnalytics = (metrics: PerformanceMetrics): void => {
 
 // Track API call performance
 export const trackApiCall = (endpoint: string, startTime: number): void => {
+  if (typeof window === 'undefined' || typeof performance === 'undefined') {
+    return;
+  }
+  
   const endTime = performance.now();
   const duration = endTime - startTime;
   
