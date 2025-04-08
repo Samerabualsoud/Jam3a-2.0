@@ -5,7 +5,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   root: '.', // Explicitly set the root directory
-  base: './', // This helps with routing in production
+  base: '/', // Changed from './' to '/' for proper SPA routing in production
   build: {
     outDir: 'dist',
     emptyOutDir: true,
