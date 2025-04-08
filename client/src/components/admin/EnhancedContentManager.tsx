@@ -65,8 +65,8 @@ import { useLanguage } from '@/components/Header';
 import { useProducts } from '@/contexts/ProductContext';
 
 // Import WYSIWYG editor
-import dynamic from 'next/dynamic';
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+import React, { lazy, Suspense } from 'react';
+const ReactQuill = lazy(() => import('react-quill'));
 import 'react-quill/dist/quill.snow.css';
 
 // Configuration for image upload services

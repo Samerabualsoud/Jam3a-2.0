@@ -1,8 +1,12 @@
 // Email service for Jam3a
-const nodemailer = require('nodemailer');
-const fs = require('fs');
-const path = require('path');
-const handlebars = require('handlebars');
+import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import handlebars from 'handlebars';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -163,7 +167,4 @@ const sendBulkEmails = async ({ recipients, subject, template, data, attachments
   }
 };
 
-module.exports = {
-  sendEmail,
-  sendBulkEmails
-};
+export { sendEmail, sendBulkEmails };

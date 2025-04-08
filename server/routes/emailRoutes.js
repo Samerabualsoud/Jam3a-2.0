@@ -1,7 +1,8 @@
 // Routes for email functionality
-const express = require('express');
+import express from 'express';
+import { sendEmail, sendBulkEmails } from '../emailService.js';
+
 const router = express.Router();
-const { sendEmail, sendBulkEmails } = require('../emailService');
 
 // Middleware to validate email request
 const validateEmailRequest = (req, res, next) => {
@@ -259,4 +260,4 @@ router.post('/group-complete', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,35 +1,36 @@
-import { ReactNode } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
-  children: ReactNode;
+  children: React.ReactNode;
   requiredRole?: string;
 }
 
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { isAuthenticated, hasRole, user } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+  const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
-  // Check if user is authenticated
+  // Show loading state while authentication is being checked
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    // Redirect to login page, but save the location they were trying to access
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Special case for admin role - check email directly
-  if (requiredRole === 'admin' && user?.email === 'admin@jam3a.me') {
-    // User has admin email, allow access
-    return <>{children}</>;
-  }
-
-  // If a specific role is required, check if user has that role
-  if (requiredRole && !hasRole(requiredRole)) {
-    // Redirect to unauthorized page or home page
+  // If role is required but user doesn't have it
+  if (requiredRole && user?.role !== requiredRole) {
     return <Navigate to="/" replace />;
   }
 
-  // If user is authenticated and has required role (if any), render the children
+  // If authenticated and has required role (or no role required), render children
   return <>{children}</>;
 };
 
