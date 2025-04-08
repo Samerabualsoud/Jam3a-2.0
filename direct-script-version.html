@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jam3a 2.0 - Direct Script Version</title>
+  
+  <!-- Load React directly from CDN before any other scripts -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-G3N8DYCLBM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-G3N8DYCLBM');
+  </script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      background-color: #1a202c;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .hero {
+      background-color: #2d3748;
+      color: white;
+      padding: 3rem 1rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .feature {
+      flex-basis: calc(33.333% - 20px);
+      background-color: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .feature h3 {
+      margin-top: 0;
+      color: #4a5568;
+    }
+    footer {
+      background-color: #1a202c;
+      color: white;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4299e1;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    .button:hover {
+      background-color: #3182ce;
+    }
+    @media (max-width: 768px) {
+      .feature {
+        flex-basis: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <!-- This content will be replaced by React when it loads -->
+    <header>
+      <div class="container">
+        <h2>Jam3a 2.0</h2>
+      </div>
+    </header>
+    
+    <main class="container">
+      <section class="hero">
+        <h1>Welcome to Jam3a 2.0</h1>
+        <p>The next generation platform for community building and collaboration</p>
+        <a href="#features" class="button">Explore Features</a>
+      </section>
+      
+      <section id="features" class="features">
+        <div class="feature">
+          <h3>Community Building</h3>
+          <p>Create and grow your community with powerful tools designed for engagement and connection.</p>
+        </div>
+        <div class="feature">
+          <h3>Resource Sharing</h3>
+          <p>Share resources, knowledge, and expertise within your community through our intuitive platform.</p>
+        </div>
+        <div class="feature">
+          <h3>Event Management</h3>
+          <p>Organize and manage events, workshops, and gatherings with our comprehensive event tools.</p>
+        </div>
+        <div class="feature">
+          <h3>Secure Communication</h3>
+          <p>Communicate securely with community members through encrypted messaging and discussions.</p>
+        </div>
+        <div class="feature">
+          <h3>Analytics Dashboard</h3>
+          <p>Track community growth and engagement with our detailed analytics dashboard.</p>
+        </div>
+        <div class="feature">
+          <h3>Mobile Friendly</h3>
+          <p>Access your community on any device with our responsive and mobile-friendly design.</p>
+        </div>
+      </section>
+    </main>
+    
+    <footer>
+      <div class="container">
+        <p>&copy; 2025 Jam3a 2.0. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Simple React component to verify React is working
+    function App() {
+      const [count, setCount] = React.useState(0);
+      
+      return React.createElement('div', { style: { textAlign: 'center', padding: '20px', marginTop: '20px' } },
+        React.createElement('h2', null, 'React is working!'),
+        React.createElement('p', null, `Button clicked ${count} times`),
+        React.createElement('button', 
+          { 
+            onClick: () => setCount(count + 1),
+            style: {
+              padding: '10px 20px',
+              backgroundColor: '#4299e1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }
+          }, 
+          'Click me'
+        )
+      );
+    }
+
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        // Create a container for our React verification
+        const verificationContainer = document.createElement('div');
+        verificationContainer.id = 'react-verification';
+        document.querySelector('main.container').appendChild(verificationContainer);
+        
+        // Render our React component
+        const root = ReactDOM.createRoot(document.getElementById('react-verification'));
+        root.render(React.createElement(App));
+        
+        console.log('React verification component mounted successfully');
+      } catch (error) {
+        console.error('Error rendering React verification component:', error);
+        
+        // Show error message on page
+        const errorElement = document.createElement('div');
+        errorElement.style.padding = '20px';
+        errorElement.style.margin = '20px';
+        errorElement.style.backgroundColor = '#fee2e2';
+        errorElement.style.color = '#b91c1c';
+        errorElement.style.borderRadius = '4px';
+        errorElement.innerHTML = `
+          <h2>React Error</h2>
+          <p>There was an error initializing React.</p>
+          <p>Error: ${error?.message || 'Unknown error'}</p>
+        `;
+        document.querySelector('main.container').appendChild(errorElement);
+      }
+    });
+  </script>
+</body>
+</html>
