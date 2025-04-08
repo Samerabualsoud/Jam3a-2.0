@@ -23,7 +23,7 @@ export default defineConfig({
       },
     },
     // Add allowedHosts configuration to fix CORS issues
-    allowedHosts: ['jam3a.me', 'www.jam3a.me', 'localhost'],
+    allowedHosts: ['jam3a.me', 'www.jam3a.me', 'localhost', 'king-prawn-app-pzj4u.ondigitalocean.app', '*.ondigitalocean.app'],
     // Enable CORS for all origins
     cors: true
   },
