@@ -5,8 +5,8 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Use in-memory MongoDB for testing and development
-const MONGODB_URI = 'mongodb://localhost:27017/jam3a';
+// MongoDB Atlas connection string
+const MONGODB_URI = 'mongodb+srv://samer:2141991Sam@jam3a.yfuimdi.mongodb.net/?retryWrites=true&w=majority&appName=Jam3a';
 
 // Connect to MongoDB
 const connectDB = async () => {
