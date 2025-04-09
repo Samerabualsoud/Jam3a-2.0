@@ -1,447 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Jam3a - Saudi Arabia's first and most advanced group-buying platform. Join forces with others to unlock better prices on premium products." />
-    <meta name="theme-color" content="#4f46e5" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://jam3a.sa/" />
-    <meta property="og:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
-    <meta property="og:description" content="Join forces with others to unlock better prices on premium products." />
-    <meta property="og:image" content="/og-image.jpg" />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://jam3a.sa/" />
-    <meta property="twitter:title" content="Jam3a - Saudi Arabia's First Group Buying Platform" />
-    <meta property="twitter:description" content="Join forces with others to unlock better prices on premium products." />
-    <meta property="twitter:image" content="/og-image.jpg" />
-    
-    <!-- Preload critical assets -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" as="style">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap">
-    
-    <!-- Load React directly before any other scripts -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Dependency checker script -->
-    <script src="/dependency-checker.js"></script>
-    
-    <!-- Inline critical CSS -->
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: 'Cairo', 'Tajawal', sans-serif;
-        background-color: #f8fafc;
-      }
-      .app-loading {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        width: 100vw;
-        background-color: #f8fafc;
-      }
-      .app-loading-logo {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 20px;
-        animation: pulse 1.5s infinite;
-      }
-      .app-loading-logo svg {
-        width: 40px;
-        height: 40px;
-        color: white;
-      }
-      .app-loading-text {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1e293b;
-        margin-top: 16px;
-      }
-      @keyframes pulse {
-        0% {
-          transform: scale(0.95);
-          box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
-        }
-        70% {
-          transform: scale(1);
-          box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
-        }
-        100% {
-          transform: scale(0.95);
-          box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
-        }
-      }
-      
-      /* Fallback content styles */
-      .fallback-content {
-        display: none;
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 2rem;
-        text-align: center;
-      }
-      .fallback-heading {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        color: #1e293b;
-      }
-      .fallback-text {
-        font-size: 1rem;
-        line-height: 1.5;
-        margin-bottom: 1.5rem;
-        color: #64748b;
-      }
-      .fallback-button {
-        display: inline-block;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        color: white;
-        font-weight: 600;
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.375rem;
-        text-decoration: none;
-        transition: opacity 0.2s;
-      }
-      .fallback-button:hover {
-        opacity: 0.9;
-      }
-      
-      /* Error message styles */
-      .error-container {
-        display: none;
-        max-width: 600px;
-        margin: 2rem auto;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        background-color: #fee2e2;
-        border: 1px solid #fecaca;
-      }
-      .error-heading {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        color: #b91c1c;
-      }
-      .error-message {
-        font-size: 0.875rem;
-        line-height: 1.5;
-        color: #ef4444;
-        margin-bottom: 1rem;
-        word-break: break-word;
-      }
-      .error-actions {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: flex-end;
-      }
-      .error-button {
-        font-size: 0.875rem;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        background-color: #ef4444;
-        color: white;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      .error-button:hover {
-        background-color: #dc2626;
-      }
-    </style>
-    
-    <title>Jam3a - Saudi Arabia's First Group Buying Platform</title>
-  </head>
-  <body>
-    <div id="root">
-      <!-- Loading state that will be shown until React loads -->
-      <div class="app-loading" id="app-loading">
-        <div class="app-loading-logo">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-        </div>
-        <div class="app-loading-text">Loading Jam3a...</div>
-      </div>
-      
-      <!-- Fallback content for server-side routes -->
-      <div class="fallback-content" id="fallback-home">
-        <div class="fallback-heading">Welcome to Jam3a</div>
-        <div class="fallback-text">
-          Saudi Arabia's first and most advanced group-buying platform. Join forces with others to unlock better prices on premium products.
-        </div>
-        <a href="/" class="fallback-button">Explore Jam3a</a>
-      </div>
-      
-      <div class="fallback-content" id="fallback-shop">
-        <div class="fallback-heading">Shop with Jam3a</div>
-        <div class="fallback-text">
-          Browse our collection of group deals and save on your favorite products.
-        </div>
-        <a href="/shop-jam3a" class="fallback-button">View Deals</a>
-      </div>
-      
-      <div class="fallback-content" id="fallback-join">
-        <div class="fallback-heading">Join a Jam3a</div>
-        <div class="fallback-text">
-          Join an existing group purchase and save money together.
-        </div>
-        <a href="/join-jam3a" class="fallback-button">Join Now</a>
-      </div>
-      
-      <div class="fallback-content" id="fallback-start">
-        <div class="fallback-heading">Start Your Own Jam3a</div>
-        <div class="fallback-text">
-          Create your own group purchase and invite others to join.
-        </div>
-        <a href="/start-jam3a" class="fallback-button">Get Started</a>
-      </div>
-      
-      <div class="fallback-content" id="fallback-about">
-        <div class="fallback-heading">About Jam3a</div>
-        <div class="fallback-text">
-          Learn more about our mission to revolutionize group buying in Saudi Arabia.
-        </div>
-        <a href="/about" class="fallback-button">Learn More</a>
-      </div>
-      
-      <!-- Error container for displaying errors -->
-      <div class="error-container" id="error-container">
-        <div class="error-heading">Something went wrong</div>
-        <div class="error-message" id="error-message">
-          We encountered an error while loading the application. Please try refreshing the page.
-        </div>
-        <div class="error-actions">
-          <button class="error-button" onclick="window.location.reload()">Refresh Page</button>
-          <button class="error-button" onclick="window.location.href='/'">Go to Home</button>
-        </div>
-      </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jam3a 2.0</title>
+  
+  <!-- Digital Ocean specific fix for React reference error -->
+  <!-- Load React directly from CDN before any other scripts -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Make React globally available -->
+  <script>
+    window.React = React;
+    window.ReactDOM = ReactDOM;
+    console.log('React loaded from CDN and made globally available');
+  </script>
+  
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-G3N8DYCLBM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-G3N8DYCLBM');
+  </script>
+</head>
+<body>
+  <div id="root">
+    <!-- Loading indicator that will be replaced when React loads -->
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+      <h2>Loading Jam3a 2.0...</h2>
+      <p>If this message persists, please check the console for errors.</p>
     </div>
-    
-    <!-- Verify React is loaded before loading application -->
-    <script>
-      // Verify React is available
-      if (typeof React === 'undefined') {
-        console.error('React is not defined. Loading from CDN...');
-        document.write('<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>');
-        document.write('<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>');
-      } else {
-        console.log('React is already defined:', React.version);
-      }
-      
-      // Global error handler
-      window.onerror = function(message, source, lineno, colno, error) {
-        console.error('Global error caught:', message, error);
+  </div>
+  
+  <!-- Error handling script -->
+  <script>
+    window.addEventListener('error', function(event) {
+      if (event.message && event.message.includes('React is not defined')) {
+        console.error('Caught React not defined error, attempting recovery...');
         
-        // Check if error is related to React
-        if (message.includes('React') || (error && error.message && error.message.includes('React'))) {
-          console.error('React-related error detected. Attempting to reload React...');
-          
-          // Try to reload React
-          var reactScript = document.createElement('script');
-          reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
-          reactScript.onload = function() {
-            console.log('React reloaded successfully');
-            var reactDOMScript = document.createElement('script');
-            reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
-            document.head.appendChild(reactDOMScript);
+        // Try to reload React
+        var reactScript = document.createElement('script');
+        reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+        reactScript.onload = function() {
+          var reactDOMScript = document.createElement('script');
+          reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+          reactDOMScript.onload = function() {
+            window.React = React;
+            window.ReactDOM = ReactDOM;
+            console.log('React reloaded successfully!');
+            window.location.reload();
           };
-          document.head.appendChild(reactScript);
-          
-          // Show error message
-          var errorContainer = document.getElementById('error-container');
-          var errorMessage = document.getElementById('error-message');
-          var appLoading = document.getElementById('app-loading');
-          
-          if (appLoading) {
-            appLoading.style.display = 'none';
-          }
-          
-          if (errorContainer) {
-            errorContainer.style.display = 'block';
-          }
-          
-          if (errorMessage) {
-            errorMessage.textContent = 'React failed to load properly. Please try refreshing the page.';
-          }
-          
-          return true; // Prevent default error handling
-        }
-        
-        return false; // Allow default error handling for non-React errors
-      };
-    </script>
-    
-    <!-- Load application script after React verification -->
-    <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Fallback script for handling loading errors and showing appropriate content -->
-    <script>
-      // Function to show fallback content based on URL
-      function showFallbackContent() {
-        const path = window.location.pathname || '/';
-        const appLoading = document.getElementById('app-loading');
-        
-        if (appLoading) {
-          appLoading.style.display = 'none';
-        }
-        
-        // Hide all fallback content first
-        document.querySelectorAll('.fallback-content').forEach(el => {
-          el.style.display = 'none';
-        });
-        
-        // Show appropriate fallback content based on path
-        if (path === '/' || path === '') {
-          document.getElementById('fallback-home').style.display = 'block';
-        } else if (path.startsWith('/shop')) {
-          document.getElementById('fallback-shop').style.display = 'block';
-        } else if (path.startsWith('/join')) {
-          document.getElementById('fallback-join').style.display = 'block';
-        } else if (path.startsWith('/start')) {
-          document.getElementById('fallback-start').style.display = 'block';
-        } else if (path.startsWith('/about')) {
-          document.getElementById('fallback-about').style.display = 'block';
-        } else {
-          // Default to home for unknown routes
-          document.getElementById('fallback-home').style.display = 'block';
-        }
+          document.head.appendChild(reactDOMScript);
+        };
+        document.head.appendChild(reactScript);
       }
-      
-      // Function to show error message
-      function showError(message) {
-        const appLoading = document.getElementById('app-loading');
-        const errorContainer = document.getElementById('error-container');
-        const errorMessage = document.getElementById('error-message');
-        
-        if (appLoading) {
-          appLoading.style.display = 'none';
-        }
-        
-        // Hide all fallback content
-        document.querySelectorAll('.fallback-content').forEach(el => {
-          el.style.display = 'none';
-        });
-        
-        // Show error container with message
-        if (errorContainer) {
-          errorContainer.style.display = 'block';
-        }
-        
-        if (errorMessage && message) {
-          errorMessage.textContent = message;
-        }
-      }
-      
-      // Check if the app has loaded within 5 seconds
-      let appLoaded = false;
-      
-      window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-          if (!appLoaded) {
-            // Check if React has taken over
-            const appLoading = document.getElementById('app-loading');
-            if (appLoading && appLoading.parentNode && appLoading.style.display !== 'none') {
-              // React hasn't loaded, show fallback content
-              showFallbackContent();
-              
-              // Log error for debugging
-              console.warn('React application did not load within expected time, showing fallback content');
-            }
-          }
-        }, 5000);
-      });
-      
-      // Listen for navigation events to update fallback content
-      window.addEventListener('popstate', () => {
-        if (!appLoaded) {
-          showFallbackContent();
-        }
-      });
-      
-      // Listen for errors
-      window.addEventListener('error', (event) => {
-        console.error('Global error caught:', event.error || event.message);
-        
-        if (!appLoaded && event.error) {
-          showError(event.error.message || 'An unexpected error occurred while loading the application.');
-        }
-      });
-      
-      // Listen for unhandled promise rejections
-      window.addEventListener('unhandledrejection', (event) => {
-        console.error('Unhandled promise rejection:', event.reason);
-        
-        if (!appLoaded && event.reason) {
-          showError(event.reason.message || 'An unexpected error occurred while loading the application.');
-        }
-      });
-      
-      // Set a flag when React takes over
-      window.markAppAsLoaded = function() {
-        appLoaded = true;
-        console.log('Application successfully loaded');
-      };
-      
-      // Add performance monitoring
-      window.addEventListener('load', () => {
-        // Mark app as loaded if we got this far
-        if (!appLoaded) {
-          window.markAppAsLoaded();
-        }
-        
-        // Report performance metrics
-        if ('performance' in window) {
-          setTimeout(() => {
-            const timing = performance.timing || {};
-            const navigationStart = timing.navigationStart || 0;
-            
-            if (navigationStart > 0) {
-              const metrics = {
-                loadTime: timing.loadEventEnd - navigationStart,
-                domContentLoaded: timing.domContentLoadedEventEnd - navigationStart,
-                firstPaint: 0,
-                firstContentfulPaint: 0
-              };
-              
-              // Get paint metrics if available
-              if (performance.getEntriesByType) {
-                const paintMetrics = performance.getEntriesByType('paint');
-                const firstPaint = paintMetrics.find(m => m.name === 'first-paint');
-                const firstContentfulPaint = paintMetrics.find(m => m.name === 'first-contentful-paint');
-                
-                if (firstPaint) {
-                  metrics.firstPaint = firstPaint.startTime;
-                }
-                
-                if (firstContentfulPaint) {
-                  metrics.firstContentfulPaint = firstContentfulPaint.startTime;
-                }
-              }
-              
-              console.log('Performance metrics:', metrics);
-            }
-          }, 0);
-        }
-      });
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
