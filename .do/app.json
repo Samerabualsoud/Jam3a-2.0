@@ -1,0 +1,38 @@
+// Digital Ocean App Platform configuration file
+// This file helps configure the deployment for React applications
+
+{
+  "name": "jam3a-2-0",
+  "static_sites": [
+    {
+      "name": "jam3a-2-0-client",
+      "github": {
+        "repo": "Samerabualsoud/Jam3a-2.0",
+        "branch": "improvements",
+        "deploy_on_push": true
+      },
+      "build_command": "npm install && npm run build",
+      "output_dir": "dist",
+      "index_document": "index.html",
+      "error_document": "index.html",
+      "routes": [
+        {
+          "path": "/*",
+          "preserve_path_prefix": false
+        }
+      ],
+      "catchall_document": "index.html",
+      "environment_slug": "node-js",
+      "envs": [
+        {
+          "key": "VITE_PUBLIC_URL",
+          "value": "/"
+        },
+        {
+          "key": "VITE_NODE_ENV",
+          "value": "production"
+        }
+      ]
+    }
+  ]
+}
