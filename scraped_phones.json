@@ -1,0 +1,126 @@
+[
+  {
+    "name": "Apple iPhone 15 Plus, 5G, 6.7 inch, 128GB, Green",
+    "nameAr": "أبل آيفون 15 بلس، 5G، 6.7 بوصة، 128 جيجابايت، أخضر",
+    "description": "The iPhone 15 Plus features a 6.7-inch Super Retina XDR display, A16 Bionic chip, and a 48MP main camera with 2x optical-quality zoom.",
+    "descriptionAr": "يتميز آيفون 15 بلس بشاشة سوبر رتينا XDR مقاس 6.7 بوصة، وشريحة A16 بيونيك، وكاميرا رئيسية بدقة 48 ميجابكسل مع تقريب بصري 2x.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Smartphones",
+      "nameAr": "الهواتف الذكية"
+    },
+    "price": 2999,
+    "stock": 25,
+    "sku": "APPLE-IP15P-128G-GREEN",
+    "featured": true,
+    "imageUrl": "https://www.extra.com/medias/sys_master/images/images/h3c/h3e/9999877423134/iphone-15-plus-green-128gb-5g-6-7-inch-4194040-1.jpg",
+    "specifications": {
+      "display": "6.7 INCH Super Retina XDR display",
+      "processor": "A16 Bionic chip",
+      "camera": "48MP main camera with 2x optical-quality zoom",
+      "battery": "Up to 26 hours video playback",
+      "storage": "128GB",
+      "colors": ["Green"]
+    },
+    "rating": 4.6,
+    "reviews": 943,
+    "discount": {
+      "original": 4199,
+      "current": 2999,
+      "percentage": 28.57
+    }
+  },
+  {
+    "name": "Apple iPhone 15 Plus, 5G, 6.7 inch, 128GB, Black",
+    "nameAr": "أبل آيفون 15 بلس، 5G، 6.7 بوصة، 128 جيجابايت، أسود",
+    "description": "The iPhone 15 Plus features a 6.7-inch Super Retina XDR display, A16 Bionic chip, and a 48MP main camera with 2x optical-quality zoom.",
+    "descriptionAr": "يتميز آيفون 15 بلس بشاشة سوبر رتينا XDR مقاس 6.7 بوصة، وشريحة A16 بيونيك، وكاميرا رئيسية بدقة 48 ميجابكسل مع تقريب بصري 2x.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Smartphones",
+      "nameAr": "الهواتف الذكية"
+    },
+    "price": 2999,
+    "stock": 20,
+    "sku": "APPLE-IP15P-128G-BLACK",
+    "featured": true,
+    "imageUrl": "https://www.extra.com/medias/sys_master/images/images/h5c/h5e/9999877554206/iphone-15-plus-black-128gb-5g-6-7-inch-4194041-1.jpg",
+    "specifications": {
+      "display": "6.7 INCH Super Retina XDR display",
+      "processor": "A16 Bionic chip",
+      "camera": "48MP main camera with 2x optical-quality zoom",
+      "battery": "Up to 26 hours video playback",
+      "storage": "128GB",
+      "colors": ["Black"]
+    },
+    "rating": 4.4,
+    "reviews": 945,
+    "discount": {
+      "original": 4199,
+      "current": 2999,
+      "percentage": 28.57
+    }
+  },
+  {
+    "name": "Apple iPhone 15 Plus, 5G, 6.7 inch, 256GB, Green",
+    "nameAr": "أبل آيفون 15 بلس، 5G، 6.7 بوصة، 256 جيجابايت، أخضر",
+    "description": "The iPhone 15 Plus features a 6.7-inch Super Retina XDR display, A16 Bionic chip, and a 48MP main camera with 2x optical-quality zoom.",
+    "descriptionAr": "يتميز آيفون 15 بلس بشاشة سوبر رتينا XDR مقاس 6.7 بوصة، وشريحة A16 بيونيك، وكاميرا رئيسية بدقة 48 ميجابكسل مع تقريب بصري 2x.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Smartphones",
+      "nameAr": "الهواتف الذكية"
+    },
+    "price": 3599,
+    "stock": 15,
+    "sku": "APPLE-IP15P-256G-GREEN",
+    "featured": false,
+    "imageUrl": "https://www.extra.com/medias/sys_master/images/images/h3c/h3e/9999877423134/iphone-15-plus-green-128gb-5g-6-7-inch-4194040-1.jpg",
+    "specifications": {
+      "display": "6.7 INCH Super Retina XDR display",
+      "processor": "A16 Bionic chip",
+      "camera": "48MP main camera with 2x optical-quality zoom",
+      "battery": "Up to 26 hours video playback",
+      "storage": "256GB",
+      "colors": ["Green"]
+    },
+    "rating": 4.6,
+    "reviews": 942,
+    "discount": {
+      "original": 4699,
+      "current": 3599,
+      "percentage": 23.4
+    }
+  },
+  {
+    "name": "Apple iPhone 15 Plus, 5G, 6.7 inch, 256GB, Black",
+    "nameAr": "أبل آيفون 15 بلس، 5G، 6.7 بوصة، 256 جيجابايت، أسود",
+    "description": "The iPhone 15 Plus features a 6.7-inch Super Retina XDR display, A16 Bionic chip, and a 48MP main camera with 2x optical-quality zoom.",
+    "descriptionAr": "يتميز آيفون 15 بلس بشاشة سوبر رتينا XDR مقاس 6.7 بوصة، وشريحة A16 بيونيك، وكاميرا رئيسية بدقة 48 ميجابكسل مع تقريب بصري 2x.",
+    "category": {
+      "_id": "60d21b4667d0d8992e610c80",
+      "name": "Smartphones",
+      "nameAr": "الهواتف الذكية"
+    },
+    "price": 3599,
+    "stock": 18,
+    "sku": "APPLE-IP15P-256G-BLACK",
+    "featured": false,
+    "imageUrl": "https://www.extra.com/medias/sys_master/images/images/h5c/h5e/9999877554206/iphone-15-plus-black-128gb-5g-6-7-inch-4194041-1.jpg",
+    "specifications": {
+      "display": "6.7 INCH Super Retina XDR display",
+      "processor": "A16 Bionic chip",
+      "camera": "48MP main camera with 2x optical-quality zoom",
+      "battery": "Up to 26 hours video playback",
+      "storage": "256GB",
+      "colors": ["Black"]
+    },
+    "rating": 4.4,
+    "reviews": 942,
+    "discount": {
+      "original": 4699,
+      "current": 3599,
+      "percentage": 23.4
+    }
+  }
+]

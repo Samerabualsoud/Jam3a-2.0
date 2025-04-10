@@ -15,8 +15,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Connect to MongoDB
 connectDB();
+
+// CORS configuration with specific allowed origins
+const corsOptions = {
+  origin: [
+    'http://3001-io1ygyougg0tolkf491jf-8ca236b0.manus.computer',
+    'https://3001-io1ygyougg0tolkf491jf-8ca236b0.manus.computer',
+    'http://localhost:3001',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
