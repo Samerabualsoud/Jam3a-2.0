@@ -16,14 +16,9 @@ const __dirname = path.dirname(__filename);
 // Connect to MongoDB
 connectDB();
 
-// CORS configuration with specific allowed origins
+// CORS configuration - allow all origins in development
 const corsOptions = {
-  origin: [
-    'http://3001-io1ygyougg0tolkf491jf-8ca236b0.manus.computer',
-    'https://3001-io1ygyougg0tolkf491jf-8ca236b0.manus.computer',
-    'http://localhost:3001',
-    'http://localhost:3000'
-  ],
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -54,6 +49,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/deals', dealsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/email', emailRoutes);
+
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
   // Set static folder
@@ -62,8 +58,10 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
   });
 }
+
 // Define port
 const PORT = process.env.PORT || 5000;
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

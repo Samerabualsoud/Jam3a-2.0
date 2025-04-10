@@ -1,8 +1,18 @@
 // API service for connecting to backend
 import axios from 'axios';
 
-// Create base API instance
-const API_BASE_URL = 'http://5000-io1ygyougg0tolkf491jf-8ca236b0.manus.computer/api';
+// Create base API instance with fallback mechanism
+const getApiBaseUrl = () => {
+  // Check if we're in a production environment (deployed)
+  if (window.location.hostname !== 'localhost') {
+    // Use relative URL for same-origin requests when deployed
+    return '/api';
+  }
+  // Use absolute URL for local development
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
