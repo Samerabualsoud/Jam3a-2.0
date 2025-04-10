@@ -1,63 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jam3a 2.0</title>
-  
-  <!-- Digital Ocean specific fix for React reference error -->
-  <!-- Load React directly from CDN before any other scripts -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Make React globally available -->
-  <script>
-    window.React = React;
-    window.ReactDOM = ReactDOM;
-    console.log('React loaded from CDN and made globally available');
-  </script>
-  
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-G3N8DYCLBM"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-G3N8DYCLBM');
-  </script>
-</head>
-<body>
-  <div id="root">
-    <!-- Loading indicator that will be replaced when React loads -->
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
-      <h2>Loading Jam3a 2.0...</h2>
-      <p>If this message persists, please check the console for errors.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/jam3a-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jam3a Hub - Group Buying Platform</title>
+    <meta name="description" content="Join Jam3a Hub for group buying experiences and save with collective purchasing power." />
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/assets/index.css" as="style" />
+    <!-- Fallback script for loading errors -->
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('Global error caught:', e);
+        // Only show fallback if it's a script loading error and the app hasn't loaded yet
+        if (e.target && e.target.tagName === 'SCRIPT' && !window.appLoaded) {
+          const rootEl = document.getElementById('root');
+          if (rootEl && !rootEl.hasChildNodes()) {
+            rootEl.innerHTML = `
+              <div style="padding: 20px; margin: 20px; text-align: center; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                <h2>Loading Jam3a 2.0...</h2>
+                <p>If this message persists, please check the console for errors.</p>
+                <button onclick="window.location.reload()" style="padding: 8px 16px; background: #6d28d9; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">Reload Page</button>
+              </div>
+            `;
+          }
+        }
+      }, true);
+      
+      // Set a timeout to show a message if the app takes too long to load
+      setTimeout(function() {
+        const rootEl = document.getElementById('root');
+        if (rootEl && !window.appLoaded && (!rootEl.hasChildNodes() || rootEl.innerHTML.includes('Loading Jam3a 2.0'))) {
+          rootEl.innerHTML = `
+            <div style="padding: 20px; margin: 20px; text-align: center; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <h2>Loading is taking longer than expected</h2>
+              <p>This is a static demo version with limited functionality.</p>
+              <button onclick="window.location.href = '/#/'" style="padding: 8px 16px; background: #6d28d9; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">Go to Home Page</button>
+            </div>
+          `;
+        }
+      }, 5000);
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Initial loading state -->
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <h2>Loading Jam3a 2.0...</h2>
+        <p>Please wait while we prepare your experience.</p>
+      </div>
     </div>
-  </div>
-  
-  <!-- Error handling script -->
-  <script>
-    window.addEventListener('error', function(event) {
-      if (event.message && event.message.includes('React is not defined')) {
-        console.error('Caught React not defined error, attempting recovery...');
-        
-        // Try to reload React
-        var reactScript = document.createElement('script');
-        reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
-        reactScript.onload = function() {
-          var reactDOMScript = document.createElement('script');
-          reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
-          reactDOMScript.onload = function() {
-            window.React = React;
-            window.ReactDOM = ReactDOM;
-            console.log('React reloaded successfully!');
-            window.location.reload();
-          };
-          document.head.appendChild(reactDOMScript);
-        };
-        document.head.appendChild(reactScript);
-      }
-    });
-  </script>
-</body>
+    <script>
+      // Mark when static script is loaded
+      window.staticScriptLoaded = true;
+    </script>
+    <script type="module" src="/src/static.jsx"></script>
+  </body>
 </html>
