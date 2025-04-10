@@ -5,10 +5,18 @@ import AnalyticsConfig from '../../models/AnalyticsConfig.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { auth, authorize, refreshToken } from '../../middleware/auth.js';
+import { validate, validationRules, sanitizeInputs } from '../../middleware/validation.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Apply token refresh middleware to all routes
+router.use(refreshToken);
+
+// Apply sanitization middleware to all routes
+router.use(sanitizeInputs);
 
 // Fallback to JSON file if MongoDB is not available
 const getAnalyticsConfigFromFile = () => {
@@ -43,7 +51,7 @@ const getAnalyticsConfigFromFile = () => {
   }
 };
 
-// Get analytics configuration
+// Get analytics configuration - Public route for client-side tracking
 router.get('/config', async (req, res) => {
   try {
     // Check if MongoDB is connected
@@ -62,22 +70,63 @@ router.get('/config', async (req, res) => {
         });
       }
       
-      return res.json(config);
+      // Only return public fields for client-side tracking
+      const publicConfig = {
+        trackingId: config.trackingId,
+        ipAnonymization: config.ipAnonymization,
+        trackPageViews: config.trackPageViews,
+        trackEvents: config.trackEvents,
+        ecommerceTracking: config.ecommerceTracking,
+        active: config.active
+      };
+      
+      return res.json({
+        success: true,
+        data: publicConfig
+      });
     } else {
       // Fallback to JSON file
       const config = getAnalyticsConfigFromFile();
-      return res.json(config);
+      
+      // Only return public fields for client-side tracking
+      const publicConfig = {
+        trackingId: config.trackingId,
+        ipAnonymization: config.ipAnonymization,
+        trackPageViews: config.trackPageViews,
+        trackEvents: config.trackEvents,
+        ecommerceTracking: config.ecommerceTracking,
+        active: config.active
+      };
+      
+      return res.json({
+        success: true,
+        data: publicConfig
+      });
     }
   } catch (error) {
     console.error('Error fetching analytics config:', error);
     // Fallback to default config on error
     const config = getAnalyticsConfigFromFile();
-    return res.json(config);
+    
+    // Only return public fields for client-side tracking
+    const publicConfig = {
+      trackingId: config.trackingId,
+      ipAnonymization: config.ipAnonymization,
+      trackPageViews: config.trackPageViews,
+      trackEvents: config.trackEvents,
+      ecommerceTracking: config.ecommerceTracking,
+      active: config.active
+    };
+    
+    return res.json({
+      success: true,
+      data: publicConfig
+    });
   }
 });
 
-// Update analytics configuration (PUT)
-router.put('/config', async (req, res) => {
+// Update analytics configuration (PUT) - Admin only
+router.put('/config', auth, authorize(['admin']), validate(validationRules.analytics), async (req, res) => {
   try {
     const {
       trackingId,
@@ -101,6 +150,7 @@ router.put('/config', async (req, res) => {
         config.ecommerceTracking = ecommerceTracking;
         config.active = active;
         config.updatedAt = Date.now();
+        config.updatedBy = req.user.id; // Add updater reference
         
         await config.save();
       } else {
@@ -111,11 +161,16 @@ router.put('/config', async (req, res) => {
           trackPageViews,
           trackEvents,
           ecommerceTracking,
-          active
+          active,
+          createdBy: req.user.id, // Add creator reference
+          updatedBy: req.user.id
         });
       }
       
-      return res.json(config);
+      return res.json({
+        success: true,
+        data: config
+      });
     } else {
       // Mock response for when MongoDB is not available
       const updatedConfig = {
@@ -126,6 +181,8 @@ router.put('/config', async (req, res) => {
         trackEvents,
         ecommerceTracking,
         active,
+        createdBy: req.user.id,
+        updatedBy: req.user.id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -138,16 +195,23 @@ router.put('/config', async (req, res) => {
         console.error('Error writing analytics config to file:', writeError);
       }
       
-      return res.json(updatedConfig);
+      return res.json({
+        success: true,
+        data: updatedConfig
+      });
     }
   } catch (error) {
     console.error('Error updating analytics config:', error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      code: 'SERVER_ERROR'
+    });
   }
 });
 
-// Add POST endpoint for analytics configuration (same functionality as PUT)
-router.post('/config', async (req, res) => {
+// Add POST endpoint for analytics configuration (same functionality as PUT) - Admin only
+router.post('/config', auth, authorize(['admin']), validate(validationRules.analytics), async (req, res) => {
   try {
     const {
       trackingId,
@@ -171,6 +235,7 @@ router.post('/config', async (req, res) => {
         config.ecommerceTracking = ecommerceTracking;
         config.active = active;
         config.updatedAt = Date.now();
+        config.updatedBy = req.user.id; // Add updater reference
         
         await config.save();
       } else {
@@ -181,11 +246,16 @@ router.post('/config', async (req, res) => {
           trackPageViews,
           trackEvents,
           ecommerceTracking,
-          active
+          active,
+          createdBy: req.user.id, // Add creator reference
+          updatedBy: req.user.id
         });
       }
       
-      return res.json(config);
+      return res.json({
+        success: true,
+        data: config
+      });
     } else {
       // Mock response for when MongoDB is not available
       const updatedConfig = {
@@ -196,6 +266,8 @@ router.post('/config', async (req, res) => {
         trackEvents,
         ecommerceTracking,
         active,
+        createdBy: req.user.id,
+        updatedBy: req.user.id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -208,16 +280,23 @@ router.post('/config', async (req, res) => {
         console.error('Error writing analytics config to file:', writeError);
       }
       
-      return res.json(updatedConfig);
+      return res.json({
+        success: true,
+        data: updatedConfig
+      });
     }
   } catch (error) {
     console.error('Error saving analytics config:', error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      code: 'SERVER_ERROR'
+    });
   }
 });
 
-// Get analytics data
-router.get('/data', async (req, res) => {
+// Get analytics data - Admin only
+router.get('/data', auth, authorize(['admin']), async (req, res) => {
   try {
     // Mock analytics data (in a real app, this would come from Google Analytics API)
     const analyticsData = {
@@ -266,10 +345,17 @@ router.get('/data', async (req, res) => {
       }
     };
     
-    return res.json(analyticsData);
+    return res.json({
+      success: true,
+      data: analyticsData
+    });
   } catch (error) {
     console.error('Error fetching analytics data:', error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      code: 'SERVER_ERROR'
+    });
   }
 });
 

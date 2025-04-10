@@ -1,11 +1,20 @@
+// API routes for users
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = require('../../models/User');
 const { sendEmail } = require('../../emailService');
+const { auth, authorize, refreshToken } = require('../../middleware/auth');
+const { validate, validationRules, sanitizeInputs } = require('../../middleware/validation');
 
-// Get all users
-router.get('/', async (req, res) => {
+// Apply token refresh middleware to all routes
+router.use(refreshToken);
+
+// Apply sanitization middleware to all routes
+router.use(sanitizeInputs);
+
+// Get all users - Admin only
+router.get('/', auth, authorize(['admin']), async (req, res) => {
   try {
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.json({ success: true, data: users });
@@ -15,9 +24,18 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get user by ID
-router.get('/:id', async (req, res) => {
+// Get user by ID - Admin or own user
+router.get('/:id', auth, async (req, res) => {
   try {
+    // Check if user is requesting their own data or is an admin
+    if (req.user.id !== req.params.id && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Not authorized to access this user data',
+        code: 'AUTH_INSUFFICIENT_PERMISSIONS'
+      });
+    }
+    
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
@@ -29,8 +47,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create a new user
-router.post('/', async (req, res) => {
+// Create a new user - Public route (registration)
+router.post('/', validate(validationRules.user.register), async (req, res) => {
   try {
     const {
       username,
@@ -52,6 +70,24 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Only allow admin role to be set by existing admins
+    let userRole = 'user';
+    if (role === 'admin') {
+      // Check if request has valid admin authentication
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, config.jwtSecret || 'jam3a_jwt_secret');
+          if (decoded.user && decoded.user.role === 'admin') {
+            userRole = 'admin';
+          }
+        } catch (err) {
+          // If token verification fails, default to user role
+          console.error('Admin role assignment failed:', err.message);
+        }
+      }
+    }
+
     const newUser = new User({
       username,
       email,
@@ -60,7 +96,7 @@ router.post('/', async (req, res) => {
       lastName,
       phone,
       address,
-      role: role || 'user'
+      role: userRole
     });
 
     const savedUser = await newUser.save();
@@ -91,9 +127,18 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update a user
-router.put('/:id', async (req, res) => {
+// Update a user - Admin or own user
+router.put('/:id', auth, validate(validationRules.user.update), async (req, res) => {
   try {
+    // Check if user is updating their own data or is an admin
+    if (req.user.id !== req.params.id && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Not authorized to update this user',
+        code: 'AUTH_INSUFFICIENT_PERMISSIONS'
+      });
+    }
+    
     const {
       username,
       email,
@@ -106,6 +151,15 @@ router.put('/:id', async (req, res) => {
       isActive,
       emailVerified
     } = req.body;
+
+    // Only allow admin to update role, isActive, and emailVerified fields
+    if ((role || isActive !== undefined || emailVerified !== undefined) && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Not authorized to update these fields',
+        code: 'AUTH_INSUFFICIENT_PERMISSIONS'
+      });
+    }
 
     // Check if updating to an existing email/username
     if (email || username) {
@@ -130,9 +184,9 @@ router.put('/:id', async (req, res) => {
       ...(lastName && { lastName }),
       ...(phone && { phone }),
       ...(address && { address }),
-      ...(role && { role }),
-      ...(isActive !== undefined && { isActive }),
-      ...(emailVerified !== undefined && { emailVerified }),
+      ...(role && req.user.role === 'admin' && { role }),
+      ...(isActive !== undefined && req.user.role === 'admin' && { isActive }),
+      ...(emailVerified !== undefined && req.user.role === 'admin' && { emailVerified }),
       updatedAt: Date.now()
     };
 
@@ -153,8 +207,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete a user
-router.delete('/:id', async (req, res) => {
+// Delete a user - Admin only
+router.delete('/:id', auth, authorize(['admin']), async (req, res) => {
   try {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
     if (!deletedUser) {
@@ -167,8 +221,8 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Send email to user
-router.post('/:id/email', async (req, res) => {
+// Send email to user - Admin only
+router.post('/:id/email', auth, authorize(['admin']), async (req, res) => {
   try {
     const { subject, template, data } = req.body;
     
