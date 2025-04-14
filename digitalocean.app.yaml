@@ -16,7 +16,7 @@
         ],
         "build_command": "npm install && npm run build",
         "run_command": "npm start",
-        "http_port": 8080,
+        "http_port": 80,
         "routes": [
           {
             "path": "/"
@@ -31,24 +31,8 @@
           "failure_threshold": 5
         },
         "instance_count": 1,
-        "instance_size_slug": "basic-xs"
-      }
-    ],
-    "static_sites": [
-      {
-        "name": "jam3a-static",
-        "source_dir": "/",
-        "build_command": "npm install && npm run build",
-        "output_dir": "/dist",
-        "index_document": "index.html",
-        "error_document": "index.html",
-        "catchall_document": "index.html",
-        "routes": [
-          {
-            "path": "/"
-          }
-        ],
-        "environment_slug": "html"
+        "instance_size_slug": "basic-xs",
+        "dockerfile_path": "Dockerfile"
       }
     ]
   }
