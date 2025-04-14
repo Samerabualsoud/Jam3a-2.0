@@ -1,0 +1,39 @@
+{
+  "name": "jam3a-hub-collective",
+  "spec": {
+    "name": "jam3a-hub-collective",
+    "region": "fra",
+    "services": [
+      {
+        "name": "jam3a-web",
+        "source_dir": "/",
+        "envs": [
+          {
+            "key": "NODE_ENV",
+            "value": "production",
+            "scope": "RUN_AND_BUILD_TIME"
+          }
+        ],
+        "build_command": "npm install @radix-ui/react-separator@1.1.2 && cd client && npm install @radix-ui/react-separator@1.1.2 && cd .. && npm install && npm run build",
+        "run_command": "npm start",
+        "http_port": 80,
+        "routes": [
+          {
+            "path": "/"
+          }
+        ],
+        "health_check": {
+          "http_path": "/health",
+          "initial_delay_seconds": 30,
+          "period_seconds": 60,
+          "timeout_seconds": 10,
+          "success_threshold": 1,
+          "failure_threshold": 5
+        },
+        "instance_count": 1,
+        "instance_size_slug": "basic-xs",
+        "dockerfile_path": "Dockerfile"
+      }
+    ]
+  }
+}
