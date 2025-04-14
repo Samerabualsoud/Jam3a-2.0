@@ -5,7 +5,8 @@
                     "build:static":  "vite build --config vite.config.static.js",
                     "lint":  "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
                     "preview":  "vite preview",
-                    "start":  "npx serve -s dist"
+                    "start":  "npx serve -s dist",
+                    "prebuild": "npm install @radix-ui/react-separator@1.1.2"
                 },
     "dependencies":  {
                          "express-rate-limit":  "^7.5.0",
