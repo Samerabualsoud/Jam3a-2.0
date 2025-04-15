@@ -1,0 +1,15 @@
+name: jam3a-app
+services:
+- name: web
+  github:
+    repo: Samerabualsoud/Jam3a-2.0
+    branch: main
+  build_command: npm install && cd client && npm install && cd .. && npm install @radix-ui/react-separator@1.1.2 && cd client && npm install @radix-ui/react-separator@1.1.2 && cd .. && npm run build
+  run_command: npx serve -s dist
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: NPM_CONFIG_FORCE
+    value: "true"
+  - key: NPM_CONFIG_EXTRA_ARGS
+    value: "--no-audit --no-fund --prefix=. install @radix-ui/react-separator@1.1.2"
