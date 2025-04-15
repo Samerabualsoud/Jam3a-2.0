@@ -12,6 +12,16 @@
             "key": "NODE_ENV",
             "value": "production",
             "scope": "RUN_AND_BUILD_TIME"
+          },
+          {
+            "key": "NPM_CONFIG_FORCE",
+            "value": "true",
+            "scope": "BUILD_TIME"
+          },
+          {
+            "key": "NPM_CONFIG_EXTRA_ARGS",
+            "value": "--no-audit --no-fund --prefix=. install @radix-ui/react-separator@1.1.2",
+            "scope": "BUILD_TIME"
           }
         ],
         "build_command": "npm install && npm run build",

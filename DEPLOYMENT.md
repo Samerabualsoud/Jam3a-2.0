@@ -1,105 +1,121 @@
-# Jam3a 2.0 Deployment Guide for Digital Ocean
+# Jam3a Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Jam3a 2.0 platform on Digital Ocean.
+This comprehensive guide covers all aspects of deploying the Jam3a application to various platforms, with a focus on Digital Ocean deployment.
 
-## Prerequisites
+## Table of Contents
+- [Digital Ocean Deployment](#digital-ocean-deployment)
+- [Deployment Troubleshooting](#deployment-troubleshooting)
+- [Vercel Deployment](#vercel-deployment)
+- [Environment Configuration](#environment-configuration)
 
-- A Digital Ocean account
-- Git installed on your local machine
-- Access to the Jam3a 2.0 GitHub repository
+## Digital Ocean Deployment
 
-## Deployment Steps
+### Prerequisites
+- A Digital Ocean account with billing set up
+- Access to your GitHub repository (Jam3a)
+- Basic familiarity with Digital Ocean App Platform
 
-### 1. Create a Digital Ocean App
+### Step 1: Log in to Digital Ocean
+1. Navigate to https://cloud.digitalocean.com/
+2. Sign in with your Digital Ocean credentials
+3. From the dashboard, click on "Apps" in the left sidebar
 
-1. Log in to your Digital Ocean account
-2. Navigate to the Apps section
-3. Click "Create App"
-4. Select "GitHub" as the source
-5. Connect to your GitHub account if not already connected
-6. Select the `Samerabualsoud/Jam3a-2.0` repository
-7. Select the `main` branch
+### Step 2: Create a New App
+1. Click the "Create App" button
+2. Select "GitHub" as your source provider
+3. If prompted, authorize Digital Ocean to access your GitHub repositories
+4. Search for and select your Jam3a repository
+5. Select the "main" branch
+6. Click "Next"
 
-### 2. Configure the App
+### Step 3: Configure App Settings
+1. In the "Resources" section:
+   - Ensure the "Web Service" resource type is selected
+   - Verify the source directory is set to `/` (root)
+   - Confirm the Dockerfile path is set to `/Dockerfile`
+   - Make sure HTTP port is set to `80`
 
-1. **Environment Variables**: Add the following environment variables:
-   - `NODE_ENV`: `production`
-   - `MOYASSER_API_KEY`: Your Moyasser API key
-   - `MOYASSER_SECRET_KEY`: Your Moyasser secret key
-   - `MOYASSER_API_URL`: `https://api.moyasser.com/v1`
-   - `JWT_SECRET`: A secure random string for JWT token signing
-   - `MONGODB_URI`: Your MongoDB connection string
-   - `EMAIL_SERVICE`: `outlook`
-   - `EMAIL_USER`: Your email address for sending emails
-   - `EMAIL_PASSWORD`: Your email password or app password
+2. Click "Next" to proceed to the "Environment Variables" section
 
-2. **Resources**: Select the appropriate plan based on your needs
-   - Recommended: Basic plan with 1 GB RAM / 1 vCPU
+### Step 4: Configure Environment Variables
+1. Add the following environment variables:
+   - `NODE_ENV`: Set value to `production`
+   - `VITE_API_URL`: Set value to `${APP_URL}/api`
+   - Add any other environment variables your application requires
 
-3. **Region**: Select the region closest to your target audience
-   - Recommended for Middle East: `fra1` (Frankfurt)
+2. Click "Next" to proceed to the "App Info" section
 
-### 3. Configure Build and Run Commands
+### Step 5: Configure App Info
+1. Name your app (e.g., "jam3a-app")
+2. Select the appropriate region closest to your target users
+3. Choose the "Basic" plan (or higher if needed)
+4. Select "Basic" instance type (or higher if needed)
+5. Set instance count to 1 (can be scaled later if needed)
+6. Click "Next" to proceed to the "Review" section
 
-1. **Build Command**: `npm install && npm run build`
-2. **Run Command**: `npm start`
+### Step 6: Review and Launch
+1. Review all settings to ensure they match the following:
+   - Source: GitHub repository, main branch
+   - Build Command: Uses Dockerfile at root
+   - Environment Variables: NODE_ENV=production, etc.
+   - Resources: Web service on port 80
+   - Plan: Basic (or as selected)
 
-### 4. Deploy the App
+2. Click "Create Resources" to start the deployment process
 
-1. Review your configuration
-2. Click "Create Resources"
-3. Wait for the deployment to complete (this may take a few minutes)
+### Step 7: Monitor Deployment
+1. Digital Ocean will now build and deploy your application
+2. Monitor the build logs for any issues
+3. Pay special attention to the dependency installation phase
+4. The build and deployment process typically takes 5-10 minutes
 
-### 5. Verify Deployment
+## Deployment Troubleshooting
 
-1. Once deployment is complete, Digital Ocean will provide a URL for your app
-2. Visit the URL to verify that the app is running correctly
-3. Test the following functionality:
-   - User registration and login
-   - Product browsing
-   - Group creation
-   - Payment processing
-   - Admin panel access
+### Common Issues and Solutions
 
-## Troubleshooting
+#### Missing Dependencies
+If you encounter errors related to missing dependencies during the build process:
 
-### Common Issues
+1. Ensure all dependencies are properly listed in package.json files
+2. Check that the Dockerfile correctly installs dependencies from both root and client directories
+3. Verify that the prebuild script in package.json includes installation of critical dependencies
+4. Check for any version conflicts between dependencies
 
-1. **Authentication Error**: If you see "ri.clearToken is not a function", ensure you're using the latest code from the main branch.
+#### Build Process Failures
+If the build process fails:
 
-2. **Payment Integration Issues**: Verify that your Moyasser API keys are correctly set in the environment variables.
+1. Check the build logs for specific error messages
+2. Verify that the build command in digitalocean.app.yaml is correct
+3. Ensure the Dockerfile is properly configured for your application structure
+4. Test the build process locally before deploying
 
-3. **Email Sending Failures**: Check that your email service credentials are correct and that the email service allows sending from apps.
+#### Runtime Errors
+If the application deploys but doesn't run correctly:
 
-### Logs and Monitoring
+1. Check the application logs in the Digital Ocean dashboard
+2. Verify all environment variables are correctly set
+3. Ensure the application is properly configured for production environment
+4. Check for any runtime errors in the browser console
 
-1. Access logs from the Digital Ocean dashboard:
-   - Navigate to your app
-   - Click on "Components"
-   - Select the component you want to check
-   - Click "Logs"
+## Vercel Deployment
 
-2. Set up monitoring:
-   - In the Digital Ocean dashboard, navigate to your app
-   - Click "Insights" to view performance metrics
-   - Set up alerts for critical metrics
+For deploying to Vercel:
 
-## Updating the Application
+1. Connect your GitHub repository to Vercel
+2. Configure the build settings:
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+3. Set up environment variables
+4. Deploy the application
 
-To update the application after making changes:
+## Environment Configuration
 
-1. Push your changes to the GitHub repository
-2. Digital Ocean will automatically detect the changes and rebuild the app
-3. Monitor the build process in the Digital Ocean dashboard
+Ensure these environment variables are properly set for production deployment:
 
-## Security Considerations
+- `NODE_ENV`: Set to `production`
+- `VITE_API_URL`: API endpoint URL
+- `DATABASE_URL`: Connection string for your database
+- `JWT_SECRET`: Secret key for JWT authentication
+- `EMAIL_SERVICE_API_KEY`: API key for email service (if applicable)
 
-1. Ensure your JWT_SECRET is strong and unique
-2. Regularly rotate API keys and passwords
-3. Enable HTTPS for all traffic
-4. Implement rate limiting for API endpoints
-5. Regularly update dependencies to patch security vulnerabilities
-
-## Support
-
-For additional support, contact the Jam3a development team or refer to the documentation in the GitHub repository.
+For local development, create a `.env` file in the root directory with these variables.

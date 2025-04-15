@@ -1,8 +1,8 @@
 {
-  "name": "jam3a-2-0",
+  "name": "jam3a-hub",
   "static_sites": [
     {
-      "name": "jam3a-2-0-client",
+      "name": "jam3a-hub-client",
       "github": {
         "repo": "Samerabualsoud/Jam3a-2.0",
         "branch": "main",
@@ -28,6 +28,14 @@
         {
           "key": "VITE_NODE_ENV",
           "value": "production"
+        },
+        {
+          "key": "NPM_CONFIG_FORCE",
+          "value": "true"
+        },
+        {
+          "key": "NPM_CONFIG_EXTRA_ARGS",
+          "value": "--no-audit --no-fund --prefix=. install @radix-ui/react-separator@1.1.2"
         }
       ]
     }
