@@ -30,6 +30,9 @@ COPY . .
 # Install dependencies directly without using a script
 RUN npm install @radix-ui/react-separator@1.1.2 && cd client && npm install @radix-ui/react-separator@1.1.2 && cd ..
 
+# Install Vite globally to ensure it's available in PATH
+RUN npm install -g vite
+
 # Build the application
 RUN npm run build
 
