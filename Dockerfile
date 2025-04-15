@@ -27,11 +27,9 @@ WORKDIR /app
 # Copy source code
 COPY . .
 
-# Create a pre-build script to ensure dependencies are installed
-RUN echo "#!/bin/sh\nnpm install @radix-ui/react-separator@1.1.2\ncd client && npm install @radix-ui/react-separator@1.1.2\ncd .." > ensure-deps.sh && chmod +x ensure-deps.sh
+# Install dependencies directly without using a script
+RUN npm install @radix-ui/react-separator@1.1.2 && cd client && npm install @radix-ui/react-separator@1.1.2 && cd ..
 
-# Run the pre-build script
-RUN ./ensure-deps.sh
 
 # Build the application
 RUN npm run build
